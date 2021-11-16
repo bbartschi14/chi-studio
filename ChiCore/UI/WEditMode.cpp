@@ -1,0 +1,428 @@
+#include "D:\GraphicsProjects\ChiStudio\ChiCore\UI\WEditMode.h"
+#include "ChiGraphics/Application.h"
+#include "UILibrary.h"
+#include <glm/gtc/type_ptr.hpp>
+#include "core.h"
+#include <glm/gtx/matrix_decompose.hpp>
+
+
+namespace CHISTUDIO {
+	WEditMode::WEditMode()
+	{
+		PrimNudgeAmount = .25f;
+		RotationOperationValue = glm::vec3(0.0f);
+		ScaleOperationValue = glm::vec3(1.0f);
+	}
+
+	void WEditMode::Render(Application& InApplication)
+	{
+		std::vector<SceneNode*> selectedNodes = InApplication.GetSelectedNodes();
+
+		if (selectedNodes.size() == 1 && InApplication.GetSceneMode() == ESceneMode::Edit)
+		{
+			ImGui::Begin("Edit Mode");
+
+			const char* typeStrings[] = { "Vertex", "Edge", "Face" };
+			const char* currentTypeString = typeStrings[(int)InApplication.GetEditModeSelectionType()];
+			if (ImGui::BeginCombo("Selection Mode", currentTypeString))
+			{
+				for (int i = 0; i < 3; i++)
+				{
+					bool isSelected = currentTypeString == typeStrings[i];
+					if (ImGui::Selectable(typeStrings[i], isSelected))
+					{
+						currentTypeString = typeStrings[i];
+						InApplication.SetEditModeSelectionType((EEditModeSelectionType)i);
+					}
+
+					if (isSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+
+				ImGui::EndCombo();
+			}
+
+
+			if (RenderingComponent* renderingComponent = selectedNodes[0]->GetComponentPtr<RenderingComponent>())
+			{
+				RenderPrimitivesSection(selectedNodes, renderingComponent, InApplication);
+			}
+
+			ImGui::End();
+
+		}
+	}
+
+	void WEditMode::RenderPrimitivesSection(std::vector<SceneNode*> selectedNodes, RenderingComponent* renderingComponent, Application& InApplication)
+	{
+		VertexObject* vertexObject = renderingComponent->GetVertexObjectPtr();
+		ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
+
+		if (InApplication.AreEditModeVerticesSelectable())
+		{
+			if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				if (ImGui::BeginTable("VerticesTable", 1, tableFlags))
+				{
+					ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_NoHide);
+					ImGui::TableHeadersRow();
+					ImGui::TableNextColumn();
+
+					const std::vector<std::unique_ptr<FVertex>>& vertices = vertexObject->GetVertices();
+					const std::set<int>& selectedVertices = vertexObject->GetSelectedVertices();
+					for (int i = 0; i < vertices.size(); i++)
+					{
+						ImGuiTreeNodeFlags leafFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth;// | ImGuiTreeNodeFlags_FramePadding;
+						bool bIsVertexSelected = selectedVertices.find(vertices[i]->GetIndexId()) != selectedVertices.end();
+						if (bIsVertexSelected)
+						{
+							leafFlags |= ImGuiTreeNodeFlags_Selected;
+							ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4{ 0.08f, 0.53f, 0.85f, 1.0f });
+						}
+
+						// Headers
+						ImGui::PushStyleColor(ImGuiCol_Header, ImVec4{ 0.025f, 0.43f, 0.75f, 1.0f });
+						bool open = ImGui::TreeNodeEx(fmt::format("{}", vertices[i]->GetIndexId()).c_str(), leafFlags); //
+						ImGui::PopStyleColor();
+
+						if (bIsVertexSelected)
+						{
+							ImGui::PopStyleColor();
+						}
+
+						if (ImGui::IsItemClicked())
+						{
+							if (ImGui::GetIO().KeyCtrl)
+							{
+								if (bIsVertexSelected)
+								{
+									vertexObject->DeselectVertex(vertices[i]->GetIndexId());
+								}
+								else
+								{
+									vertexObject->SelectVertex(vertices[i]->GetIndexId(), true);
+								}
+							}
+							else
+							{
+								vertexObject->SelectVertex(vertices[i]->GetIndexId(), false);
+							}
+						}
+
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+					}
+					ImGui::EndTable();
+					ImGui::Separator();
+				}
+			}
+		}
+
+		if (InApplication.AreEditModeEdgesSelectable())
+		{
+			if (ImGui::CollapsingHeader("Edges", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				if (ImGui::BeginTable("EdgesTable", 1, tableFlags))
+				{
+					ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_NoHide);
+					ImGui::TableHeadersRow();
+					ImGui::TableNextColumn();
+
+					const std::vector<std::unique_ptr<FEdge>>& edges = vertexObject->GetEdges();
+					const std::set<int>& selectedEdges = vertexObject->GetSelectedEdges();
+					for (int i = 0; i < edges.size(); i++)
+					{
+						ImGuiTreeNodeFlags leafFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth;
+						bool bIsEdgeSelected = selectedEdges.find(edges[i]->GetIndexId()) != selectedEdges.end();;
+						if (bIsEdgeSelected)
+						{
+							leafFlags |= ImGuiTreeNodeFlags_Selected;
+							ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4{ 0.08f, 0.53f, 0.85f, 1.0f });
+						}
+
+						// Headers
+						ImGui::PushStyleColor(ImGuiCol_Header, ImVec4{ 0.025f, 0.43f, 0.75f, 1.0f });
+
+						bool open = ImGui::TreeNodeEx(fmt::format("{}", edges[i]->GetIndexId()).c_str(), leafFlags); //
+						ImGui::PopStyleColor();
+						if (bIsEdgeSelected)
+						{
+							ImGui::PopStyleColor();
+						}
+
+						if (ImGui::IsItemClicked())
+						{
+							if (ImGui::GetIO().KeyCtrl)
+							{
+								if (bIsEdgeSelected)
+								{
+									vertexObject->DeselectEdge(edges[i]->GetIndexId());
+								}
+								else
+								{
+									vertexObject->SelectEdge(edges[i]->GetIndexId(), true);
+								}
+							}
+							else
+							{
+								vertexObject->SelectEdge(edges[i]->GetIndexId(), false);
+							}
+						}
+
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+					}
+					ImGui::EndTable();
+					ImGui::Separator();
+				}
+			}
+		}
+
+		if (InApplication.AreEditModeFacesSelectable())
+		{
+			if (ImGui::CollapsingHeader("Faces", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				if (ImGui::BeginTable("FacesTable", 1, tableFlags))
+				{
+					ImGui::TableSetupColumn("Index", ImGuiTableColumnFlags_NoHide);
+					ImGui::TableHeadersRow();
+					ImGui::TableNextColumn();
+
+					const std::vector<std::unique_ptr<FFace>>& faces = vertexObject->GetFaces();
+					const std::set<int>& selectedFaces = vertexObject->GetSelectedFaces();
+					for (int i = 0; i < faces.size(); i++)
+					{
+						ImGuiTreeNodeFlags leafFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth;
+						bool bIsFaceSelected = selectedFaces.find(faces[i]->GetIndexId()) != selectedFaces.end();;
+						if (bIsFaceSelected)
+						{
+							leafFlags |= ImGuiTreeNodeFlags_Selected;
+							ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4{ 0.08f, 0.53f, 0.85f, 1.0f });
+						}
+
+						// Headers
+						ImGui::PushStyleColor(ImGuiCol_Header, ImVec4{ 0.025f, 0.43f, 0.75f, 1.0f });
+
+						bool open = ImGui::TreeNodeEx(fmt::format("{}", faces[i]->GetIndexId()).c_str(), leafFlags); //
+						ImGui::PopStyleColor();
+						if (bIsFaceSelected)
+						{
+							ImGui::PopStyleColor();
+						}
+
+						if (ImGui::IsItemClicked())
+						{
+							if (ImGui::GetIO().KeyCtrl)
+							{
+								if (bIsFaceSelected)
+								{
+									vertexObject->DeselectFace(faces[i]->GetIndexId());
+								}
+								else
+								{
+									vertexObject->SelectFace(faces[i]->GetIndexId(), true);
+								}
+							}
+							else
+							{
+								vertexObject->SelectFace(faces[i]->GetIndexId(), false);
+							}
+						}
+
+						ImGui::TableNextRow();
+						ImGui::TableNextColumn();
+					}
+					ImGui::EndTable();
+					ImGui::Separator();
+				}
+			}
+		}
+
+		if (vertexObject->GetNumberOfPrimsSelected() > 0)
+		{
+			if (ImGui::CollapsingHeader("Selection Transform", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				glm::vec3 displayPosition = vertexObject->GetSelectedPrimAveragePosition();
+				glm::vec3 initialPosition = displayPosition;
+				if (UILibrary::DrawVector3Control("Position", displayPosition, 0.1f))
+				{
+					MoveSelectedPrims(vertexObject, displayPosition - initialPosition);
+				}
+
+				bool wasRotationDeactivated = false;
+				glm::vec3 previousRotationValue = RotationOperationValue;
+				if (UILibrary::DrawVector3ControlWithStates("Rotation", RotationOperationValue, wasRotationDeactivated, 1.f))
+				{
+					RotateSelectedPrims(vertexObject, RotationOperationValue - previousRotationValue);
+				}
+				if (wasRotationDeactivated)
+				{
+					RotationOperationValue = glm::vec3(0.0f);
+				}
+
+				bool wasScaleDeactivated = false;
+				if (UILibrary::DrawVector3ControlWithStates("Scale", ScaleOperationValue, wasScaleDeactivated, .01f))
+				{
+					if (PreScaleVertexPosition.size() == 0)
+					{
+						// Cache pre scale positions
+						std::set<FVertex*> verticesToScale = vertexObject->GetAggregateSelectedVertices();
+						for (FVertex* vert : verticesToScale)
+						{
+							PreScaleVertexPosition.push_back(vert->GetPosition());
+						}
+						StartingScaleOrigin = vertexObject->GetSelectedPrimAveragePosition();
+					}
+					ScaleSelectedPrims(vertexObject, ScaleOperationValue);
+				}
+				if (wasScaleDeactivated)
+				{
+					ScaleOperationValue = glm::vec3(1.0f);
+					PreScaleVertexPosition.clear();
+				}
+				ImGui::Separator();
+			}
+		}
+
+
+		if (ImGui::CollapsingHeader("Operations", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			ImGui::DragFloat("Nudge Amount", &PrimNudgeAmount, 0.05f, 0.0f, 200.0f);
+			ImVec2 buttonSize = { 35.0f, 20.0f };
+
+			if (ImGui::Button("X+", buttonSize))
+			{
+				MoveSelectedPrims(vertexObject, glm::vec3(PrimNudgeAmount, 0.0f, 0.0f));
+			} ImGui::SameLine();
+			if (ImGui::Button("X-", buttonSize))
+			{
+				MoveSelectedPrims(vertexObject, glm::vec3(-PrimNudgeAmount, 0.0f, 0.0f));
+			} ImGui::SameLine();
+			if (ImGui::Button("Y+", buttonSize))
+			{
+				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, PrimNudgeAmount, 0.0f));
+			} ImGui::SameLine();
+			if (ImGui::Button("Y-", buttonSize))
+			{
+				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, -PrimNudgeAmount, 0.0f));
+			} ImGui::SameLine();
+			if (ImGui::Button("Z+", buttonSize))
+			{
+				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, 0.0f, PrimNudgeAmount));
+			} ImGui::SameLine();
+			if (ImGui::Button("Z-", buttonSize))
+			{
+				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, 0.0f, -PrimNudgeAmount));
+			}
+
+			if (ImGui::Button("Delete"))
+				ImGui::OpenPopup("deletePopup");
+
+			if (ImGui::BeginPopup("deletePopup"))
+			{
+				if (ImGui::Selectable("Vertices"))
+				{
+					//Delete vertices
+					vertexObject->DeleteSelectedVertices();
+				}
+				if (ImGui::Selectable("Edges"))
+				{
+					//Delete edges
+				}
+				if (ImGui::Selectable("Faces"))
+				{
+					//Delete faces
+				}
+				ImGui::Separator();
+				ImGui::Text("Type");
+
+				ImGui::EndPopup();
+			}
+
+			if (vertexObject->GetSelectedFaces().size() > 0)
+			{
+				if (ImGui::Button("Extrude"))
+					ImGui::OpenPopup("extrudePopup");
+
+				if (ImGui::BeginPopup("extrudePopup"))
+				{
+					if (ImGui::Selectable("Individual Faces"))
+					{
+						vertexObject->ExtrudeSelectedFaces(EFaceExtrudeType::Individual);
+					}
+
+					if (ImGui::Selectable("Regions"))
+					{
+						vertexObject->ExtrudeSelectedFaces(EFaceExtrudeType::Regions);
+					}
+					
+					ImGui::Separator();
+					ImGui::Text("Mode");
+
+					ImGui::EndPopup();
+				}
+			}
+		}
+	}
+
+	void WEditMode::MoveSelectedPrims(VertexObject* InObject, glm::vec3 InDistance)
+	{
+		std::set<FVertex*> verticesToMove = InObject->GetAggregateSelectedVertices();
+		
+		for (FVertex* vertex : verticesToMove)
+		{
+			vertex->SetPosition(vertex->GetPosition() + InDistance);
+		}
+
+		InObject->MarkDirty();
+	}
+
+	void WEditMode::RotateSelectedPrims(VertexObject* InObject, glm::vec3 InRotation)
+	{
+		std::set<FVertex*> verticesToRotate = InObject->GetAggregateSelectedVertices();
+		glm::vec3 rotationOrigin = InObject->GetSelectedPrimAveragePosition();
+
+		glm::mat4 newMatrix(1.f);
+
+		// Order: scale, rotate, translate
+		newMatrix = glm::scale(glm::mat4(1.f), glm::vec3(1.0f)) * newMatrix;
+		newMatrix = glm::mat4_cast(glm::quat(glm::radians(InRotation))) * newMatrix;
+		newMatrix = glm::translate(glm::mat4(1.f), rotationOrigin) * newMatrix;
+
+		for (FVertex* vertex : verticesToRotate)
+		{
+			glm::vec3 localPositionToRotationOrigin = vertex->GetPosition() - rotationOrigin;
+			glm::vec3 newPosition = newMatrix * glm::vec4(localPositionToRotationOrigin, 1.0f);
+			vertex->SetPosition(newPosition);
+		}
+
+		InObject->MarkDirty();
+		//glm::quat rotationMatrix = glm::quat(cosf(InAngle / 2), InAxis.x * sinf(InAngle / 2),
+		//	InAxis.y * sinf(InAngle / 2), InAxis.z * sinf(InAngle / 2))
+	}
+
+	void WEditMode::ScaleSelectedPrims(VertexObject* InObject, glm::vec3 InScale)
+	{
+		std::set<FVertex*> verticesToScale = InObject->GetAggregateSelectedVertices();
+		glm::vec3 scaleOrigin = InObject->GetSelectedPrimAveragePosition();
+
+		glm::mat4 deltaMatrix(1.f);
+
+		// Order: scale, rotate, translate
+		deltaMatrix = glm::scale(glm::mat4(1.f), InScale) * deltaMatrix;
+		deltaMatrix = glm::mat4_cast(glm::quat(glm::vec3(0.0f))) * deltaMatrix;
+		deltaMatrix = glm::translate(glm::mat4(1.f), StartingScaleOrigin) * deltaMatrix;
+
+		int count = 0;
+		for (FVertex* vertex : verticesToScale)
+		{
+			glm::vec3 localPositionToScaleOrigin = PreScaleVertexPosition[count] - StartingScaleOrigin;
+			glm::vec3 newPosition = deltaMatrix * glm::vec4(localPositionToScaleOrigin, 1.0f);
+			vertex->SetPosition(newPosition);
+			count++;
+		}
+
+		InObject->MarkDirty();
+	}
+
+}
