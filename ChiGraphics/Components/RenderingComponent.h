@@ -25,6 +25,8 @@ public:
     bool bRenderSolid;
     bool bRenderWireframe;
     bool bRenderPoints;
+
+    bool bIsDebugRender;
 private:
     std::shared_ptr<VertexObject> VertexObj;
     int StartIndex;

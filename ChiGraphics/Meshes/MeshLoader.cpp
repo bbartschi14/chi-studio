@@ -18,7 +18,7 @@ MeshData MeshLoader::Import(const std::string& filename) {
         parsed_data.Groups.end());
 
     MeshData mesh_data;
-    mesh_data.VertexObj = make_unique<VertexObject>();
+    mesh_data.VertexObj = make_unique<VertexObject>(EDefaultObject::CustomMesh);
     /*
     if (parsed_data.Positions) {
         mesh_data.VertexObj->UpdatePositions(std::move(parsed_data.Positions));

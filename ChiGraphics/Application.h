@@ -64,6 +64,9 @@ public:
 	void TryToggleEditMode();
 
 	void OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2 SceneViewSize);
+
+	void CreatePrimitiveNode(EDefaultObject InObjectType);
+
 protected:
 	virtual void DrawGUI() {}
 	virtual void SetupScene() = 0;

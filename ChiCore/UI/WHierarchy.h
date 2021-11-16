@@ -1,19 +1,21 @@
 #pragma once
 
 #include "IWidget.h"
+#include <vector>
 
 namespace CHISTUDIO {
 
-	class WHierarchy : public IWidget
-	{
-	public:
-		WHierarchy();
+class WHierarchy : public IWidget
+{
+public:
+	WHierarchy();
 
-		void Render(Application& InApplication);
+	void Render(Application& InApplication);
 
-	private:
-		void LoadRowsRecursively(class SceneNode& node, Application& app);
-		void TestTable();
-	};
+private:
+	void LoadRowsRecursively(class SceneNode& node, Application& app);
+	void TestTable();
+	std::vector<class SceneNode*> NodesToDelete;
+};
 
 }

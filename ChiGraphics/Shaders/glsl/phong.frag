@@ -1,6 +1,7 @@
 #version 330 core
 
-out vec4 frag_color;
+layout(location = 0) out vec4 frag_color;
+layout(location = 1) out vec4 mask_color;
 
 struct AmbientLight {
     bool enabled;
@@ -48,6 +49,8 @@ void main() {
     if (point_light.enabled) {
         frag_color += vec4(CalcPointLight(normal, view_dir), 1.0);
     }
+
+    mask_color = vec4(1.0, 1.0, 1.0, 1.0);
 }
 
 vec3 GetAmbientColor() {
@@ -68,7 +71,7 @@ vec3 CalcAmbientLight() {
 
 vec3 CalcPointLight(vec3 normal, vec3 view_dir) {
     PointLight light = point_light;
-    vec3 light_dir = normalize(light.position - world_position);
+    vec3 light_dir = normalize(camera_position - world_position);
 
     float diffuse_intensity = max(dot(normal, light_dir), 0.0);
     vec3 diffuse_color = diffuse_intensity * light.diffuse * GetDiffuseColor();
@@ -79,10 +82,12 @@ vec3 CalcPointLight(vec3 normal, vec3 view_dir) {
     vec3 specular_color = specular_intensity * 
         light.specular * GetSpecularColor();
 
-    float distance = length(light.position - world_position);
-    float attenuation = 1.0 / (light.attenuation.x + 
-        light.attenuation.y * distance + 
-        light.attenuation.z * (distance * distance));
+    float distance = length(camera_position - world_position);
+    //float attenuation = 1.0 / (light.attenuation.x + 
+    //    light.attenuation.y * distance + 
+    //   light.attenuation.z * (distance * distance));
+
+    float attenuation = .75;
 
     return attenuation * (diffuse_color + specular_color);
 }

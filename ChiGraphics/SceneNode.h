@@ -35,6 +35,7 @@ public:
     }
 
     void AddChild(std::unique_ptr<SceneNode> InChild);
+    void RemoveChild(SceneNode* InChildToRemove);
 
     template <class T>
     void AddComponent(std::unique_ptr<T> InComponent) {
@@ -111,6 +112,14 @@ public:
         return bIsSelected;
     }
 
+    void SetHierarchyVisible(bool InIsHierarchyVisible) {
+        bIsHierarchyVisible = InIsHierarchyVisible;
+    }
+
+    bool IsHierarchyVisible() const {
+        return bIsHierarchyVisible;
+    }
+
 private:
     ComponentBase* GetComponentPtrByType(EComponentType InType) const;
 
@@ -125,6 +134,8 @@ private:
     bool Active;
     std::string NodeName;
     bool bIsSelected;
+    bool bIsHierarchyVisible;
+
 };
 
 }

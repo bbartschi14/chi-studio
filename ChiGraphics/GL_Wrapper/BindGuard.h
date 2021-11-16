@@ -21,7 +21,6 @@ public:
 	BindGuard& operator=(BindGuard&&) = delete;
 
 	~BindGuard();
-
 private:
 	const IBindable* Binder;
 };

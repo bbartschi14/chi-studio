@@ -5,6 +5,8 @@
 #include "ChiGraphics/Shaders/PointShader.h"
 #include "ChiGraphics/Shaders/EdgeShader.h"
 #include "ChiGraphics/Shaders/SelectedFaceShader.h"
+#include "ChiGraphics/Shaders/TextureBlendShader.h"
+#include "ChiGraphics/Shaders/TextureBlurShader.h"
 #include "ChiGraphics/Components/ShadingComponent.h"
 #include <cassert>
 #include <iostream>
@@ -22,6 +24,10 @@ namespace CHISTUDIO {
 		PointShader_ = std::make_shared<PointShader>();
 		EdgeShader_ = std::make_shared<EdgeShader>();
 		SelectedFaceShader_ = std::make_shared<SelectedFaceShader>();
+		TextureBlendShader_ = std::make_shared<TextureBlendShader>();
+		TextureBlurShader_ = std::make_shared<TextureBlurShader>();
+
+		SceneRenderQuad = PrimitiveFactory::CreateQuad();
 	}
 
 	void Renderer::Render(const Scene& InScene)
@@ -44,7 +50,7 @@ namespace CHISTUDIO {
 		RenderScene(InScene);
 
 		// Add rendered texture to ImGUI scene window
-		uint64_t textureID = GetSceneOutputTextureHandle();
+		uint64_t textureID = SceneOutputTexture->GetHandle();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)CurrentWidth, (float)CurrentHeight }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 		ImGui::EndChild();
 
@@ -131,6 +137,15 @@ namespace CHISTUDIO {
 
 		BindGuard FrameBufferBindGuard(SceneColorFrameBuffer.get());
 
+		GL_CHECK(glClearColor(0.0f, 0.0f, 0.0f, 0.0f));
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+		GL_CHECK(glDrawBuffers(2, buffers));
+		GL_CHECK(glClear(GL_COLOR_BUFFER_BIT));
+
+		GLenum buffers2[] = { GL_COLOR_ATTACHMENT0 };
+
+		GL_CHECK(glDrawBuffers(1, buffers2));
+		GL_CHECK(glClearColor(0.2f, 0.2f, 0.2f, 0.0f));
 		GL_CHECK(glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT));
 
 		const SceneNode& root = InScene.GetRootNode();
@@ -146,23 +161,13 @@ namespace CHISTUDIO {
 
 		// First pass: depth buffer and stencil buffer
 		// Remaining passes - 1: one per light source.
-		// Last pass: draw outline using stencil
-		size_t totalNumberOfPasses = 2 + lightComponentPointers.size();
+		size_t totalNumberOfPasses = 1 + lightComponentPointers.size();
 
 		for (size_t currentPass = 0; currentPass < totalNumberOfPasses; currentPass++) {
 
 			GL_CHECK(glDepthMask((currentPass == 0) ? GL_TRUE : GL_FALSE));
 			bool color_mask = (currentPass == 0) ? GL_FALSE : GL_TRUE;
 			GL_CHECK(glColorMask(color_mask, color_mask, color_mask, color_mask));
-			
-			if (currentPass == totalNumberOfPasses - 1)
-			{
-				// Outline pass
-				GL_CHECK(glStencilFunc(GL_NOTEQUAL, 1, 0xFF));
-				GL_CHECK(glStencilMask(0x00));
-
-				GL_CHECK(glDisable(GL_BLEND));
-			}
 
 			for (const auto& NodeAndMatrixPair : renderingInfo) {
 				auto renderingComponentPointer = NodeAndMatrixPair.first;
@@ -170,20 +175,48 @@ namespace CHISTUDIO {
 
 				bool isSelected = renderingNode.IsSelected(); // Get selected info for stencil rendering
 
-				if (currentPass < totalNumberOfPasses - 1)
+				if (isSelected && renderingComponentPointer->bRenderSolid)
 				{
-					// Normal passes using all objects and assigned shaders
-					if (isSelected && renderingComponentPointer->bRenderSolid)
-					{
-						GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xFF));
-						GL_CHECK(glStencilMask(0xFF));
+					GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xFF));
+					GL_CHECK(glStencilMask(0xFF));
+				}
+				else
+				{
+					GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xFF));
+					GL_CHECK(glStencilMask(0x00));
+				}
+
+				if (renderingComponentPointer->bIsDebugRender)
+				{
+					// For debug rendering, we use whatever mode is already specified
+					auto shadingPointer = renderingNode.GetComponentPtr<ShadingComponent>();
+					if (shadingPointer == nullptr) {
+						std::cerr << "Some mesh is not attached with a shader during rendering!"
+							<< std::endl;
+						continue;
 					}
-					else
-					{
-						GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xFF));
-						GL_CHECK(glStencilMask(0x00));
+					ShaderProgram* shader = shadingPointer->GetShaderPtr();
+					if (shader == nullptr) {
+						std::cerr << "Shader program is null"
+							<< std::endl;
+						continue;
+					}
+					BindGuard shader_bg(shader);
+
+					// Set various uniform variables in the shaders.
+					shader->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
+					shader->SetCamera(*activeCamera);
+
+					if (currentPass > 0) {
+						LightComponent& light = *lightComponentPointers.at(totalNumberOfPasses - currentPass - 1);
+						shader->SetLightSource(light);
 					}
 
+					renderingComponentPointer->Render();
+				}
+				else
+				{
+					// Non debug rendering components have solid vs wireframe vs point modes
 					if (renderingComponentPointer->bRenderSolid || (renderingNode.IsSelected() && Application_.AreEditModeFacesSelectable() && Application_.GetSceneMode() == ESceneMode::Edit))
 					{
 						renderingComponentPointer->SetDrawMode(EDrawMode::Triangles);
@@ -208,13 +241,24 @@ namespace CHISTUDIO {
 						shader->SetCamera(*activeCamera);
 
 						if (currentPass > 0) {
-							LightComponent& light = *lightComponentPointers.at(totalNumberOfPasses - currentPass - 2);
+							LightComponent& light = *lightComponentPointers.at(totalNumberOfPasses - currentPass - 1);
 							shader->SetLightSource(light);
+						}
+
+						if (isSelected && renderingComponentPointer->bRenderSolid)
+						{
+							GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+							GL_CHECK(glDrawBuffers(2, buffers));
+						}
+						else
+						{
+							GLenum buffers[] = { GL_COLOR_ATTACHMENT0 };
+							GL_CHECK(glDrawBuffers(1, buffers));
 						}
 
 						renderingComponentPointer->Render();
 					}
-					
+
 					{
 						// POINTS
 						GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xFF));
@@ -245,12 +289,12 @@ namespace CHISTUDIO {
 							GL_CHECK(glEnable(GL_DEPTH_TEST));
 						}
 					}
-					
+
 					{
 						// EDGES
 						GL_CHECK(glStencilFunc(GL_ALWAYS, 1, 0xFF));
 						GL_CHECK(glStencilMask(0x00));
-				
+
 						BindGuard edgeShaderBg(EdgeShader_.get());
 
 						// Set various uniform variables in the shaders.
@@ -276,8 +320,8 @@ namespace CHISTUDIO {
 						}
 					}
 
-					
-					if (renderingComponentPointer->GetVertexObjectPtr()->GetSelectedFaces().size() > 0)
+
+					if (renderingComponentPointer->GetVertexObjectPtr()->GetSelectedFaces().size() > 0 && renderingNode.IsSelected() && Application_.GetSceneMode() == ESceneMode::Edit)
 					{
 						// Selected Faces
 						GL_CHECK(glDisable(GL_DEPTH_TEST)); // Disable depth test and write to stencil buffer to get the edges on top
@@ -290,8 +334,8 @@ namespace CHISTUDIO {
 						BindGuard selectedFaceShaderBg(SelectedFaceShader_.get());
 						SelectedFaceShader_->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
 						SelectedFaceShader_->AssociateVertexArray(renderingComponentPointer->GetVertexObjectPtr()->GetSelectedFaceVertexArray());
-						SelectedFaceShader_->SetCamera(*activeCamera); 
-						
+						SelectedFaceShader_->SetCamera(*activeCamera);
+
 						renderingComponentPointer->GetVertexObjectPtr()->GetSelectedFaceVertexArray().Render();
 						GL_CHECK(glEnable(GL_DEPTH_TEST));
 						GL_CHECK(glDisable(GL_BLEND));
@@ -311,27 +355,27 @@ namespace CHISTUDIO {
 
 						renderingComponentPointer->GetVertexObjectPtr()->GetDebugNormalsVertexArray().Render();
 					}
-					
-				}
-				else
-				{
-					// Outline pass
-					if (!isSelected || !renderingComponentPointer->bRenderSolid || Application_.GetSceneMode() == ESceneMode::Edit) continue;
-					renderingComponentPointer->SetDrawMode(EDrawMode::Triangles);
-					renderingComponentPointer->SetPolygonMode(EPolygonMode::Fill);
-
-					BindGuard outlineShaderBg(OutlineShader_.get());
-
-					// Set various uniform variables in the shaders.
-					OutlineShader_->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
-					OutlineShader_->SetCamera(*activeCamera);
-
-					renderingComponentPointer->Render();
 				}
 			}
 		}
-		// Outline texture
+		// Post processing
+		if (Application_.GetSceneMode() != ESceneMode::Edit)
+		{
+			GL_CHECK(glDisable(GL_DEPTH_TEST));
+			GL_CHECK(glDisable(GL_BLEND));
+			BindGuard textureBlurShader(TextureBlurShader_.get());
+			TextureBlurShader_->SetVertexObject(*SceneRenderQuad);
+			TextureBlurShader_->SetTexture(*customMaskTexture);
+			GLenum newBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+			GL_CHECK(glDrawBuffers(3, newBuffers));
+			SceneRenderQuad->GetVertexArray().Render();
 
+			BindGuard textureShader(TextureBlendShader_.get());
+			TextureBlendShader_->SetVertexObject(*SceneRenderQuad);
+			TextureBlendShader_->SetTextures(*SceneOutputTexture, *OutlineTexture);
+			SceneRenderQuad->GetVertexArray().Render();
+		}
+		
 
 		// Re-enable writing to depth buffer.
 		GL_CHECK(glDepthMask(GL_TRUE));
@@ -342,8 +386,6 @@ namespace CHISTUDIO {
 
 	void Renderer::SetRenderingOptions() const
 	{
-		GL_CHECK(glClearColor(0.2f, 0.2f, 0.2f, 0.0f));
-
 		// Enable depth test.
 		GL_CHECK(glEnable(GL_DEPTH_TEST));
 		GL_CHECK(glDepthFunc(GL_LEQUAL));
@@ -394,7 +436,21 @@ namespace CHISTUDIO {
 
 		SceneDepthStencilTexture = make_unique<FTexture>();
 		SceneDepthStencilTexture->Reserve(GL_DEPTH24_STENCIL8, CurrentWidth, CurrentHeight, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8);
-
 		SceneColorFrameBuffer->AssociateTexture(*SceneDepthStencilTexture, GL_DEPTH_STENCIL_ATTACHMENT);
+
+		PostProcessOutputTexture = make_unique<FTexture>();
+		PostProcessOutputTexture->Reserve(GL_RGB, CurrentWidth, CurrentHeight, GL_RGBA, GL_UNSIGNED_BYTE);
+
+		PostProcessFrameBuffer = make_unique<Framebuffer>();
+		PostProcessFrameBuffer->AssociateTexture(*PostProcessOutputTexture, GL_COLOR_ATTACHMENT0);
+
+		// Custom depth buffer
+		customMaskTexture = make_unique<FTexture>(TextureConfig{{GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},{GL_TEXTURE_MIN_FILTER, GL_LINEAR },{GL_TEXTURE_MAG_FILTER, GL_LINEAR }});
+		customMaskTexture->Reserve(GL_RGB, CurrentWidth, CurrentHeight, GL_RGBA, GL_UNSIGNED_BYTE);
+		SceneColorFrameBuffer->AssociateTexture(*customMaskTexture, GL_COLOR_ATTACHMENT1);
+
+		OutlineTexture = make_unique<FTexture>(TextureConfig{ {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},{GL_TEXTURE_MIN_FILTER, GL_LINEAR },{GL_TEXTURE_MAG_FILTER, GL_LINEAR } });
+		OutlineTexture->Reserve(GL_RGB, CurrentWidth, CurrentHeight, GL_RGBA, GL_UNSIGNED_BYTE);
+		SceneColorFrameBuffer->AssociateTexture(*OutlineTexture, GL_COLOR_ATTACHMENT2);
 	}
 }

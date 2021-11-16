@@ -81,6 +81,8 @@ void FTexture::Reserve(GLint internal_format,
     // the rendered image to as a texture. Pass nullptr as the data pointer (the
     // last parameter) to glTexImage2D since we don't know the actual image data
     // yet.
+    Width = width;
+    Height = height;
     GL_CHECK(glTexImage2D(GL_TEXTURE_2D, 0, internal_format, (GLsizei)width,
         (GLsizei)height, 0, format, type, nullptr));
 }

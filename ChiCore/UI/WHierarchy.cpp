@@ -6,6 +6,7 @@ namespace CHISTUDIO {
 	WHierarchy::WHierarchy()
 	{
 	}
+
 	void WHierarchy::Render(Application& InApplication)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
@@ -39,14 +40,47 @@ namespace CHISTUDIO {
         InApplication.SelectNode(nullptr, false);
     }
 
+    // Hierarchy context menu
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 4, 4 });
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
+        ImGui::OpenPopup("HierarchyContext");
+    if (ImGui::BeginPopup("HierarchyContext"))
+    {
+        ImGui::Text("Options");
+        ImGui::Separator();
+        if (ImGui::Selectable("Add Cube"))
+        {
+            InApplication.CreatePrimitiveNode(EDefaultObject::Cube);
+        }
+
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleVar();
+    // ~ END Hierarchy context menu
+
 	ImGui::End();
     ImGui::PopStyleVar();
 
-
+    bool bDeleted = false;
+    for (SceneNode* node : NodesToDelete)
+    {
+        node->GetParentPtr()->RemoveChild(node);
+        if (node->IsSelected())
+        {
+            InApplication.SelectNode(nullptr, false);
+        }
+        bDeleted = true;
+    }
+    if (bDeleted)
+    {
+        NodesToDelete.clear();
+    }
 }
 
     void WHierarchy::LoadRowsRecursively(SceneNode& node, Application& app)
     {
+        if (!node.IsHierarchyVisible()) return;
+
         size_t childCount = node.GetChildrenCount();
 
         // Create row for this node
@@ -68,6 +102,22 @@ namespace CHISTUDIO {
         //colors[ImGuiCol_HeaderHovered] = ImVec4{ 0.3f, 0.305f, 0.31f, 1.0f };
         //colors[ImGuiCol_HeaderActive] = ImVec4{ 0.15f, 0.1505f, 0.151f, 1.0f };
         bool open = ImGui::TreeNodeEx(node.GetNodeName().c_str(), finalFlag);
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 4, 4 });
+        if (ImGui::BeginPopupContextItem()) // <-- use last item id as popup id
+        {
+            ImGui::Text(node.GetNodeName().c_str(), "Options");
+            ImGui::Separator();
+            if (ImGui::Selectable("Delete"))
+            {
+                // Mark node for deletion
+                NodesToDelete.push_back(&node);
+            }
+
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleVar();
+
         ImGui::PopStyleColor();
         if (node.IsSelected())
         {

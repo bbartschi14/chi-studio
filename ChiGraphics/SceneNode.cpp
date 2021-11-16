@@ -3,7 +3,7 @@
 
 namespace CHISTUDIO {
 
-SceneNode::SceneNode(std::string InNodeName) : Transform_(*this), Parent(nullptr), Active(true), NodeName(InNodeName), bIsSelected(false)
+SceneNode::SceneNode(std::string InNodeName) : Transform_(*this), Parent(nullptr), Active(true), NodeName(InNodeName), bIsSelected(false), bIsHierarchyVisible(true)
 {
 }
 
@@ -11,6 +11,24 @@ void SceneNode::AddChild(std::unique_ptr<SceneNode> InChild)
 {
 	InChild->Parent = this;
 	Children.emplace_back(std::move(InChild));
+}
+
+void SceneNode::RemoveChild(SceneNode* InChildToRemove)
+{
+	int indexToRemove = -1;
+	for (size_t i = 0; i < Children.size(); i++)
+	{
+		if (Children[i].get() == InChildToRemove)
+		{
+			indexToRemove = i;
+			break;
+		}
+	}
+
+	if (indexToRemove > 0)
+	{
+		Children.erase(Children.begin() + indexToRemove);
+	}
 }
 
 ComponentBase* SceneNode::GetComponentPtrByType(EComponentType InType) const

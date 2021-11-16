@@ -12,7 +12,7 @@ namespace CHISTUDIO {
 
 ArcBallCameraNode::ArcBallCameraNode(float fov, float aspect, float distance)
     : SceneNode("Camera"), fov_(fov), distance_(distance) {
-  auto camera = make_unique<CameraComponent>(fov, aspect, 0.1f, 100.f);
+  auto camera = make_unique<CameraComponent>(fov, aspect, 0.01f, 1000.0f);
   AddComponent(std::move(camera));
 
   start_position_ = GetTransform().GetPosition();

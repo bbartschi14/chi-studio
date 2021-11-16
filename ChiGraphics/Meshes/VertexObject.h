@@ -15,6 +15,12 @@ enum class EFaceExtrudeType {
     Regions
 };
 
+enum class EDefaultObject {
+    Cube,
+    CustomMesh,
+    Debug
+};
+
 struct FIncidentHalfEdges {
     std::vector<FHalfEdge*> IncidentHalfEdges;
 };
@@ -73,7 +79,7 @@ struct FFaceRegion {
 // for sending data from CPU to GPU via the Update* methods.
 class VertexObject {
 public:
-    VertexObject() : VertexArray_(make_unique<VertexArray>()), 
+    VertexObject(EDefaultObject InDefaultObject) : VertexArray_(make_unique<VertexArray>()),
         EdgeVertexArray_(make_unique<VertexArray>()),
         SelectedFaceVertexArray_(make_unique<VertexArray>()), 
         SelectedEdgeVertexArray_(make_unique<VertexArray>()), 
@@ -96,17 +102,25 @@ public:
         SelectedFaceVertexArray_->CreatePositionBuffer();
         SelectedFaceVertexArray_->CreateIndexBuffer();
 
-        CreateHalfEdgeCube();
-        CreateVertexArrayFromHalfEdgeStructure();
+        if (InDefaultObject == EDefaultObject::Cube)
+        {
+            CreateHalfEdgeCube();
+        }
+
+        if (InDefaultObject != EDefaultObject::Debug)
+        {
+            CreateVertexArrayFromHalfEdgeStructure();
+        }
     }
 
-private:
     // Vertex buffers are created in a lazy manner in the following Update*.
     void UpdatePositions(std::unique_ptr<FPositionArray> InPositions);
     void UpdateNormals(std::unique_ptr<FNormalArray> InNormals);
     void UpdateColors(std::unique_ptr<FColorArray> InColors);
     void UpdateTexCoord(std::unique_ptr<FTexCoordArray> InTexCoords);
     void UpdateIndices(std::unique_ptr<FIndexArray> InIndices);
+private:
+    
 
     void CreateHalfEdgeCube();
     void CreateVertexArrayFromHalfEdgeStructure();

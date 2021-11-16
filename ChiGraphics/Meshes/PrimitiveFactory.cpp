@@ -5,7 +5,7 @@
 #include "ChiGraphics/Utilities.h"
 
 namespace CHISTUDIO {
-   /* std::unique_ptr<VertexObject> PrimitiveFactory::CreateSphere(float r,
+   std::unique_ptr<VertexObject> PrimitiveFactory::CreateSphere(float r,
         size_t slices,
         size_t stacks) {
         auto positions = make_unique<FPositionArray>();
@@ -36,7 +36,7 @@ namespace CHISTUDIO {
                 indices->insert(indices->end(), { t1, t3, t4 });
             }
 
-        auto obj = make_unique<VertexObject>();
+        auto obj = make_unique<VertexObject>(EDefaultObject::Debug);
         obj->UpdatePositions(std::move(positions));
         obj->UpdateNormals(std::move(normals));
         obj->UpdateIndices(std::move(indices));
@@ -82,7 +82,7 @@ namespace CHISTUDIO {
             }
             indices->insert(indices->end(), { i1, i2, i3 });
         }
-        auto obj = make_unique<VertexObject>();
+        auto obj = make_unique<VertexObject>(EDefaultObject::Debug);
         obj->UpdatePositions(std::move(positions));
         obj->UpdateNormals(std::move(normals));
         obj->UpdateIndices(std::move(indices));
@@ -110,7 +110,7 @@ namespace CHISTUDIO {
         tex_coords->emplace_back(1.0f, 1.0f);
         tex_coords->emplace_back(0.0f, 1.0f);
 
-        auto obj = make_unique<VertexObject>();
+        auto obj = make_unique<VertexObject>(EDefaultObject::Debug);
         obj->UpdatePositions(std::move(positions));
         obj->UpdateNormals(std::move(normals));
         obj->UpdateIndices(std::move(indices));
@@ -126,9 +126,9 @@ namespace CHISTUDIO {
         positions->push_back(p);
         positions->push_back(q);
 
-        auto obj = make_unique<VertexObject>();
+        auto obj = make_unique<VertexObject>(EDefaultObject::Debug);
         obj->UpdatePositions(std::move(positions));
         return obj;
-    }*/
+    }
 
 }

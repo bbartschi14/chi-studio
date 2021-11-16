@@ -4,6 +4,17 @@
 #include "ChiGraphics/Utilities.h"
 #include "ChiGraphics/InputManager.h"
 #include "ChiGraphics/Collision/FRay.h"
+#include "ChiGraphics/Cameras/ArcBallCameraNode.h"
+#include "ChiGraphics/Components/RenderingComponent.h"
+#include "ChiGraphics/Components/MaterialComponent.h"
+#include "ChiGraphics/Components/CameraComponent.h"
+#include "ChiGraphics/Components/ShadingComponent.h"
+#include "ChiGraphics/Components/LightComponent.h"
+#include "ChiGraphics/Lights/AmbientLight.h"
+#include "ChiGraphics/Lights/PointLight.h"
+#include "ChiGraphics/Shaders/PhongShader.h"
+#include "ChiGraphics/Shaders/PointShader.h"
+#include "ChiGraphics/Meshes/MeshLoader.h"
 
 namespace CHISTUDIO {
 
@@ -164,6 +175,18 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 		mouseRay.ApplyTransform(glm::inverse(SelectedNodes[0]->GetTransform().GetLocalToWorldMatrix()));
 		SelectedNodes[0]->GetComponentPtr<RenderingComponent>()->GetVertexObjectPtr()->HandleClick(mouseRay, this);
 	}
+}
+
+void Application::CreatePrimitiveNode(EDefaultObject InObjectType)
+{
+	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();
+	std::shared_ptr<VertexObject> cubeMesh = std::make_shared<VertexObject>(InObjectType);
+
+	auto cubeNode = make_unique<SceneNode>(fmt::format("Cube.{}", Scene_->GetRootNode().GetChildrenCount()));
+	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
+	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
+	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
+	Scene_->GetRootNode().AddChild(std::move(cubeNode));
 }
 
 void Application::InitializeGLFW()

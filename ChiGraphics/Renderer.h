@@ -30,12 +30,19 @@ private:
     void InvalidateFrameBuffer();
 
     std::unique_ptr<Framebuffer> SceneColorFrameBuffer;
+    std::unique_ptr<Framebuffer> PostProcessFrameBuffer;
+    std::unique_ptr<FTexture> PostProcessOutputTexture;
     std::unique_ptr<FTexture> SceneOutputTexture;
     std::unique_ptr<FTexture> SceneDepthStencilTexture;
     std::shared_ptr<class OutlineShader> OutlineShader_;
     std::shared_ptr<class PointShader> PointShader_;
     std::shared_ptr<class EdgeShader> EdgeShader_;
     std::shared_ptr<class SelectedFaceShader> SelectedFaceShader_;
+    std::shared_ptr<class TextureBlendShader> TextureBlendShader_;
+    std::shared_ptr<class TextureBlurShader> TextureBlurShader_;
+
+    std::unique_ptr<FTexture> customMaskTexture;    
+    std::unique_ptr<FTexture> OutlineTexture;
 
     std::unique_ptr<VertexObject> SceneRenderQuad;
 

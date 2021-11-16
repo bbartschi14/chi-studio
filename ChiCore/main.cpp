@@ -10,7 +10,7 @@ int main()
 	std::cout << "Hello ChiStudio" << std::endl;
 
     std::unique_ptr<ChiStudioApplication> application =
-        make_unique<ChiStudioApplication>("Chi Studio", glm::ivec2(1440, 900));
+        make_unique<ChiStudioApplication>("Chi Studio", glm::ivec2(1920, 1080));
 
     application->SetupScene();
 

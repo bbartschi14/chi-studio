@@ -4,8 +4,8 @@
 
 namespace CHISTUDIO {
 
-RenderingComponent::RenderingComponent(std::shared_ptr<VertexObject> InVertexObj)
-    : VertexObj(std::move(InVertexObj)) 
+    RenderingComponent::RenderingComponent(std::shared_ptr<VertexObject> InVertexObj)
+        : VertexObj(std::move(InVertexObj)), bIsDebugRender(false)
 {
     if (!VertexObj->HasIndices() && !VertexObj->HasPositions()) {
         throw std::runtime_error(

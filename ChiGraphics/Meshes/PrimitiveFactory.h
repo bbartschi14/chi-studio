@@ -8,7 +8,7 @@ class PrimitiveFactory {
 public:
     // Create a radius-r sphere with prescribed vertical/horizontal numbers
     // of slices/stacks.
-    /*static std::unique_ptr<VertexObject> CreateSphere(float r,
+    static std::unique_ptr<VertexObject> CreateSphere(float r,
         size_t slices,
         size_t stacks);
 
@@ -22,7 +22,7 @@ public:
     // Create a line segment between p and q.
     static std::unique_ptr<VertexObject> CreateLineSegment(const glm::vec3& p,
         const glm::vec3& q);
-        */
+        
 };
 
 }

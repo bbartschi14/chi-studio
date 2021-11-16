@@ -10,6 +10,7 @@
 #include "ChiGraphics/Shaders/PhongShader.h"
 #include "ChiGraphics/Shaders/PointShader.h"
 #include "ChiGraphics/Meshes/MeshLoader.h"
+#include "ChiGraphics/XYZGridNode.h"
 
 #include "glm/gtx/string_cast.hpp"
 
@@ -27,51 +28,34 @@ void ChiStudioApplication::SetupScene()
 {
 	SceneNode& root = Scene_->GetRootNode();
 
+	// Grid
+	std::unique_ptr<XYZGridNode> gridNode = make_unique<XYZGridNode>();
+	gridNode->SetHierarchyVisible(false);
+	root.AddChild(std::move(gridNode));
+
 	// Setup Camera
 	std::unique_ptr<ArcBallCameraNode> cameraNode = make_unique<ArcBallCameraNode>(50.0f, 1.0f, 10.0f);
 	cameraNode->GetTransform().SetPosition(glm::vec3(0.0f, -1.0f, 0.0f));
 	cameraNode->GetTransform().SetRotation(glm::vec3(0.0f, 1.0f, 0.0f), kPi / 2);
 	cameraNode->Calibrate();
 	Scene_->ActivateCamera(cameraNode->GetComponentPtr<CameraComponent>());
-	root.AddChild(std::move(cameraNode));
+	cameraNode->SetHierarchyVisible(false);
 
-	// Ambient Light
-	//std::shared_ptr<AmbientLight> ambientLightPtr = std::make_shared<AmbientLight>();
-	//ambientLightPtr->SetAmbientColor(glm::vec3(0.4f));
-	//root.CreateComponent<LightComponent>(ambientLightPtr); // Add as a component to the root node
-	
 	// Point Light Node
 	std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
 	pointLight->SetDiffuseColor(glm::vec3(0.8f, 0.8f, 0.8f));
 	pointLight->SetSpecularColor(glm::vec3(1.0f, 1.0f, 1.0f));
-	pointLight->SetAttenuation(glm::vec3(1.0f, 0.09f, 0.032f));
+	pointLight->SetAttenuation(glm::vec3(0.0f, 0.00f, 0.00f));
 
 	std::unique_ptr<SceneNode> pointLightNode = make_unique<SceneNode>("Point Light");
 	pointLightNode->CreateComponent<LightComponent>(pointLight);
 	pointLightNode->GetTransform().SetPosition(glm::vec3(0.0f, 4.0f, 5.f));
-	root.AddChild(std::move(pointLightNode));
+	pointLightNode->SetHierarchyVisible(false);
+	cameraNode->AddChild(std::move(pointLightNode));
 
-	// Setup Teapot
-	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();
-	//std::shared_ptr<VertexObject> teapotMesh = MeshLoader::Import("teapot.obj").VertexObj;
-	std::shared_ptr<VertexObject> cubeMesh = std::make_shared<VertexObject>();
-	//if (teapotMesh == nullptr) {
-	//	return;
-	//}
+	root.AddChild(std::move(cameraNode));
 
-	auto cubeNode = make_unique<SceneNode>("Cube");
-	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
-	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
-	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
-	root.AddChild(std::move(cubeNode));
-	
-	auto cubeNode2 = make_unique<SceneNode>("Cube2");
-	cubeNode2->CreateComponent<ShadingComponent>(cubeShader);
-	std::shared_ptr<VertexObject> cubeMesh2 = std::make_shared<VertexObject>();
-	cubeNode2->CreateComponent<RenderingComponent>(cubeMesh2);
-	cubeNode2->GetTransform().SetPosition(glm::vec3(4.f, 0.f, 4.f));
-	root.AddChild(std::move(cubeNode2));
-	
+	CreatePrimitiveNode(EDefaultObject::Cube);
 }
 
 void ChiStudioApplication::DrawGUI()

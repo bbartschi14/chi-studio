@@ -36,12 +36,18 @@ public:
     GLuint GetHandle() const {
         return handle_;
     }
+    
+    
+    size_t Width;
+    size_t Height;
 
 private:
     void Initialize(const TextureConfig& config);
     static const TextureConfig& GetDefaultConfig();
 
     GLuint handle_{ GLuint(-1) };
+
+    
 };
 
 }

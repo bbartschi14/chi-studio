@@ -27,7 +27,7 @@ public:
     static const Material& GetDefault() {
         static Material default_material(glm::vec3(0.7f),
             glm::vec3(0.7f),
-            glm::vec3(0.7f), 2.0f);
+            glm::vec3(0.15f), 1.0f);
         return default_material;
     }
 
