@@ -19,6 +19,10 @@ public:
         return *Material_;
     }
 
+    Material* GetMaterialPtr() {
+        return Material_.get();
+    }
+
 private:
     std::shared_ptr<Material> Material_;
 };

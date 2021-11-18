@@ -14,6 +14,13 @@ public:
 
 	bool Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord) const override;
 
+    glm::vec3 GetPosition(size_t i) const {
+        return Positions[i];
+    }
+    glm::vec3 GetNormal(size_t i) const {
+        return Normals[i];
+    }
+
 private:
 	std::vector<glm::vec3> Positions;
 	std::vector<glm::vec3> Normals;

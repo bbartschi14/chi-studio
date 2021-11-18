@@ -150,18 +150,13 @@ namespace CHISTUDIO {
 
 		const SceneNode& root = InScene.GetRootNode();
 		auto renderingInfo = RetrieveRenderingInfo(InScene);
-		auto lightComponentPointers = root.GetComponentPtrsInChildren<LightComponent>();
-
-		if (lightComponentPointers.size() == 0) {
-			return;
-		}
 
 		CameraComponent* activeCamera = InScene.GetActiveCameraPtr();
 		activeCamera->SetAspectRatio(CurrentWidth, CurrentHeight);
 
 		// First pass: depth buffer and stencil buffer
 		// Remaining passes - 1: one per light source.
-		size_t totalNumberOfPasses = 1 + lightComponentPointers.size();
+		size_t totalNumberOfPasses = 2;
 
 		for (size_t currentPass = 0; currentPass < totalNumberOfPasses; currentPass++) {
 
@@ -207,11 +202,6 @@ namespace CHISTUDIO {
 					shader->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
 					shader->SetCamera(*activeCamera);
 
-					if (currentPass > 0) {
-						LightComponent& light = *lightComponentPointers.at(totalNumberOfPasses - currentPass - 1);
-						shader->SetLightSource(light);
-					}
-
 					renderingComponentPointer->Render();
 				}
 				else
@@ -239,11 +229,6 @@ namespace CHISTUDIO {
 						// Set various uniform variables in the shaders.
 						shader->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
 						shader->SetCamera(*activeCamera);
-
-						if (currentPass > 0) {
-							LightComponent& light = *lightComponentPointers.at(totalNumberOfPasses - currentPass - 1);
-							shader->SetLightSource(light);
-						}
 
 						if (isSelected && renderingComponentPointer->bRenderSolid)
 						{
@@ -450,7 +435,7 @@ namespace CHISTUDIO {
 		SceneColorFrameBuffer->AssociateTexture(*customMaskTexture, GL_COLOR_ATTACHMENT1);
 
 		OutlineTexture = make_unique<FTexture>(TextureConfig{ {GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE},{GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE},{GL_TEXTURE_MIN_FILTER, GL_LINEAR },{GL_TEXTURE_MAG_FILTER, GL_LINEAR } });
-		OutlineTexture->Reserve(GL_RGB, CurrentWidth, CurrentHeight, GL_RGBA, GL_UNSIGNED_BYTE);
+		OutlineTexture->Reserve(GL_RGBA, CurrentWidth, CurrentHeight, GL_RGBA, GL_UNSIGNED_BYTE);
 		SceneColorFrameBuffer->AssociateTexture(*OutlineTexture, GL_COLOR_ATTACHMENT2);
 	}
 }

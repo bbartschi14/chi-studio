@@ -7,6 +7,7 @@
 #include <sstream>
 #include <memory>
 #include <glad/glad.h>
+#include "AliasTypes.h"
 
 /** Collection of helper functions and macros for the graphics library */
 
@@ -74,6 +75,13 @@ struct EnumClassHash {
         return static_cast<std::size_t>(t);
     }
 };
+
+std::unique_ptr<FNormalArray> CalculateNormals(const FPositionArray& positions, const FIndexArray& indices);
+
+float static RandomFloat(float min, float max) {
+    // Returns a random real in [min,max).
+    return min + (max - min) * rand() / (RAND_MAX + 1.0f);;
+}
 
 // Silence compiler warning for unused variables
 #define UNUSED(expr) \

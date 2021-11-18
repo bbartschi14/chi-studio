@@ -42,10 +42,14 @@ void PhongShader::SetTargetNode(const SceneNode& InNode, const glm::mat4& InMode
     else {
         materialPtr = &materialComponentPtr->GetMaterial();
     }
-    SetUniform("material.ambient", materialPtr->GetAmbientColor());
-    SetUniform("material.diffuse", materialPtr->GetDiffuseColor());
-    SetUniform("material.specular", materialPtr->GetSpecularColor());
-    SetUniform("material.shininess", materialPtr->GetShininess());
+    //SetUniform("material.ambient", materialPtr->GetAmbientColor());
+    //SetUniform("material.diffuse", materialPtr->GetDiffuseColor());
+    //SetUniform("material.specular", materialPtr->GetSpecularColor());
+    //SetUniform("material.shininess", materialPtr->GetShininess());
+    SetUniform("material.ambient", glm::vec3(.7f));
+    SetUniform("material.diffuse", glm::vec3(.7f));
+    SetUniform("material.specular", glm::vec3(.15f));
+    SetUniform("material.shininess", 1.0f);
 }
 
 void PhongShader::SetCamera(const CameraComponent& InCamera) const
@@ -53,6 +57,11 @@ void PhongShader::SetCamera(const CameraComponent& InCamera) const
     SetUniform("view_matrix", InCamera.GetViewMatrix());
     SetUniform("projection_matrix", InCamera.GetProjectionMatrix());
     SetUniform("camera_position", InCamera.GetAbsoluteCameraPosition());
+
+    SetUniform("point_light.enabled", true);
+    SetUniform("point_light.diffuse", glm::vec3(0.8f, 0.8f, 0.8f));
+    SetUniform("point_light.specular", glm::vec3(1.0f, 1.0f, 1.0f));
+    SetUniform("point_light.attenuation", glm::vec3(0.0f, 0.0f, 0.0f));
 }
 void PhongShader::SetLightSource(const LightComponent& InComponent) const
 {

@@ -65,7 +65,9 @@ public:
 
 	void OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2 SceneViewSize);
 
-	void CreatePrimitiveNode(EDefaultObject InObjectType);
+	SceneNode* CreatePrimitiveNode(EDefaultObject InObjectType);
+	SceneNode* CreateCamera();
+	SceneNode* CreatePointLight();
 
 protected:
 	virtual void DrawGUI() {}

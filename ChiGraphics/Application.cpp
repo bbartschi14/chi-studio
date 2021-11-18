@@ -5,6 +5,7 @@
 #include "ChiGraphics/InputManager.h"
 #include "ChiGraphics/Collision/FRay.h"
 #include "ChiGraphics/Cameras/ArcBallCameraNode.h"
+#include "ChiGraphics/Cameras/TracingCameraNode.h"
 #include "ChiGraphics/Components/RenderingComponent.h"
 #include "ChiGraphics/Components/MaterialComponent.h"
 #include "ChiGraphics/Components/CameraComponent.h"
@@ -12,6 +13,7 @@
 #include "ChiGraphics/Components/LightComponent.h"
 #include "ChiGraphics/Lights/AmbientLight.h"
 #include "ChiGraphics/Lights/PointLight.h"
+#include "ChiGraphics/Lights/LightNode.h"
 #include "ChiGraphics/Shaders/PhongShader.h"
 #include "ChiGraphics/Shaders/PointShader.h"
 #include "ChiGraphics/Meshes/MeshLoader.h"
@@ -177,7 +179,7 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 	}
 }
 
-void Application::CreatePrimitiveNode(EDefaultObject InObjectType)
+SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType)
 {
 	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();
 	std::shared_ptr<VertexObject> cubeMesh = std::make_shared<VertexObject>(InObjectType);
@@ -186,7 +188,33 @@ void Application::CreatePrimitiveNode(EDefaultObject InObjectType)
 	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
 	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
 	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
+	auto material = std::make_shared<Material>();
+	material->SetDiffuseColor(glm::vec3(1.0f, 0.0f, 0.0f));
+	material->SetSpecularColor(glm::vec3(1.0f, 0.0f, 0.0f));
+	material->SetDiffuseColor(glm::vec3(1.0f, 0.0f, 0.0f));
+
+	cubeNode->CreateComponent<MaterialComponent>(material);
+	SceneNode* ref = cubeNode.get();
+
 	Scene_->GetRootNode().AddChild(std::move(cubeNode));
+	return ref;
+}
+
+SceneNode* Application::CreateCamera()
+{
+	auto cameraNode = make_unique<TracingCameraNode>(fmt::format("Camera.{}", Scene_->GetRootNode().GetChildrenCount()));
+	SceneNode* ref = cameraNode.get();
+	Scene_->GetRootNode().AddChild(std::move(cameraNode));
+	return ref;
+}
+
+SceneNode* Application::CreatePointLight()
+{
+	auto lightNode = make_unique<LightNode>(fmt::format("Light.{}", Scene_->GetRootNode().GetChildrenCount()));
+	SceneNode* ref = lightNode.get();
+
+	Scene_->GetRootNode().AddChild(std::move(lightNode));
+	return ref;
 }
 
 void Application::InitializeGLFW()

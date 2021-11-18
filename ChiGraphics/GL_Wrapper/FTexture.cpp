@@ -56,7 +56,7 @@ FTexture::~FTexture() {
 }
 
 void FTexture::BindToUnit(int id) const {
-    // TODO: bind this texture to texture unit with index id.
+    // Bind this texture to texture unit with index id.
     // The GLenum corresponding to the id-th unit is (GL_TEXTURE0 + id).
     GL_CHECK(glActiveTexture(GL_TEXTURE0 + id));
     GL_CHECK(glBindTexture(GL_TEXTURE_2D, handle_));

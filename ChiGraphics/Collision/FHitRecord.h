@@ -4,6 +4,7 @@
 #include <ostream>
 
 #include <glm/gtx/string_cast.hpp>
+#include "ChiGraphics/Materials/Material.h"
 
 namespace CHISTUDIO {
 
@@ -17,6 +18,7 @@ struct FHitRecord
     float Time;
     glm::vec3 Position;
     glm::vec3 Normal;
+    Material Material_;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const FHitRecord& InRecord)

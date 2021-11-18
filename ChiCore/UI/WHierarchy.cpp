@@ -52,6 +52,14 @@ namespace CHISTUDIO {
         {
             InApplication.CreatePrimitiveNode(EDefaultObject::Cube);
         }
+        if (ImGui::Selectable("Add Camera"))
+        {
+            InApplication.CreateCamera();
+        }
+        if (ImGui::Selectable("Add Point Light"))
+        {
+            InApplication.CreatePointLight();
+        }
 
         ImGui::EndPopup();
     }

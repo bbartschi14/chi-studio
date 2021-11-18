@@ -1,6 +1,7 @@
 #pragma once
 #include "ChiGraphics/External.h"
 #include <vector>
+#include "ChiGraphics/Collision/Hittables/TriangleHittable.h"
 
 namespace CHISTUDIO {
 
@@ -30,7 +31,7 @@ public:
 	*/
 	glm::vec3 CalculateNaiveFaceNormal() const;
 
-	std::vector<class TriangleHittable> GetTrianglesOnFace() const;
+	std::vector<TriangleHittable> GetTrianglesOnFace() const;
 
 	/** Flagged used for stages of primitive deletion operations */
 	bool bMarkedForDeletion;

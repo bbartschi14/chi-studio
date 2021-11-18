@@ -8,10 +8,10 @@ class Material
 {
 public:
     Material()
-        : AmbientColor(0.0f),
-        DiffuseColor(0.0f),
-        SpecularColor(0.0f),
-        Shininess(0.0f) {
+        : AmbientColor(glm::vec3(0.7f)),
+        DiffuseColor(glm::vec3(0.7f)),
+        SpecularColor(glm::vec3(0.15f)),
+        Shininess(1.0f) {
     }
 
     Material(const glm::vec3& InAmbientColor,

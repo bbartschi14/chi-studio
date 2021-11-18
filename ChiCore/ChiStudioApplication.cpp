@@ -22,6 +22,7 @@ ChiStudioApplication::ChiStudioApplication(const std::string& InAppName, glm::iv
 	HierarchyWidget = make_unique<WHierarchy>();	
 	ObjectPropertiesWidget = make_unique<WObjectProperties>();
 	EditModeWidget = make_unique<WEditMode>();
+	RenderingWidget = make_unique<WRendering>();
 }
 
 void ChiStudioApplication::SetupScene()
@@ -41,21 +42,17 @@ void ChiStudioApplication::SetupScene()
 	Scene_->ActivateCamera(cameraNode->GetComponentPtr<CameraComponent>());
 	cameraNode->SetHierarchyVisible(false);
 
-	// Point Light Node
-	std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
-	pointLight->SetDiffuseColor(glm::vec3(0.8f, 0.8f, 0.8f));
-	pointLight->SetSpecularColor(glm::vec3(1.0f, 1.0f, 1.0f));
-	pointLight->SetAttenuation(glm::vec3(0.0f, 0.00f, 0.00f));
-
-	std::unique_ptr<SceneNode> pointLightNode = make_unique<SceneNode>("Point Light");
-	pointLightNode->CreateComponent<LightComponent>(pointLight);
-	pointLightNode->GetTransform().SetPosition(glm::vec3(0.0f, 4.0f, 5.f));
-	pointLightNode->SetHierarchyVisible(false);
-	cameraNode->AddChild(std::move(pointLightNode));
-
 	root.AddChild(std::move(cameraNode));
 
 	CreatePrimitiveNode(EDefaultObject::Cube);
+
+	SceneNode* tracingCamera = CreateCamera();
+	tracingCamera->GetTransform().SetPosition(glm::vec3(5.0f, 7.0f, 5.0f));
+	tracingCamera->GetTransform().SetRotation(glm::vec3(-45.0f, 45.0f, 0.0f));
+
+	SceneNode* tracingPointLight = CreatePointLight();
+	tracingPointLight->GetTransform().SetPosition(glm::vec3(-2.0f, 2.0f, 3.0f));
+
 }
 
 void ChiStudioApplication::DrawGUI()
@@ -95,6 +92,7 @@ void ChiStudioApplication::DrawGUI()
 	HierarchyWidget->Render(*this);
 	ObjectPropertiesWidget->Render(*this);
 	EditModeWidget->Render(*this);
+	RenderingWidget->Render(*this);
 }
 
 }

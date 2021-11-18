@@ -8,39 +8,39 @@ namespace CHISTUDIO {
    std::unique_ptr<VertexObject> PrimitiveFactory::CreateSphere(float r,
         size_t slices,
         size_t stacks) {
-        auto positions = make_unique<FPositionArray>();
-        auto normals = make_unique<FNormalArray>();
-        auto indices = make_unique<FIndexArray>();
+       auto positions = make_unique<FPositionArray>();
+       auto normals = make_unique<FNormalArray>();
+       auto indices = make_unique<FIndexArray>();
 
-        float phi_step = kPi * 2 / slices;
-        float theta_step = kPi / stacks;
+       float phi_step = kPi * 2 / slices;
+       float theta_step = kPi / stacks;
 
-        for (size_t vi = 0; vi < stacks; vi++) {  // vertical loop
-            float theta = vi * theta_step;
-            float z = r * cosf(theta);
-            for (size_t hi = 0; hi < slices; hi++) {  // horizontal loop
-                float phi = hi * phi_step;
-                glm::vec3 p(r * cosf(phi) * sinf(theta), r * sinf(phi) * sinf(theta), z);
-                positions->push_back(p);
-                normals->push_back(glm::normalize(p));
-            }
-        }
+       for (size_t vi = 0; vi < stacks; vi++) {  // vertical loop
+           float theta = vi * theta_step;
+           float z = r * cosf(theta);
+           for (size_t hi = 0; hi < slices; hi++) {  // horizontal loop
+               float phi = hi * phi_step;
+               glm::vec3 p(r * cosf(phi) * sinf(theta), r * sinf(phi) * sinf(theta), z);
+               positions->push_back(p);
+               normals->push_back(glm::normalize(p));
+           }
+       }
 
-        for (size_t vi = 0; vi < stacks; vi++)
-            for (size_t hi = 0; hi < slices; hi++) {
-                auto t1 = (unsigned int)(vi * slices + hi);
-                auto t2 = (unsigned int)(vi * slices + hi + 1);
-                auto t3 = (unsigned int)((vi + 1) * slices + hi + 1);
-                auto t4 = (unsigned int)((vi + 1) * slices + hi);
-                indices->insert(indices->end(), { t1, t2, t3 });
-                indices->insert(indices->end(), { t1, t3, t4 });
-            }
+       for (size_t vi = 0; vi < stacks; vi++)
+           for (size_t hi = 0; hi < slices; hi++) {
+               auto t1 = (unsigned int)(vi * slices + hi);
+               auto t2 = (unsigned int)(vi * slices + hi + 1);
+               auto t3 = (unsigned int)((vi + 1) * slices + hi + 1);
+               auto t4 = (unsigned int)((vi + 1) * slices + hi);
+               indices->insert(indices->end(), { t1, t2, t3 });
+               indices->insert(indices->end(), { t1, t3, t4 });
+           }
 
-        auto obj = make_unique<VertexObject>(EDefaultObject::Debug);
-        obj->UpdatePositions(std::move(positions));
-        obj->UpdateNormals(std::move(normals));
-        obj->UpdateIndices(std::move(indices));
-        return obj;
+       auto obj = make_unique<VertexObject>(EDefaultObject::Debug);
+       obj->UpdatePositions(std::move(positions));
+       obj->UpdateNormals(std::move(normals));
+       obj->UpdateIndices(std::move(indices));
+       return obj;
     }
 
     std::unique_ptr<VertexObject>

@@ -39,6 +39,16 @@ public:
 
     class FRay GenerateRay(glm::vec2 InMousePosition, glm::vec2 InViewportSize);
 
+    float GetFOV() const
+    {
+        return FOV;
+    }
+
+    float GetAspectRatio() const
+    {
+        return AspectRatio;
+    }
+
 private:
     glm::vec2 GetNormalizedDeviceCoords(glm::vec2 InMousePosition, glm::vec2 InViewportSize);
     glm::vec4 GetEyeCoords(glm::vec4 InClipCoords);
