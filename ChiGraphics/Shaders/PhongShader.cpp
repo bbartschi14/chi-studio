@@ -37,7 +37,7 @@ void PhongShader::SetTargetNode(const SceneNode& InNode, const glm::mat4& InMode
 
     const Material* materialPtr;
     if (materialComponentPtr == nullptr) {
-        materialPtr = &Material::GetDefault();
+        materialPtr = &Material();
     }
     else {
         materialPtr = &materialComponentPtr->GetMaterial();

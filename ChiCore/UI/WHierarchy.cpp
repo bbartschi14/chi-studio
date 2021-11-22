@@ -60,6 +60,14 @@ namespace CHISTUDIO {
         {
             InApplication.CreatePointLight();
         }
+        if (ImGui::Selectable("Add Ambient Light"))
+        {
+            InApplication.CreateAmbientLight();
+        }
+        if (ImGui::Selectable("Add Tracing Sphere"))
+        {
+            InApplication.CreateTracingSphereNode();
+        }
 
         ImGui::EndPopup();
     }

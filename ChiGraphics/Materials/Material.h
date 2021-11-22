@@ -1,73 +1,426 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/gtx/compatibility.hpp>
+#include "ChiGraphics/Utilities.h"
+#include <glm/gtx/string_cast.hpp>
 
+#include  <iostream>
 namespace CHISTUDIO {
     
 class Material 
 {
 public:
     Material()
-        : AmbientColor(glm::vec3(0.7f)),
-        DiffuseColor(glm::vec3(0.7f)),
-        SpecularColor(glm::vec3(0.15f)),
-        Shininess(1.0f) {
+        : Albedo(glm::dvec3(1.0, 0., 0.)),
+        Roughness(1.0f),
+        Metallic(0.0f),
+        Emittance(0.0f),
+        IndexOfRefraction(1.5f),
+        bIsTransparent(false)
+    {
+
     }
 
-    Material(const glm::vec3& InAmbientColor,
-        const glm::vec3& InDiffuseColor,
-        const glm::vec3& InSpecularColor,
-        float InShininess)
-        : AmbientColor(InAmbientColor),
-        DiffuseColor(InDiffuseColor),
-        SpecularColor(InSpecularColor),
-        Shininess(InShininess) {
+    Material(const glm::dvec3& InAlbedo, 
+             const float& InRoughness, 
+             const float& InMetallic, 
+             const float& InEmittance, 
+             const float& InIndexOfRefraction, 
+             const bool& InIsTransparent)
+        : Albedo(InAlbedo),
+        Roughness(InRoughness),
+        Metallic(InMetallic),
+        Emittance(InEmittance),
+        IndexOfRefraction(InIndexOfRefraction),
+        bIsTransparent(InIsTransparent)
+    {
     }
 
-    static const Material& GetDefault() {
-        static Material default_material(glm::vec3(0.7f),
-            glm::vec3(0.7f),
-            glm::vec3(0.15f), 1.0f);
-        return default_material;
+    static const std::shared_ptr<Material> GetDefault() {
+        return MakeDiffuse(glm::dvec3(1.0, .1, .05));
     }
 
-    glm::vec3 GetAmbientColor() const {
-        return AmbientColor;
+    static const std::shared_ptr<Material> MakeDiffuse(glm::dvec3 InAlbedo) {
+        return std::make_shared<Material>(
+            InAlbedo,   // Albedo
+            1.0f,       // Roughness    
+            0.0f,       // Metallic
+            0.0f,       // Emittance
+            1.5f,       // IndexOfRefraction
+            false       // IsTransparent
+        );
     }
 
-    void SetAmbientColor(const glm::vec3& color) {
-        AmbientColor = color;
+    glm::dvec3 GetAlbedo() const 
+    {
+        return Albedo;
     }
 
-    glm::vec3 GetDiffuseColor() const {
-        return DiffuseColor;
+    void SetAlbedo(const glm::dvec3& InAlbedo) 
+    {
+        Albedo = InAlbedo;
     }
 
-    void SetDiffuseColor(const glm::vec3& color) {
-        DiffuseColor = color;
+    float GetRoughness() const
+    {
+        return Roughness;
     }
 
-    glm::vec3 GetSpecularColor() const {
-        return SpecularColor;
+    void SetRoughness(const float& InRoughness)
+    {
+        Roughness = InRoughness;
     }
 
-    void SetSpecularColor(const glm::vec3& color) {
-        SpecularColor = color;
+    float GetMetallic() const
+    {
+        return Metallic;
     }
 
-    float GetShininess() const {
-        return Shininess;
+    void SetMetallic(const float& InMetallic)
+    {
+        Metallic = InMetallic;
     }
 
-    void SetShininess(float InShininess) {
-        Shininess = InShininess;
+    float GetEmittance() const
+    {
+        return Emittance;
+    }
+
+    void SetEmittance(const float& InEmittance)
+    {
+        Emittance = InEmittance;
+    }
+
+    float GetIndexOfRefraction() const
+    {
+        return IndexOfRefraction;
+    }
+
+    void SetIndexOfRefraction(const float& InIndexOfRefraction)
+    {
+        IndexOfRefraction = InIndexOfRefraction;
+    }
+
+    bool IsTransparent() const
+    {
+        return bIsTransparent;
+    }
+
+    void SetTransparent(const bool& InIsTransparent)
+    {
+        bIsTransparent = InIsTransparent;
+    }
+
+    /*
+    * Evaluate the Bidirectional Scattering Distribution Function for this material's properties.
+    * 
+    * Parameters 'InTowardViewer' and 'InTowardIncident' correspond to w_o and w_i in the rendering equation.
+    * The distribution function used is the Beckmann Microfacet Distribution Model (https://www.pbr-book.org/3ed-2018/Reflection_Models/Microfacet_Models).
+    * The specular component uses the Cook-Torrance BRDF, while the diffuse component uses Lambert's BRDF.
+    *
+    * Other references:
+    * https://learnopengl.com/PBR/Theory
+    * http://www.codinglabs.net/article_physically_based_rendering.aspx
+    * http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
+    * https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
+    */
+    glm::dvec3 EvaluateBSDF(glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, glm::dvec3 InTowardIncident) const
+    {
+        double NormalDottedWithViewer = glm::dot(InSurfaceNormal,InTowardViewer);
+        double NormalDottedWithIncident = glm::dot(InSurfaceNormal, InTowardIncident);
+
+        bool bIsViewerOutside = NormalDottedWithViewer > 0.0;
+        bool bIsIncidentOutside = NormalDottedWithIncident > 0.0;
+
+        // Check if we're looking for transmitted light
+        if (!bIsViewerOutside || !bIsIncidentOutside) {
+            if (!bIsTransparent) // If the material is opaque, don't transmit any light
+                return glm::dvec3(0.0);
+        }
+
+        // Check for diffuse/specular reflection
+        if (bIsViewerOutside == bIsIncidentOutside)
+        {
+            // Calculate halfway vector
+            glm::dvec3 halfway = glm::normalize(InTowardIncident + InTowardViewer);
+            double ViewerDotHalfway = glm::dot(InTowardViewer, halfway);
+            double NormalDotHalfway = glm::dot(InSurfaceNormal, halfway);
+            
+            // Evaluate microfacet distribution function
+            // D = exp(((n dot h)^2 - 1) / (roughness^2 (n dot h)^2)) / (pi * roughness^2 (n dot h)^4)
+            double NH2 = NormalDotHalfway * NormalDotHalfway;
+            double roughnessSquared = Roughness * Roughness;
+            double dNum1 = (NH2 - 1.0);
+            double dNum2 = (roughnessSquared * NH2);
+            double dNumerator = glm::exp(dNum1 / dNum2);
+            double dDenominator = (kPi * roughnessSquared * NH2 * NH2);
+            double distributionFunction = dNumerator / dDenominator;
+
+            //std::cout << std::endl;
+            //std::cout << "Normal: " << glm::to_string(InSurfaceNormal) << std::endl;
+            //std::cout << "Incident: " << glm::to_string(InTowardIncident) << std::endl;
+            //std::cout << "Viewer: " << glm::to_string(InTowardViewer) << std::endl;
+
+            //std::cout << "NH2: " << NH2 << std::endl;
+            //std::cout << "D Num1: " << dNum1 << std::endl;
+            //std::cout << "D Num2: " << dNum2 << std::endl;
+
+            //std::cout << "D Numerator: " << dNumerator << std::endl;
+            //std::cout << "D Denom: " << dDenominator << std::endl;
+
+            // Evaluate fresnel using schlick's approximation
+            // F = F0 + (1 - F0)(1 - wi dot h)^5
+            glm::dvec3 fresnel;
+            if (!bIsIncidentOutside && glm::sqrt(1.0 - ViewerDotHalfway * ViewerDotHalfway) * IndexOfRefraction > 1.0)
+            {
+                // Here we have total internal reflection
+                fresnel = glm::dvec3(1.0, 1.0, 1.0);
+            }
+            else 
+            {
+                double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
+                glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), Albedo, (double)Metallic);
+                fresnel = colorF0 + (glm::dvec3(1.0, 1.0, 1.0) - colorF0) * glm::pow((1.0 - ViewerDotHalfway), 5);
+            };
+
+            // Evaluate geometry function using microfacet shadowing
+            // G = min(1, 2(n dot h)(n dot wo)/(wo dot h), 2(n dot h)(n dot wi)/(wo dot h))
+            double geometryFunction = glm::min(NormalDottedWithIncident * NormalDotHalfway, NormalDottedWithViewer * NormalDotHalfway);
+            geometryFunction = (2.0 * geometryFunction) / ViewerDotHalfway;
+            geometryFunction = glm::min(1.0, geometryFunction);
+
+            // Evaluate BRDF (combine specular and diffuse)
+            // Cook-Torrance = DFG / (4(n dot wi)(n dot wo))
+            // Lambert = (1 - F) * c / pi
+            glm::dvec3 specularComponent = distributionFunction * fresnel * geometryFunction / (4.0 * NormalDottedWithViewer * NormalDottedWithIncident);
+  
+            //std::cout << "Fresnel: " << glm::to_string(fresnel) << std::endl;
+            //std::cout << "Distribution Function: " << distributionFunction << std::endl;
+            //std::cout << "Geometry Function: " << geometryFunction << std::endl;
+            //std::cout << "Denom: " << (4.0 * NormalDottedWithViewer * NormalDottedWithIncident) << std::endl;
+            //std::cout << "Spec: " << glm::to_string(specularComponent) << std::endl;
+
+            if (bIsTransparent) 
+            {
+                return specularComponent;
+            }
+            else 
+            {
+                glm::dvec3 diffuseComponent = (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * Albedo / (double)kPi;
+                //std::cout << "Diffuse: " << glm::to_string(diffuseComponent) << std::endl;
+                return specularComponent + diffuseComponent;
+            }
+        }
+        else
+        {
+            // Refraction/Transmission
+            // 
+            // Ratio of refractive indices
+            double etaT = bIsViewerOutside ? IndexOfRefraction : 1.0f / IndexOfRefraction;
+
+            glm::dvec3 halfway = glm::normalize(InTowardIncident * etaT + InTowardViewer);
+            double ViewerDotHalfway = glm::dot(InTowardViewer, halfway);
+            double IncidentDotHalfway = glm::dot(InTowardIncident, halfway);
+            double NormalDotHalfway = glm::dot(InSurfaceNormal, halfway);
+
+            // Evaluate microfacet distribution function
+            // D = exp(((n dot h)^2 - 1) / (roughness^2 (n dot h)^2)) / (pi * roughness^2 (n dot h)^4)
+            double NH2 = NormalDotHalfway * NormalDotHalfway;
+            double roughnessSquared = Roughness * Roughness;
+            double distributionFunction = glm::exp((NH2 - 1.0) / (roughnessSquared * NH2)) / (kPi * roughnessSquared * NH2 * NH2);
+
+            // Evaluate fresnel using schlick's approximation
+            // F = F0 + (1 - F0)(1 - wi dot h)^5
+            double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
+            glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), Albedo, (double)Metallic);
+            glm::dvec3 fresnel = colorF0 + (glm::dvec3(1.0, 1.0, 1.0) - colorF0) * glm::pow((1.0 - ViewerDotHalfway), 5);
+
+            // Evaluate geometry function using microfacet shadowing
+            // G = min(1, 2(n dot h)(n dot wo)/(wo dot h), 2(n dot h)(n dot wi)/(wo dot h))
+            double geometryFunction = glm::min(glm::abs(NormalDottedWithIncident * NormalDotHalfway), glm::abs(NormalDottedWithViewer * NormalDotHalfway));
+            geometryFunction = (2.0f * geometryFunction) / glm::abs(ViewerDotHalfway);
+            geometryFunction = glm::min(1.0, geometryFunction);
+
+            // Evaluate BTDF (https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf)
+            // Cook-Torrance = |h dot wi|/|n dot wi| * |h dot wo|/|n dot wo|
+            //                  * n_o^2 (1 - F)DG / (n_i (h dot wi) + n_o (h dot wo))^2
+            glm::dvec3 btdf = glm::abs(IncidentDotHalfway * ViewerDotHalfway / (NormalDottedWithIncident * NormalDottedWithViewer))
+                * (distributionFunction * (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * geometryFunction / glm::pow((etaT * IncidentDotHalfway + ViewerDotHalfway), 2));
+            
+            return btdf * Albedo;
+        }
+    }
+
+    /*
+    * Sample hemisphere around a surface normal for an out direction and a 
+    * corresponding probability density function. Uses the Beckmann distribution
+    * function.
+    * 
+    * Parameter 'InTowardViewer' corresponds to w_o in the rendering equation.
+    * PDF : Probability Density Function
+    * 
+    * Returns false if ray shouldn't be used
+    */
+    bool SampleHemisphere(glm::dvec3& OutDirection, double& OutPDF, glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer)
+    {
+        // https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
+
+        double roughnessSquared = (double)Roughness * (double)Roughness;
+
+        // Using the Fresnel term, estimate specular contribution 
+        double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
+        double f = (1.0 - Metallic) * f0 + Metallic * ((Albedo.x + Albedo.y + Albedo.z) / 3.0);
+        f = glm::lerp(f, 1.0, 0.2);
+
+        double etaT = glm::dot(InTowardViewer, InSurfaceNormal) > 0.0 ? IndexOfRefraction : 1.0 / IndexOfRefraction;
+
+        auto beckmannHalfwayVector = [&]()
+        {
+            // Probability integral transform for Beckmann distribution microfacet normal
+            // theta = arctan sqrt(-m^2 ln U)
+            double theta = glm::atan(glm::sqrt(-roughnessSquared * glm::log(RandomDouble())));
+            double sinT = glm::sin(theta);
+            double cosT = glm::cos(theta);
+
+            // Generate halfway vector by sampling azimuth uniformly
+            glm::dvec2 point = RandomInUnitDisk();
+            glm::dvec3 halfway = glm::dvec3(point.x * sinT, point.y * sinT, cosT);
+            
+            //std::cout << glm::to_string(halfway) << std::endl;
+            return GetLocalToWorld(InSurfaceNormal) * halfway;
+        };
+
+        auto beckmannPDF = [&](glm::dvec3 InHalfway, glm::dvec3 InNormal)
+        {
+            // p = 1 / (pi m^2 cos^3 theta) * e^(-tan^2(theta) / m^2)
+            double cosT = glm::min(glm::abs(glm::dot(InHalfway, InNormal)), 1.0);
+            //std::cout.precision(17);
+            //std::cout << "cosT" << std::fixed << cosT << std::endl;
+
+            double sinT = glm::sqrt(1.0 - cosT * cosT);
+            //std::cout << "sinT" << std::fixed << sinT << std::endl;
+
+            double denom = 1.0 / (kPi * roughnessSquared * glm::pow(cosT, 3));
+            //std::cout << "denom" << std::fixed << denom << std::endl;
+
+            double secondTerm = glm::exp(-glm::pow(sinT / cosT, 2) / roughnessSquared);
+            double probability = denom * secondTerm;
+            
+            return probability;
+        };
+        //std::cout << (beckmannPDF(glm::dvec3(0.001933066273768015, 0.00003833645440733135, 0.9999981308908019),
+        //                            glm::dvec3(0.0028702836961018432, -0.0018525468897957215, 0.9999941647537375))) << std::endl;
+
+        bool bIsReflected = RandomDouble(0.0, 1.0) <= f;
+        glm::dvec3 toIncidentRay; 
+
+        if (bIsReflected)
+        {
+            //std::cout << "Reflected" << std::endl;
+
+            // Specular component
+            glm::dvec3 halfway = beckmannHalfwayVector();
+            toIncidentRay = -glm::reflect(InTowardViewer, halfway);
+        }
+        else if (!bIsTransparent)
+        {
+            // Diffuse component (Lambertian)
+            // Simple cosine-sampling using Malley's method
+            glm::dvec2 point = RandomInUnitDisk();
+            double z = glm::sqrt((1.0 - point.x * point.x - point.y * point.y));
+            //std::cout << "Normal: " << glm::to_string(InSurfaceNormal) << std::endl;
+            //std::cout << "New Vector: " << glm::to_string(glm::dvec3(point.x, point.y, z)) << std::endl;
+            //std::cout << "Transformed: " << glm::to_string(GetLocalToWorld(InSurfaceNormal) * glm::dvec3(point.x, point.y, z)) << std::endl;
+
+            //std::cout << "Test Matrix: " << glm::to_string(GetLocalToWorld(glm::dvec3(0.007, -0.011, .999))) << std::endl;
+            //std::cout << "Test Transform: " << glm::to_string(GetLocalToWorld(glm::dvec3(0.007, -0.011, .999)) * glm::dvec3(.08401, -.70327, .705939)) << std::endl;
+
+            toIncidentRay = GetLocalToWorld(InSurfaceNormal) * glm::dvec3(point.x, point.y, z);
+        }
+        else 
+        {
+            // Transmitted component
+            glm::dvec3 halfway = beckmannHalfwayVector();
+            double cosT_Viewer = glm::dot(halfway, InTowardViewer);
+            glm::dvec3 viewerPerp = InTowardViewer - halfway * cosT_Viewer;
+            glm::dvec3 incidentPerp = -viewerPerp / etaT;
+            double sin2_ti = glm::length(incidentPerp);
+            if (sin2_ti > 1.0)
+            {
+                // This angle doesn't yield any transmittence to wo,
+                // due to total internal reflection
+                return false;
+            }
+            double cos_ti = glm::sqrt(1.0 - sin2_ti);
+            toIncidentRay = -glm::sign(cosT_Viewer) * cos_ti * halfway + incidentPerp;
+        };
+
+        // Multiple importance sampling  uses the probabilities of several components. Now we sum them up.
+        double probability = 0.0;
+        {
+            // Specular component
+            glm::dvec3 halfway = glm::normalize(toIncidentRay + InTowardViewer);
+            double probHalfway = beckmannPDF(halfway, InSurfaceNormal);
+            double specularComponent = f * probHalfway / (4.0 * glm::abs(glm::dot(halfway, InTowardViewer)));
+            probability += specularComponent;
+
+            //std::cout.precision(17);
+            //std::cout << "Specular Probability" << std::fixed << specularComponent << std::endl;
+        }
+        
+        if (!bIsTransparent)
+        {
+            // Diffuse component
+            double dotTerm = glm::dot(toIncidentRay, InSurfaceNormal);
+            double clampedDot = glm::max(dotTerm, 0.0);
+            double diffuseComponent = (1.0 - f) * dotTerm / kPi;
+            probability += diffuseComponent;
+
+            //std::cout.precision(17);
+            //std::cout << "Diffuse Probability" << std::fixed << diffuseComponent << std::endl;
+        }
+        else if (glm::dot(InTowardViewer, InSurfaceNormal) >= 0.0 != glm::dot(toIncidentRay, InSurfaceNormal) >= 0.0) {
+            // Transmitted component
+            glm::dvec3 halfway = glm::normalize(toIncidentRay * etaT + InTowardViewer);
+            double probHalfway = beckmannPDF(halfway, InSurfaceNormal);
+            double HDotViewer = glm::dot(halfway, InTowardViewer);
+            double HDotIncident = glm::dot(halfway, toIncidentRay);
+            double jacobian = glm::abs(HDotViewer) / glm::pow((etaT * HDotIncident + HDotViewer), 2);
+            probability += (1.0 - f) * probHalfway * jacobian;
+        }
+        
+        OutDirection = toIncidentRay;
+        OutPDF = probability;
+
+        return true;
+    }
+
+    glm::dmat3 GetLocalToWorld(glm::dvec3 InNormal)
+    {
+        glm::dvec3 ns = !std::isnan(InNormal.x) ? glm::normalize(glm::vec3(InNormal.y, -InNormal.x, 0.0)) : glm::normalize(glm::vec3(0.0, -InNormal.z, InNormal.y));
+        glm::dvec3 nss = glm::cross(InNormal, ns);
+        return glm::transpose(glm::dmat3(ns.x, nss.x, InNormal.x, ns.y, nss.y, InNormal.y, ns.z, nss.z, InNormal.z));
     }
 
 private:
-    glm::vec3 AmbientColor;
-    glm::vec3 DiffuseColor;
-    glm::vec3 SpecularColor;
-    float Shininess;
+    // Base color
+    glm::dvec3 Albedo;
+
+    // Used for calculating shininess/microfacet distribution
+    float Roughness;
+
+    // Metallic vs. dialectic (an example dialectric being plastic)
+    float Metallic;
+
+    // Self emission of light
+    float Emittance;
+
+    // Used for refraction, snell's law
+    float IndexOfRefraction;
+
+    // Used for allowing transmittance
+    bool bIsTransparent;
 };
 
 }

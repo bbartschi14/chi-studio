@@ -8,6 +8,8 @@
 #include <memory>
 #include <glad/glad.h>
 #include "AliasTypes.h"
+#include <cstdlib>
+#include <random>
 
 /** Collection of helper functions and macros for the graphics library */
 
@@ -78,9 +80,29 @@ struct EnumClassHash {
 
 std::unique_ptr<FNormalArray> CalculateNormals(const FPositionArray& positions, const FIndexArray& indices);
 
+double static RandomDouble() {
+    // Returns a random real double in [0,1).
+    return rand() / (RAND_MAX + 1.0);
+}
+
+double static RandomDouble(double min, double max) {
+    // Returns a random real in [min,max).
+    return min + (max - min) * RandomDouble();
+}
+
 float static RandomFloat(float min, float max) {
     // Returns a random real in [min,max).
     return min + (max - min) * rand() / (RAND_MAX + 1.0f);;
+}
+
+glm::vec2 static RandomInUnitDisk()
+{
+    while (true) 
+    {
+        auto p = glm::vec2(RandomDouble(-1, 1), RandomDouble(-1, 1));
+        if (glm::length(p) >= 1) continue;
+        return p;
+    }
 }
 
 // Silence compiler warning for unused variables

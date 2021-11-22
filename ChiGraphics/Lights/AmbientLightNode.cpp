@@ -1,6 +1,6 @@
-#include "AmbientLightNode.h"
+#include "LightNode.h"
 #include "ChiGraphics/Components/LightComponent.h"
-#include "ChiGraphics/Lights/AmbientLight.h"
+#include "ChiGraphics/Lights/PointLight.h"
 #include "ChiGraphics/Meshes/PrimitiveFactory.h"
 #include "ChiGraphics/Components/RenderingComponent.h"
 #include "ChiGraphics/Components/ShadingComponent.h"
@@ -9,13 +9,14 @@
 
 namespace CHISTUDIO {
 
-AmbientLightNode::AmbientLightNode(std::string InName)
+LightNode::LightNode(std::string InName)
 	: SceneNode(InName)
 {
-	auto ambientLight = std::make_shared<AmbientLight>();
-	ambientLight->SetDiffuseColor(glm::vec3(0.1f, 0.1f, 0.1f));
+	auto pointLight = std::make_shared<PointLight>();
+	pointLight->SetDiffuseColor(glm::vec3(1.0f, 1.0f, 1.0f));
+	pointLight->SetAttenuation(glm::vec3(1.0f, 0.09f, 0.032f));
 
-	auto lightComponent = CreateComponent<LightComponent>(ambientLight);
+	auto lightComponent = CreateComponent<LightComponent>(pointLight);
 
 	// Construct debug visuals
 	std::shared_ptr<SimpleShader> shader = std::make_shared<SimpleShader>();
@@ -37,7 +38,7 @@ AmbientLightNode::AmbientLightNode(std::string InName)
 	AddChild(std::move(debugVisualNode));
 }
 
-void AmbientLightNode::RefreshDebugVisual()
+void LightNode::RefreshDebugVisual()
 {
 }
 

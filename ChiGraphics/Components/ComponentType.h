@@ -12,7 +12,8 @@ enum class EComponentType
 	Shading,
 	Material,
 	Camera,
-	Light
+	Light,
+	Tracing
 };
 
 template <typename T>

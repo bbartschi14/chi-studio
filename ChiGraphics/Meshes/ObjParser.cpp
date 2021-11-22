@@ -146,19 +146,19 @@ namespace CHISTUDIO {
             else if (command == "Ns") {
                 float shininess;
                 ss >> shininess;
-                cur_mtl->SetShininess(shininess);
+                //cur_mtl->SetShininess(shininess);
             }
             else if (command == "Ka" || command == "Kd" || command == "Ks") {
                 glm::vec3 color;
                 ss >> color.r >> color.g >> color.b;
-                if (command == "Ka")
-                    cur_mtl->SetAmbientColor(color);
-                else if (command == "Kd")
-                    cur_mtl->SetDiffuseColor(color);
-                else {
-                    assert(command == "Ks");
-                    cur_mtl->SetSpecularColor(color);
-                }
+                //if (command == "Ka")
+                    //cur_mtl->SetAmbientColor(color);
+                //else if (command == "Kd")
+                    //cur_mtl->SetDiffuseColor(color);
+                //else {
+                   // assert(command == "Ks");
+                    //cur_mtl->SetSpecularColor(color);
+                //}
             }
             else if (command == "map_Ka" || command == "map_Kd" ||
                 command == "map_Ks") {

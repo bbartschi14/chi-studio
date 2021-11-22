@@ -3,7 +3,7 @@
 #include "UILibrary.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "core.h"
-
+#include "ChiGraphics/Cameras/TracingCameraNode.h"
 
 namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
@@ -180,6 +180,15 @@ namespace CHISTUDIO {
 	{
 		if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			TracingCameraNode* tracingCameraNode = dynamic_cast<TracingCameraNode*>(cameraComponent->GetNodePtr());
+			if (tracingCameraNode)
+			{
+				if (ImGui::DragFloat("Focus Distance", &cameraComponent->FocusDistance, 0.01f, 1000.0f))
+				{
+					tracingCameraNode->RefreshDebugVisual();
+				}
+				ImGui::DragFloat("Aperture", &cameraComponent->Aperture, .01f, 0.0f, 10.0f);
+			}
 			ImGui::Separator();
 
 		}
@@ -189,6 +198,37 @@ namespace CHISTUDIO {
 	{
 		if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			Material& mat = materialComponent->GetMaterial();
+			glm::vec3 albedo = mat.GetAlbedo();
+			if (ImGui::ColorEdit3("Albedo", glm::value_ptr(albedo)))
+			{
+				mat.SetAlbedo(albedo);
+			}
+			float roughness = mat.GetRoughness();
+			if (ImGui::SliderFloat("Roughness", &roughness, 0.001f, 1.0f))
+			{
+				mat.SetRoughness(roughness);
+			}
+			float metallic = mat.GetMetallic();
+			if (ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f))
+			{
+				mat.SetMetallic(metallic);
+			}
+			float emittance = mat.GetEmittance();
+			if (ImGui::SliderFloat("Emittance", &emittance, 0.0f, 1.0f))
+			{
+				mat.SetEmittance(emittance);
+			}
+			float IndexOfRefraction = mat.GetIndexOfRefraction();
+			if (ImGui::SliderFloat("IndexOfRefraction", &IndexOfRefraction, 0.0f, 2.0f))
+			{
+				mat.SetIndexOfRefraction(IndexOfRefraction);
+			}
+			bool isTransparent = mat.IsTransparent();
+			if (ImGui::Checkbox("Transparent", &isTransparent))
+			{
+				mat.SetTransparent(isTransparent);
+			}
 			ImGui::Separator();
 
 		}

@@ -19,12 +19,6 @@ public:
         return Triangles;
     }
 
-    glm::mat4 ModelMatrix;
-    glm::mat4 InverseModelMatrix;
-    glm::mat4 TransposeInverseModelMatrix;
-
-    class Material Material_;
-
 private:
     std::vector<TriangleHittable> Triangles;
     std::unique_ptr<Octree> Octree_;

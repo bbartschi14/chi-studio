@@ -44,15 +44,19 @@ void ChiStudioApplication::SetupScene()
 
 	root.AddChild(std::move(cameraNode));
 
-	CreatePrimitiveNode(EDefaultObject::Cube);
-
+	//CreatePrimitiveNode(EDefaultObject::Cube);
+	CreateTracingSphereNode();
 	SceneNode* tracingCamera = CreateCamera();
-	tracingCamera->GetTransform().SetPosition(glm::vec3(5.0f, 7.0f, 5.0f));
-	tracingCamera->GetTransform().SetRotation(glm::vec3(-45.0f, 45.0f, 0.0f));
+	tracingCamera->GetTransform().SetPosition(glm::vec3(0.0f, 0.0f, 10.0f));
+	//tracingCamera->GetTransform().SetRotation(glm::vec3(-45.0f, 45.0f, 0.0f));
 
-	SceneNode* tracingPointLight = CreatePointLight();
-	tracingPointLight->GetTransform().SetPosition(glm::vec3(-2.0f, 2.0f, 3.0f));
+	//SceneNode* tracingPointLight = CreatePointLight();
+	//tracingPointLight->GetTransform().SetPosition(glm::vec3(0.0f, 5.0f, 5.0f));
 
+	SceneNode* cube = CreatePrimitiveNode(EDefaultObject::Cube);
+	cube->GetTransform().SetScale(glm::vec3(10000.0f, 1.0f, 10000.0f));
+	cube->GetTransform().SetPosition(glm::vec3(0.0f, -2.0f, 0.0f));
+	cube->GetComponentPtr<MaterialComponent>()->GetMaterial().SetAlbedo(glm::vec3(.1f));
 }
 
 void ChiStudioApplication::DrawGUI()

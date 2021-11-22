@@ -8,7 +8,7 @@ namespace CHISTUDIO {
 class CameraComponent : public ComponentBase
 {
 public:
-    CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar);
+    CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar, float InFocusDistance = 5.0f, float InAperture = 0.0f);
     glm::mat4 GetProjectionMatrix() const;
     glm::mat4 GetViewMatrix() const;
 
@@ -49,6 +49,9 @@ public:
         return AspectRatio;
     }
 
+    float FocusDistance;
+    float Aperture;
+
 private:
     glm::vec2 GetNormalizedDeviceCoords(glm::vec2 InMousePosition, glm::vec2 InViewportSize);
     glm::vec4 GetEyeCoords(glm::vec4 InClipCoords);
@@ -58,6 +61,7 @@ private:
     float AspectRatio;
     float ZNear;
     float ZFar;
+    
 
     std::unique_ptr<glm::mat4> ViewMatrix;
 };

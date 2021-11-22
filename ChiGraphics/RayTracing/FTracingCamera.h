@@ -13,6 +13,8 @@ struct FCameraSpec {
     glm::vec3 Up;
     float FOV_Degrees;
     float AspectRatio; // Height / Width
+    float FocusDistance;
+    float Aperture;
 };
 
 class FTracingCamera {
@@ -24,14 +26,26 @@ public:
         FOV_Radian = ToRadian(InSpec.FOV_Degrees);
         Horizontal = glm::normalize(glm::cross(Direction, Up));
         AspectRatio = InSpec.AspectRatio;
+        FocusDistance = InSpec.FocusDistance;
+        Aperture = InSpec.Aperture;
     }
 
     FRay GenerateRay(const glm::vec2& point) {
         float d = 1.0f / tanf(FOV_Radian / 2.0f);
-        glm::vec3 new_dir = d * Direction + point[0] * Horizontal  + point[1] * Up * AspectRatio;
-        new_dir = glm::normalize(new_dir);
+        glm::vec3 newDirection = d * Direction + point[0] * Horizontal  + point[1] * Up * AspectRatio;
+        newDirection = glm::normalize(newDirection);
+        glm::vec3 origin = Center;
 
-        return FRay(Center, new_dir);
+        // Calculate DOF if the aperture is enabled
+        if (Aperture > 0.0f)
+        {
+            glm::vec3 focalPoint = Center + newDirection * FocusDistance;
+            glm::vec2 offset = RandomInUnitDisk();
+            origin += (offset.x * Horizontal + offset.y * Up) * Aperture;
+            newDirection = glm::normalize(focalPoint - origin);
+        }
+
+        return FRay(origin, newDirection);
     }
 
     float GetTMin() const {
@@ -45,6 +59,8 @@ private:
     float FOV_Radian;
     float AspectRatio;
     glm::vec3 Horizontal;
+    float FocusDistance;
+    float Aperture;
 };
 
 }

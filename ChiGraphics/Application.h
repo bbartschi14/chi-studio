@@ -68,6 +68,8 @@ public:
 	SceneNode* CreatePrimitiveNode(EDefaultObject InObjectType);
 	SceneNode* CreateCamera();
 	SceneNode* CreatePointLight();
+	SceneNode* CreateAmbientLight();
+	SceneNode* CreateTracingSphereNode();
 
 protected:
 	virtual void DrawGUI() {}

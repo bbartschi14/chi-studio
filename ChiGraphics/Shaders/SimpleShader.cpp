@@ -44,7 +44,7 @@ void SimpleShader::SetTargetNode(const SceneNode& node, const glm::mat4& model_m
     SetUniform("material_color", glm::vec3(0.0f, 0.7f, 0.2f));
   } else {
     SetUniform("material_color",
-               material_component_ptr->GetMaterial().GetDiffuseColor());
+               material_component_ptr->GetMaterial().GetAlbedo());
   }
 }
 

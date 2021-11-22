@@ -8,8 +8,8 @@
 
 namespace CHISTUDIO {
 
-CameraComponent::CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar)
-	: FOV(InFOV), AspectRatio(InAspectRatio), ZNear(InZNear), ZFar(InZFar), ViewMatrix(nullptr)
+CameraComponent::CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar, float InFocusDistance, float InAperture)
+	: FOV(InFOV), AspectRatio(InAspectRatio), ZNear(InZNear), ZFar(InZFar), ViewMatrix(nullptr), FocusDistance(InFocusDistance), Aperture(InAperture)
 {
 }
 

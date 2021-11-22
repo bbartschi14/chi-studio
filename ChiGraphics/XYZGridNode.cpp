@@ -30,7 +30,7 @@ XYZGridNode::XYZGridNode() : SceneNode("XYZGrid")
 	xAxisRendering.bIsDebugRender = true;
 	xAxisNode->GetTransform().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
 	auto xMaterial = std::make_shared<Material>();
-	xMaterial->SetDiffuseColor(glm::vec3(.6f, 0.15f, 0.0f));
+	xMaterial->SetAlbedo(glm::vec3(.6f, 0.15f, 0.0f));
 	xAxisNode->CreateComponent<ShadingComponent>(shader);
 	xAxisNode->CreateComponent<MaterialComponent>(xMaterial);
 	AddChild(std::move(xAxisNode));
@@ -54,7 +54,7 @@ XYZGridNode::XYZGridNode() : SceneNode("XYZGrid")
 	zAxisRendering.bIsDebugRender = true;
 	zAxisNode->GetTransform().SetRotation(glm::vec3(0.0f, 90.0f, 0.0f));
 	auto zMaterial = std::make_shared<Material>();
-	zMaterial->SetDiffuseColor(glm::vec3(0.15f, 0.0f, .6f));
+	zMaterial->SetAlbedo(glm::vec3(0.15f, 0.0f, .6f));
 	zAxisNode->CreateComponent<ShadingComponent>(shader);
 	zAxisNode->CreateComponent<MaterialComponent>(zMaterial);
 	AddChild(std::move(zAxisNode));

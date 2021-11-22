@@ -14,9 +14,11 @@
 #include "ChiGraphics/Lights/AmbientLight.h"
 #include "ChiGraphics/Lights/PointLight.h"
 #include "ChiGraphics/Lights/LightNode.h"
+#include "ChiGraphics/Lights/AmbientLightNode.h"
 #include "ChiGraphics/Shaders/PhongShader.h"
 #include "ChiGraphics/Shaders/PointShader.h"
 #include "ChiGraphics/Meshes/MeshLoader.h"
+#include "ChiGraphics/Collision/TracingNode.h"
 
 namespace CHISTUDIO {
 
@@ -188,10 +190,7 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType)
 	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
 	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
 	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
-	auto material = std::make_shared<Material>();
-	material->SetDiffuseColor(glm::vec3(1.0f, 0.0f, 0.0f));
-	material->SetSpecularColor(glm::vec3(1.0f, 0.0f, 0.0f));
-	material->SetDiffuseColor(glm::vec3(1.0f, 0.0f, 0.0f));
+	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
 
 	cubeNode->CreateComponent<MaterialComponent>(material);
 	SceneNode* ref = cubeNode.get();
@@ -210,10 +209,28 @@ SceneNode* Application::CreateCamera()
 
 SceneNode* Application::CreatePointLight()
 {
-	auto lightNode = make_unique<LightNode>(fmt::format("Light.{}", Scene_->GetRootNode().GetChildrenCount()));
+	auto lightNode = make_unique<LightNode>(fmt::format("PointLight.{}", Scene_->GetRootNode().GetChildrenCount()));
 	SceneNode* ref = lightNode.get();
 
 	Scene_->GetRootNode().AddChild(std::move(lightNode));
+	return ref;
+}
+
+SceneNode* Application::CreateAmbientLight()
+{
+	auto lightNode = make_unique<AmbientLightNode>(fmt::format("AmbientLight.{}", Scene_->GetRootNode().GetChildrenCount()));
+	SceneNode* ref = lightNode.get();
+
+	Scene_->GetRootNode().AddChild(std::move(lightNode));
+	return ref;
+}
+
+SceneNode* Application::CreateTracingSphereNode()
+{
+	auto tracingNode = make_unique<TracingNode>(fmt::format("TracingSphere.{}", Scene_->GetRootNode().GetChildrenCount()));
+	SceneNode* ref = tracingNode.get();
+
+	Scene_->GetRootNode().AddChild(std::move(tracingNode));
 	return ref;
 }
 

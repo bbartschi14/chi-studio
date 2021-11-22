@@ -12,7 +12,7 @@ struct FHitRecord
 {
     FHitRecord()
     {
-        Time = std::numeric_limits<float>::max();
+        Time = std::numeric_limits<float>::max(); 
     }
 
     float Time;
