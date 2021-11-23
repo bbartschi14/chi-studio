@@ -36,27 +36,11 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 		std::cout << "No tracing camera" << std::endl;
 		return OutputTexture;
 	}
-		
 
 	auto lightComponents = GetLightComponents(InScene);
 	BuildHittableData(InScene);
 
 	FImage outputImage(Settings.ImageSize.x, Settings.ImageSize.y);
-
-	float cameraX = ((float(Settings.ImageSize.x/2)) / (Settings.ImageSize.x - 1)) * 2 - 1;
-	float cameraY = ((float(Settings.ImageSize.y/2 + 5)) / (Settings.ImageSize.y - 1)) * 2 - 1;
-
-	// Use camera coords to generate a ray into the scene
-	//FRay cameraToSceneRay = tracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
-	//std::cout << std::endl;
-
-	//glm::vec3 color = TraceRay(cameraToSceneRay, 0, lightComponents);
-	//std::cout << "Final Color: " << glm::to_string(color) << std::endl;
-
-	//std::cout << fmt::format("Nan count: {}", debugNANCount) << std::endl;
-	//std::cout << fmt::format("Avg Indirect: {}", glm::to_string(debugAverageIndirect / (float)debugIndirectCount)) << std::endl;
-
-	//return OutputTexture;
 
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) {
 		for (size_t x = 0; x < Settings.ImageSize.x; x++) {
@@ -74,7 +58,6 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 				// Use camera coords to generate a ray into the scene
 				FRay cameraToSceneRay = tracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
 				pixelColor += TraceRay(cameraToSceneRay, 0, lightComponents);
-				//std::cout << "Final Color: " << glm::to_string(pixelColor) << std::endl;
 			}
 			float superSamplingScale = 1.0 / Settings.SamplesPerPixel;
 			pixelColor *= superSamplingScale;
@@ -174,7 +157,6 @@ std::unique_ptr<FTracingCamera> FRayTracer::GetFirstTracingCamera(const Scene& I
 
 glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights)
 {
-	//std::cout << "Trace: " << InBounces << std::endl;
 	FHitRecord record;
     bool objectHit = GetClosestObjectHit(InRay, record);
 
@@ -207,7 +189,6 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				{
 					// No object casting a shadow
 					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight);
-					//std::cout << glm::to_string(illumination) << std::endl;
 					overallIntensity += illumination * glm::dvec3(lightComp->GetLightPtr()->GetDiffuseColor()) * glm::dot(directionToLight, glm::dvec3(record.Normal));
 				}
 			}
@@ -218,30 +199,15 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 			// Let's trace!
 			glm::dvec3 sampledRayDirection;
 			double rayProbability;
-			//std::cout << "Hemisphere" << std::endl;
-			//std::cout << "TEST NORMAL AND EYE RAY" << std::endl;
-			//record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, glm::dvec3(0.0005738774510729404, 0.06984042439894472, 0.9975580112376656), glm::dvec3(-0.000063744946293943, -0.007757708713129185, 0.9999699064932425));
-			//record.Material_.EvaluateBSDF(glm::dvec3(0.0005738774510729404, 0.06984042439894472, 0.9975580112376656), glm::dvec3(-0.000063744946293943, -0.007757708713129185, 0.9999699064932425), sampledRayDirection);
-			//std::cout << std::endl;
 
 			if (record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, record.Normal, eyeRay))
 			{
-				//std::cout << "Indirect BSDF sample" << std::endl;
-				//std::cout.precision(17);
 				glm::dvec3 indirect = record.Material_.EvaluateBSDF(record.Normal, eyeRay, sampledRayDirection);
-				//std::cout << "Indirect: " << glm::to_string(indirect) << std::endl;
 
 				FRay tracedRay = FRay(hitPosition, sampledRayDirection);
 				glm::dvec3 traceResult = TraceRay(tracedRay, InBounces + 1, InLights);
-				//std::cout << "Trace Result: " << glm::to_string(traceResult) << std::endl;
-
 				glm::dvec3 term = indirect * traceResult;
-				//std::cout << "1/pdf: " << std::fixed << 1.0 / rayProbability << std::endl;
-				//std::cout << "Term: " << glm::to_string(term) << std::endl;
-				//std::cout << "Dot: " << glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal))) << std::endl;
-
 				glm::dvec3 indirectIllumination = 1.0 / rayProbability * term * glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal)));
-				//std::cout << "Indirect Total" << glm::to_string(indirectIllumination) << std::endl;
 
 				if (glm::isnan(indirectIllumination.x)) return overallIntensity;
 				else
@@ -258,7 +224,6 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
     }
     else 
 	{
-		//std::cout << "Background" << std::endl;
         return GetBackgroundColor(InRay.GetDirection());
     }
 }
@@ -276,10 +241,7 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 {
 	auto lightPtr = lightComponent.GetLightPtr();
 	if (lightPtr->GetType() == ELightType::Directional) {
-		/*auto directional_light_ptr = static_cast<DirectionalLight*>(lightPtr);
-		directionToLight = -directional_light_ptr->GetDirection();
-		intensity = directional_light_ptr->GetDiffusepixelColor();
-		distanceToLight = std::numeric_limits<float>::max();*/
+		// TODO : Implement directional light type
 	}
 	else if (lightPtr->GetType() == ELightType::Point) {
 		auto pointLightPtr = static_cast<PointLight*>(lightPtr);

@@ -139,11 +139,6 @@ public:
             if (!bIsTransparent) // If the material is opaque, don't transmit any light
                 return glm::dvec3(0.0);
         }
-        std::cout.precision(17);
-
-        //std::cout << "Normal: " << glm::to_string(InSurfaceNormal) << std::endl;
-        //std::cout << "Incident: " << InTowardIncident.x << ", " << InTowardIncident.y << ", " << InTowardIncident.z << ", " << std::endl;
-        //std::cout << "Viewer: " << InTowardViewer.x << ", " << InTowardViewer.y << ", " << InTowardViewer.z << ", " << std::endl;
 
         // Check for diffuse/specular reflection
         if (bIsViewerOutside == bIsIncidentOutside)
@@ -162,17 +157,6 @@ public:
             double dNumerator = glm::exp(dNum1 / dNum2);
             double dDenominator = (kPi * roughnessSquared * NH2 * NH2);
             double distributionFunction = dNumerator / dDenominator;
-
-            
-            //std::cout << "Incident: " << glm::to_string(InTowardIncident) << std::endl;
-            //std::cout << "Viewer: " << glm::to_string(InTowardViewer) << std::endl;
-
-            //std::cout << "NH2: " << NH2 << std::endl;
-            //std::cout << "D Num1: " << dNum1 << std::endl;
-            //std::cout << "D Num2: " << dNum2 << std::endl;
-
-            //std::cout << "D Numerator: " << dNumerator << std::endl;
-            //std::cout << "D Denom: " << dDenominator << std::endl;
 
             // Evaluate fresnel using schlick's approximation
             // F = F0 + (1 - F0)(1 - wi dot h)^5
@@ -202,13 +186,11 @@ public:
 
             if (bIsTransparent) 
             {
-                //std::cout << "Spec: " << glm::to_string(specularComponent) << std::endl;
                 return specularComponent;
             }
             else 
             {
                 glm::dvec3 diffuseComponent = (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * Albedo / (double)kPi;
-                //std::cout << "Diffuse: " << glm::to_string(diffuseComponent) << std::endl;
                 return specularComponent + diffuseComponent;
             }
         }
@@ -224,12 +206,6 @@ public:
             double ViewerDotHalfway = glm::dot(InTowardViewer, halfway);
             double IncidentDotHalfway = glm::dot(InTowardIncident, halfway);
             double NormalDotHalfway = glm::dot<3, double, glm::qualifier::highp>(InSurfaceNormal, halfway);
-            //std::cout << "Test Dot: " << std::fixed << glm::dot<3, double, glm::qualifier::highp>(glm::dvec3(0.009941048415773706, 0.07830899089967679, 0.9968795702092955), glm::dvec3(0.00974614429866256, 0.06237532351144038, 0.9980051761830461)) << std::endl;
-            //
-            //std::cout << "Eta T: " << etaT << std::endl;
-            //std::cout << "NH: " << std::fixed << NormalDotHalfway << std::endl;
-            //std::cout << "Halfway Pre Norm: " << preNorm.x << ", " << preNorm.y << ", " << preNorm.z << ", " << std::endl;
-            //std::cout << "Halfway: " << glm::to_string(halfway) << std::endl;
 
             // Evaluate microfacet distribution function
             // D = exp(((n dot h)^2 - 1) / (roughness^2 (n dot h)^2)) / (pi * roughness^2 (n dot h)^4)
@@ -241,21 +217,11 @@ public:
             double distributionNumerator = glm::exp(preExp);
             double distributionDenominator = (kPi * roughnessSquared * NH2 * NH2);
             double distributionFunction = distributionNumerator / distributionDenominator;
-            //std::cout << "M2: " << roughnessSquared << std::endl;
-            //std::cout << "NH2: " << std::fixed << NH2 << std::endl;
-            //std::cout << "NH2 - 1: " << top << std::endl;
-            //std::cout << "M2 * NH2: " << bottom << std::endl;
-            //
-            //std::cout << "D Numerator: " << std::fixed << distributionNumerator << std::endl;
-            //std::cout << "D Denominator: " << std::fixed << distributionDenominator << std::endl;
-
 
             // Evaluate fresnel using schlick's approximation
             // F = F0 + (1 - F0)(1 - wi dot h)^5
             double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
-            //std::cout << "F0: " << f0 << std::endl;
             glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), Albedo, (double)Metallic);
-            //std::cout << "Color F0: " << glm::to_string(colorF0) << std::endl;
             glm::dvec3 fresnel = colorF0 + (glm::dvec3(1.0, 1.0, 1.0) - colorF0) * glm::pow((1.0 - glm::abs(ViewerDotHalfway)), 5);
 
             // Evaluate geometry function using microfacet shadowing
@@ -269,11 +235,6 @@ public:
             //                  * n_o^2 (1 - F)DG / (n_i (h dot wi) + n_o (h dot wo))^2
             glm::dvec3 btdf = glm::abs(IncidentDotHalfway * ViewerDotHalfway / (NormalDottedWithIncident * NormalDottedWithViewer))
                 * (distributionFunction * (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * geometryFunction / glm::pow((etaT * IncidentDotHalfway + ViewerDotHalfway), 2));
-
-            //std::cout << "Distribution Function: " << distributionFunction << std::endl;
-            //std::cout << "Fresnel: " << glm::to_string(fresnel) << std::endl;
-            //std::cout << "Geometry Function: " << geometryFunction << std::endl;
-            //std::cout << "BTDF: " << glm::to_string(btdf) << std::endl;
 
             return btdf * Albedo;
         }
@@ -322,30 +283,19 @@ public:
         {
             // p = 1 / (pi m^2 cos^3 theta) * e^(-tan^2(theta) / m^2)
             double cosT = glm::min(glm::abs(glm::dot(InHalfway, InNormal)), 1.0);
-            //std::cout.precision(17);
-            //std::cout << "cosT" << std::fixed << cosT << std::endl;
-
             double sinT = glm::sqrt(1.0 - cosT * cosT);
-            //std::cout << "sinT" << std::fixed << sinT << std::endl;
-
             double denom = 1.0 / (kPi * roughnessSquared * glm::pow(cosT, 3));
-            //std::cout << "denom" << std::fixed << denom << std::endl;
-
             double secondTerm = glm::exp(-glm::pow(sinT / cosT, 2) / roughnessSquared);
             double probability = denom * secondTerm;
             
             return probability;
         };
-        //std::cout << (beckmannPDF(glm::dvec3(0.001933066273768015, 0.00003833645440733135, 0.9999981308908019),
-        //                            glm::dvec3(0.0028702836961018432, -0.0018525468897957215, 0.9999941647537375))) << std::endl;
-
+      
         bool bIsReflected = RandomDouble(0.0, 1.0) <= f;
         glm::dvec3 toIncidentRay; 
 
         if (bIsReflected)
         {
-            //std::cout << "Reflected" << std::endl;
-
             // Specular component
             glm::dvec3 halfway = beckmannHalfwayVector();
             toIncidentRay = -glm::reflect(InTowardViewer, halfway);
@@ -356,13 +306,6 @@ public:
             // Simple cosine-sampling using Malley's method
             glm::dvec2 point = RandomInUnitDisk();
             double z = glm::sqrt((1.0 - point.x * point.x - point.y * point.y));
-            //std::cout << "Normal: " << glm::to_string(InSurfaceNormal) << std::endl;
-            //std::cout << "New Vector: " << glm::to_string(glm::dvec3(point.x, point.y, z)) << std::endl;
-            //std::cout << "Transformed: " << glm::to_string(GetLocalToWorld(InSurfaceNormal) * glm::dvec3(point.x, point.y, z)) << std::endl;
-
-            //std::cout << "Test Matrix: " << glm::to_string(GetLocalToWorld(glm::dvec3(0.007, -0.011, .999))) << std::endl;
-            //std::cout << "Test Transform: " << glm::to_string(GetLocalToWorld(glm::dvec3(0.007, -0.011, .999)) * glm::dvec3(.08401, -.70327, .705939)) << std::endl;
-
             toIncidentRay = GetLocalToWorld(InSurfaceNormal) * glm::dvec3(point.x, point.y, z);
         }
         else 
@@ -382,18 +325,6 @@ public:
             }
             float cos_ti = glm::sqrt(1.0f - sin2_ti);
             toIncidentRay = -glm::sign(cosT_Viewer) * cos_ti * halfway + incidentPerp;
-
-            //std::cout.precision(17);
-            //std::cout << "Halfway: " << halfway.x << ", " << halfway.y << ", " << halfway.z << ", " << std::endl;
-            //std::cout << "Calc Incident: " << toIncidentRay.x << ", " << toIncidentRay.y << ", " << toIncidentRay.z << ", " << std::endl;
-
-            //std::cout << "Cos T Viewer: " << std::fixed << cosT_Viewer << std::endl;
-           //std::cout << "Sin2 Ti: " << std::fixed << sin2_ti << std::endl;
-            ////std::cout << "TEST Sin2 Ti: " << std::fixed << glm::length2(glm::dvec3(0.009819800371972191, 0.07506939429553808, -0.005192980357108468)) << std::endl;
-            //
-            //std::cout << "Cos T Incident: " << std::fixed << cos_ti << std::endl;
-            //std::cout << "Incident Perp: " << glm::to_string(incidentPerp) << std::endl;
-            //std::cout << "Result: " << glm::to_string(toIncidentRay) << std::endl;
         };
 
         // Multiple importance sampling  uses the probabilities of several components. Now we sum them up.
@@ -404,9 +335,6 @@ public:
             double probHalfway = beckmannPDF(halfway, InSurfaceNormal);
             double specularComponent = f * probHalfway / (4.0 * glm::abs(glm::dot(halfway, InTowardViewer)));
             probability += specularComponent;
-
-            //std::cout.precision(17);
-            //std::cout << "Specular Probability" << std::fixed << specularComponent << std::endl;
         }
         
         if (!bIsTransparent)
@@ -416,9 +344,6 @@ public:
             double clampedDot = glm::max(dotTerm, 0.0);
             double diffuseComponent = (1.0 - f) * dotTerm / kPi;
             probability += diffuseComponent;
-
-            //std::cout.precision(17);
-            //std::cout << "Diffuse Probability" << std::fixed << diffuseComponent << std::endl;
         }
         else if (glm::dot(InTowardViewer, InSurfaceNormal) >= 0.0 != glm::dot(toIncidentRay, InSurfaceNormal) >= 0.0) {
             // Transmitted component
