@@ -174,6 +174,7 @@ std::unique_ptr<FTracingCamera> FRayTracer::GetFirstTracingCamera(const Scene& I
 
 glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights)
 {
+	//std::cout << "Trace: " << InBounces << std::endl;
 	FHitRecord record;
     bool objectHit = GetClosestObjectHit(InRay, record);
 
@@ -218,6 +219,11 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 			glm::dvec3 sampledRayDirection;
 			double rayProbability;
 			//std::cout << "Hemisphere" << std::endl;
+			//std::cout << "TEST NORMAL AND EYE RAY" << std::endl;
+			//record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, glm::dvec3(0.0005738774510729404, 0.06984042439894472, 0.9975580112376656), glm::dvec3(-0.000063744946293943, -0.007757708713129185, 0.9999699064932425));
+			//record.Material_.EvaluateBSDF(glm::dvec3(0.0005738774510729404, 0.06984042439894472, 0.9975580112376656), glm::dvec3(-0.000063744946293943, -0.007757708713129185, 0.9999699064932425), sampledRayDirection);
+			//std::cout << std::endl;
+
 			if (record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, record.Normal, eyeRay))
 			{
 				//std::cout << "Indirect BSDF sample" << std::endl;
@@ -237,7 +243,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				glm::dvec3 indirectIllumination = 1.0 / rayProbability * term * glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal)));
 				//std::cout << "Indirect Total" << glm::to_string(indirectIllumination) << std::endl;
 
-				if (glm::isnan(indirectIllumination.x)) debugNANCount++;
+				if (glm::isnan(indirectIllumination.x)) return overallIntensity;
 				else
 				{
 					overallIntensity += indirectIllumination;
@@ -259,6 +265,10 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 
 glm::vec3 FRayTracer::GetBackgroundColor(const glm::vec3& InDirection) const
 {
+	if (Settings.HDRI != nullptr)
+	{
+		return Settings.HDRI->SampleHDRI(InDirection);
+	}
 	return Settings.BackgroundColor;
 }
 

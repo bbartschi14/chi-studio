@@ -17,6 +17,7 @@ public:
     glm::vec3 BackgroundColor;
     bool bShadowsEnabled;
     int SamplesPerPixel;
+    class FImage* HDRI;
 };
 
 /** Allows for rendering the scene via ray tracing */

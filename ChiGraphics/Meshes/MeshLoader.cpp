@@ -19,7 +19,7 @@ MeshData MeshLoader::Import(const std::string& filename) {
 
     MeshData mesh_data;
     mesh_data.VertexObj = make_unique<VertexObject>(EDefaultObject::CustomMesh);
-    /*
+    
     if (parsed_data.Positions) {
         mesh_data.VertexObj->UpdatePositions(std::move(parsed_data.Positions));
     }
@@ -32,7 +32,7 @@ MeshData MeshLoader::Import(const std::string& filename) {
     if (parsed_data.Indices) {
         mesh_data.VertexObj->UpdateIndices(std::move(parsed_data.Indices));
     }
-    */
+    
 
     mesh_data.Groups = std::move(parsed_data.Groups);
 

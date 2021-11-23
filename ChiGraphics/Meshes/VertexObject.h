@@ -107,7 +107,7 @@ public:
             CreateHalfEdgeCube();
         }
 
-        if (InDefaultObject != EDefaultObject::Debug)
+        if (InDefaultObject != EDefaultObject::Debug && InDefaultObject != EDefaultObject::CustomMesh)
         {
             CreateVertexArrayFromHalfEdgeStructure();
         }

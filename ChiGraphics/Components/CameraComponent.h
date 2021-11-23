@@ -44,6 +44,11 @@ public:
         return FOV;
     }
 
+    void SetFOV(float InFOV)
+    {
+        FOV = InFOV;
+    }
+
     float GetAspectRatio() const
     {
         return AspectRatio;

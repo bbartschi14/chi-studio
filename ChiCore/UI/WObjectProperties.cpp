@@ -183,6 +183,11 @@ namespace CHISTUDIO {
 			TracingCameraNode* tracingCameraNode = dynamic_cast<TracingCameraNode*>(cameraComponent->GetNodePtr());
 			if (tracingCameraNode)
 			{
+				float FOV = cameraComponent->GetFOV();
+				if (ImGui::DragFloat("FOV", &FOV, .1f, 5.0f, 130.0f))
+				{
+					cameraComponent->SetFOV(FOV);
+				}
 				if (ImGui::DragFloat("Focus Distance", &cameraComponent->FocusDistance, 0.01f, 1000.0f))
 				{
 					tracingCameraNode->RefreshDebugVisual();

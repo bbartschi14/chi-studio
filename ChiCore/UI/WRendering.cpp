@@ -25,17 +25,13 @@ void WRendering::Render(Application& InApplication)
 
     if (ImGui::Button("Render Scene"))
     {
-        // Test reflect
-        //glm::dvec3 wo = glm::dvec3(-0.001283480336415674, -0.007632098157135869, 0.9999700514295146);
-        //glm::dvec3 h = glm::dvec3(0.011573625529115436, 0.06880514329354218, 0.9975629821963458);
-        //std::cout << "Reflect: " << glm::to_string(-glm::reflect(wo, h)) << std::endl;
-
         FRayTraceSettings settings;
-        settings.BackgroundColor = glm::vec3(.2f);
+        settings.BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
         settings.bShadowsEnabled = false;
         settings.ImageSize = glm::ivec2(RenderWidth, RenderHeight);
         settings.MaxBounces = MaxBounces;
         settings.SamplesPerPixel = SamplesPerPixel;
+        settings.HDRI = HDRI.get();
         FRayTracer rayTracer(settings);
 
         DisplayTexture = rayTracer.Render(scene, fmt::format("{}.png", FileName));
@@ -64,6 +60,23 @@ void WRendering::Render(Application& InApplication)
     {
         uint64_t textureID = DisplayTexture->GetHandle();
         ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)DisplayTexture->Width, (float)DisplayTexture->Height }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 });
+    }
+
+    if (ImGui::Button("Show HDRI"))
+    {
+        HDRITexture = make_unique<FTexture>();
+
+        HDRI = FImage::LoadPNG(GetAssetDir() + "hdr/ballroom_4k.hdr", false);
+        //auto hdr = FImage::LoadPNG(GetAssetDir() + "left.png", false);
+
+        HDRITexture->Reserve(GL_RGB, HDRI->GetWidth(), HDRI->GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE);
+        HDRITexture->UpdateImage(*HDRI);
+    }
+
+    if (HDRITexture)
+    {
+        uint64_t textureID = HDRITexture->GetHandle();
+        ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)HDRITexture->Width * .2f, (float)HDRITexture->Height * .2f}, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
     }
 
     ImGui::End();

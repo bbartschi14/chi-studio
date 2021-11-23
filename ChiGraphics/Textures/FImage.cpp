@@ -5,6 +5,7 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include "ChiGraphics/Utilities.h"
+#include <glm/gtx/compatibility.hpp>
 
 namespace CHISTUDIO {
 
@@ -78,6 +79,26 @@ std::vector<float> FImage::ToFloatData() const
         }
 
     return buffer;
+}
+
+glm::vec3 FImage::SampleHDRI(const glm::vec3& InDirection)
+{
+    glm::vec3 direction = glm::normalize(InDirection);
+    float azimuth = atan2(direction.z, direction.x) + kPi;
+    float polar = acos(direction.y);
+    float x = azimuth / (kPi * 2.0f) * (Width - 1);
+    float y = polar / kPi * (Height - 1);
+    return BilinearSample(x,y);
+}
+
+glm::vec3 FImage::BilinearSample(float InX, float InY)
+{
+    int x0 = glm::min((int)InX, (int)Width - 1); // (x as u32).min(self.width - 1);
+    int y0 = glm::min((int)InY, (int)Height - 1);
+    float ax = InX - x0;
+    float ay = InY - y0;
+
+    return glm::lerp(glm::lerp(GetPixel(x0, y0), GetPixel(x0 + 1, y0), ax), glm::lerp(GetPixel(x0, y0 + 1), GetPixel(x0 + 1, y0 + 1), ax), ay);
 }
 
 }

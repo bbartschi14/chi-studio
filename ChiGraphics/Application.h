@@ -70,6 +70,7 @@ public:
 	SceneNode* CreatePointLight();
 	SceneNode* CreateAmbientLight();
 	SceneNode* CreateTracingSphereNode();
+	SceneNode* CreateImportMeshNode(const std::string& filePath);
 
 protected:
 	virtual void DrawGUI() {}

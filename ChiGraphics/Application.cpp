@@ -234,6 +234,25 @@ SceneNode* Application::CreateTracingSphereNode()
 	return ref;
 }
 
+SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
+{
+	std::shared_ptr<PhongShader> shader = std::make_shared<PhongShader>();
+	MeshData data = MeshLoader::Import(filePath);
+	std::shared_ptr<VertexObject> mesh = std::move(data.VertexObj);
+
+	auto meshNode = make_unique<SceneNode>(fmt::format("Mesh.{}", Scene_->GetRootNode().GetChildrenCount()));
+	meshNode->CreateComponent<ShadingComponent>(shader);
+	meshNode->CreateComponent<RenderingComponent>(mesh);
+	meshNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
+	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
+
+	meshNode->CreateComponent<MaterialComponent>(material);
+	SceneNode* ref = meshNode.get();
+
+	Scene_->GetRootNode().AddChild(std::move(meshNode));
+	return ref;
+}
+
 void Application::InitializeGLFW()
 {
 	glfwInit();
