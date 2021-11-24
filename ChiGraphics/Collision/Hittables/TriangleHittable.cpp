@@ -52,7 +52,20 @@ bool TriangleHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& I
 
 float TriangleHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
 {
-    return 0.0f;
+    float u = RandomDouble();
+    float v = RandomDouble();
+
+    while (u + v > 1.0f) {
+        u = RandomDouble();
+        v = RandomDouble();
+    }
+
+    float w = 1.0f - u - v;
+
+    float area = 0.5f * glm::length(glm::cross((Positions[1] - Positions[0]), (Positions[2] - Positions[1])));
+    OutPoint = u * Positions[0] + v * Positions[1] + w * Positions[2];
+    OutNormal = glm::normalize(u * Normals[0] + v * Normals[1] + w * Normals[2]);
+    return 1.0f / area;
 }
 
 }

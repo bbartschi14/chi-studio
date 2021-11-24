@@ -30,7 +30,10 @@ bool MeshHittable::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord
 
 float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
 {
-    return 0.0f;
+    size_t numberOfTriangles = Triangles.size();
+    int randomIndex = RandomFloat(0.0f, numberOfTriangles);
+    float probability = Triangles[randomIndex].Sample(InTargetPoint, OutPoint, OutNormal);
+    return probability / numberOfTriangles;
 }
 
 }
