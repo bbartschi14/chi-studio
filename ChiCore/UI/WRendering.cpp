@@ -26,8 +26,8 @@ void WRendering::Render(Application& InApplication)
     if (ImGui::Button("Render Scene"))
     {
         FRayTraceSettings settings;
-        //settings.BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
-        settings.BackgroundColor = glm::vec3(0.0f);
+        settings.BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
+        //settings.BackgroundColor = glm::vec3(0.0f);
         settings.bShadowsEnabled = false;
         settings.ImageSize = glm::ivec2(RenderWidth, RenderHeight);
         settings.MaxBounces = MaxBounces;

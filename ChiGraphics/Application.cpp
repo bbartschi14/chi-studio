@@ -187,7 +187,17 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType)
 	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();
 	std::shared_ptr<VertexObject> cubeMesh = std::make_shared<VertexObject>(InObjectType);
 
-	auto cubeNode = make_unique<SceneNode>(fmt::format("Cube.{}", Scene_->GetRootNode().GetChildrenCount()));
+	std::string name = "Object";
+	switch (InObjectType)
+	{
+	case (EDefaultObject::Cube):
+		name = "Cube";
+		break;
+	case (EDefaultObject::Plane):
+		name = "Plane";
+		break;
+	}
+	auto cubeNode = make_unique<SceneNode>(fmt::format("{}.{}", name, Scene_->GetRootNode().GetChildrenCount()));
 	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
 	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
 	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));

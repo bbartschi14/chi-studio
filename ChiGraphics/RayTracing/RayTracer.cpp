@@ -235,12 +235,6 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 					// No object casting a shadow
 					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight);
 					overallIntensity += illumination * lightIntensity * glm::dot(directionToLight, glm::dvec3(record.Normal));
-
-					//std::cout << "Hit Point: " << glm::to_string(hitPosition) << std::endl;
-					//std::cout << "Direction To Light: " << glm::to_string(directionToLight) << std::endl;
-					//std::cout << "Illumination: " << glm::to_string(illumination) << std::endl;
-					//std::cout << "Light Intensity: " << glm::to_string(lightIntensity) << std::endl;
-					//std::cout << "Dot Result: " << (glm::dot(directionToLight, glm::dvec3(record.Normal))) << std::endl;
 				}
 				else
 				{
@@ -264,7 +258,15 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				glm::dvec3 term = indirect * traceResult;
 				glm::dvec3 indirectIllumination = 1.0 / rayProbability * term * glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal)));
 
-				if (glm::isnan(indirectIllumination.x)) return overallIntensity;
+				//std::cout << "Ray probability: " << rayProbability << std::endl;
+				//std::cout << "Term: " << glm::to_string(term) << std::endl;
+				//std::cout << "Dot: " << glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal))) << std::endl;
+
+				if (glm::isnan(indirectIllumination.x))
+				{
+					//std::cout << "NAN" << std::endl;
+					return overallIntensity;
+				}
 				else
 				{
 					overallIntensity += indirectIllumination;
@@ -318,10 +320,7 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 
 		// Transform normal and pos back to world space
 		outNormal = glm::normalize(glm::vec3(hittableLightPtr->GetHittable()->TransposeInverseModelMatrix * glm::vec4(outNormal, 0.0f)));
-
-		//std::cout << "Out Pos (Pre Transform): " << glm::to_string(outPosition) << std::endl;
 		outPosition = glm::vec3(hittableLightPtr->GetHittable()->ModelMatrix * glm::vec4(outPosition, 1.0f));
-		//std::cout << "Out Pos: " << glm::to_string(outPosition) << std::endl;
 
 		glm::vec3 displacement = (glm::dvec3)outPosition - hitPos;
 		distanceToLight = glm::length(displacement);
@@ -346,7 +345,6 @@ bool FRayTracer::GetClosestObjectHit(const FRay& InRay, FHitRecord& InRecord, st
 	{
 		if (Hittables[i] != InHittableToIgnore)
 		{
-			
 			// Cast a ray in object space for this hittable
 			FRay objectSpaceRay = FRay(InRay.GetOrigin(), InRay.GetDirection());
 			objectSpaceRay.ApplyTransform(Hittables[i]->InverseModelMatrix);

@@ -162,6 +162,70 @@ namespace CHISTUDIO {
 			      symEdgesBack);
 	}
 
+	void VertexObject::CreateHalfEdgePlane()
+	{
+		FFace* planeFace = CreateFace(nullptr);
+
+		// Inner loop
+		FHalfEdge* halfEdge1 = CreateHalfEdge(nullptr, nullptr, planeFace, nullptr, nullptr);
+		FHalfEdge* halfEdge2 = CreateHalfEdge(nullptr, nullptr, planeFace, nullptr, nullptr);
+		FHalfEdge* halfEdge3 = CreateHalfEdge(nullptr, nullptr, planeFace, nullptr, nullptr);
+		FHalfEdge* halfEdge4 = CreateHalfEdge(nullptr, nullptr, planeFace, nullptr, nullptr);
+
+		// Outer loop
+		FHalfEdge* halfEdge5 = CreateHalfEdge(nullptr, nullptr, nullptr, nullptr, nullptr);
+		FHalfEdge* halfEdge6 = CreateHalfEdge(nullptr, nullptr, nullptr, nullptr, nullptr);
+		FHalfEdge* halfEdge7 = CreateHalfEdge(nullptr, nullptr, nullptr, nullptr, nullptr);
+		FHalfEdge* halfEdge8 = CreateHalfEdge(nullptr, nullptr, nullptr, nullptr, nullptr);
+
+		// Edges
+		FEdge* edge1 = CreateEdge(halfEdge1, halfEdge5);
+		FEdge* edge2 = CreateEdge(halfEdge2, halfEdge6);
+		FEdge* edge3 = CreateEdge(halfEdge3, halfEdge7);
+		FEdge* edge4 = CreateEdge(halfEdge4, halfEdge8);
+
+		// Vertices
+		FVertex* vertex1 = CreateVertex(glm::vec3(1.0f, 0.0f, 1.0f), halfEdge1);
+		FVertex* vertex2 = CreateVertex(glm::vec3(1.0f, 0.0f, -1.0f), halfEdge2);
+		FVertex* vertex3 = CreateVertex(glm::vec3(-1.0f, 0.0f, -1.0f), halfEdge3);
+		FVertex* vertex4 = CreateVertex(glm::vec3(-1.0f, 0.0f, 1.0f), halfEdge4);
+
+		// Finish Face
+		planeFace->SetHalfEdgeOnFace(halfEdge1);
+
+		// Finish Inner Loop
+		halfEdge1->SetNextHalfEdge(halfEdge2);
+		halfEdge2->SetNextHalfEdge(halfEdge3);
+		halfEdge3->SetNextHalfEdge(halfEdge4);
+		halfEdge4->SetNextHalfEdge(halfEdge1);
+
+		halfEdge1->SetNextVertex(vertex1);
+		halfEdge2->SetNextVertex(vertex2);
+		halfEdge3->SetNextVertex(vertex3);
+		halfEdge4->SetNextVertex(vertex4);
+
+		halfEdge1->SetSymmetricalHalfEdge(halfEdge5);
+		halfEdge2->SetSymmetricalHalfEdge(halfEdge6);
+		halfEdge3->SetSymmetricalHalfEdge(halfEdge7);
+		halfEdge4->SetSymmetricalHalfEdge(halfEdge8);
+
+		// Finish Outer Loop
+		halfEdge5->SetNextHalfEdge(halfEdge6);
+		halfEdge6->SetNextHalfEdge(halfEdge7);
+		halfEdge7->SetNextHalfEdge(halfEdge8);
+		halfEdge8->SetNextHalfEdge(halfEdge5);
+
+		halfEdge5->SetNextVertex(vertex4);
+		halfEdge6->SetNextVertex(vertex3);
+		halfEdge7->SetNextVertex(vertex2);
+		halfEdge8->SetNextVertex(vertex1);
+
+		halfEdge5->SetSymmetricalHalfEdge(halfEdge1);
+		halfEdge6->SetSymmetricalHalfEdge(halfEdge2);
+		halfEdge7->SetSymmetricalHalfEdge(halfEdge3);
+		halfEdge8->SetSymmetricalHalfEdge(halfEdge4);
+	}
+
 	void VertexObject::CreateVertexArrayFromHalfEdgeStructure()
 	{
 		// Iterates over all the faces, triangulating them and creating

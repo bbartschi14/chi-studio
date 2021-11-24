@@ -363,9 +363,13 @@ public:
 
     glm::dmat3 GetLocalToWorld(glm::dvec3 InNormal)
     {
+        glm::vec3 truncatedNormal = glm::vec3(InNormal); // Doubles can cause precision errors in glm::normalize, giving NANs
+
         glm::dvec3 ns = !std::isnan(InNormal.x) ? glm::normalize(glm::vec3(InNormal.y, -InNormal.x, 0.0)) : glm::normalize(glm::vec3(0.0, -InNormal.z, InNormal.y));
+        if (std::isnan(ns.x)) ns = glm::normalize(glm::vec3(0.0, -InNormal.z, InNormal.y));
+
         glm::dvec3 nss = glm::cross(InNormal, ns);
-        return glm::transpose(glm::dmat3(ns.x, nss.x, InNormal.x, ns.y, nss.y, InNormal.y, ns.z, nss.z, InNormal.z));
+        return (glm::dmat3(ns.x, ns.y, ns.z, nss.x, nss.y, nss.z, InNormal.x, InNormal.y, InNormal.z));
     }
 
 private:

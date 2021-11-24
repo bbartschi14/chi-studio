@@ -18,7 +18,8 @@ enum class EFaceExtrudeType {
 enum class EDefaultObject {
     Cube,
     CustomMesh,
-    Debug
+    Debug,
+    Plane
 };
 
 struct FIncidentHalfEdges {
@@ -106,6 +107,10 @@ public:
         {
             CreateHalfEdgeCube();
         }
+        else if (InDefaultObject == EDefaultObject::Plane)
+        {
+            CreateHalfEdgePlane();
+        }
 
         if (InDefaultObject != EDefaultObject::Debug && InDefaultObject != EDefaultObject::CustomMesh)
         {
@@ -123,6 +128,7 @@ private:
     
 
     void CreateHalfEdgeCube();
+    void CreateHalfEdgePlane();
     void CreateVertexArrayFromHalfEdgeStructure();
 
     /** Using the given faces (InFaces) on this vertex object, find all the contiguous regions */
