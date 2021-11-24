@@ -50,4 +50,9 @@ bool TriangleHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& I
     return false;
 }
 
+float TriangleHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
+{
+    return 0.0f;
+}
+
 }

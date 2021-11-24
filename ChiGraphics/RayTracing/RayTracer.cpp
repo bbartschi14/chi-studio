@@ -12,6 +12,7 @@
 #include "ChiGraphics/Utilities.h"
 #include "ChiGraphics/Lights/PointLight.h"
 #include "ChiGraphics/Lights/AmbientLight.h"
+#include "ChiGraphics/Lights/HittableLight.h"
 #include "core.h"
 
 namespace CHISTUDIO {
@@ -38,8 +39,8 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 	}
 
 	auto lightComponents = GetLightComponents(InScene);
-	BuildHittableData(InScene);
-
+	BuildHittableData(InScene, lightComponents);
+	std::cout << "Size: " << lightComponents.size() << std::endl;
 	FImage outputImage(Settings.ImageSize.x, Settings.ImageSize.y);
 
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) {
@@ -79,12 +80,19 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 std::vector<LightComponent*> FRayTracer::GetLightComponents(const Scene& InScene)
 {
 	auto& root = InScene.GetRootNode();
-	std::vector<LightComponent*> lightComps = root.GetComponentPtrsInChildren<LightComponent>();
-
+	std::vector<LightComponent*> lightComps;
+	for (LightComponent* lightComp : root.GetComponentPtrsInChildren<LightComponent>())
+	{
+		if (lightComp->GetLightType() != ELightType::Hittable)
+		{
+			// Hittable lights are added in the BuildHittableData function
+			lightComps.push_back(lightComp);
+		}
+	}
 	return lightComps;
 }
 
-void FRayTracer::BuildHittableData(const Scene& InScene)
+void FRayTracer::BuildHittableData(const Scene& InScene, std::vector<LightComponent*>& InLights)
 {
 	Hittables.clear();
 
@@ -112,8 +120,23 @@ void FRayTracer::BuildHittableData(const Scene& InScene)
 				hittable->Material_ = Material();
 			}
 
-			Hittables.emplace_back(std::move(hittable));
+			if (auto light = renderingComp->GetNodePtr()->GetComponentPtr<LightComponent>())
+			{
+				if (light->GetLightType() == ELightType::Hittable)
+				{
+					if (light->GetLightPtr()->IsLightEnabled() && hittable->Material_.GetEmittance() > 0.0f)
+					{
+						auto hittableLight = static_cast<HittableLight*>(light->GetLightPtr());
+						hittableLight->SetHittable(hittable);
+						InLights.emplace_back(light);
+					}
+				}
+			}
+
+			Hittables.emplace_back(hittable);
+			std::cout << "Added" << std::endl;
 		}
+
 	}
 
 	for (TracingComponent* tracingComp : tracingComps)
@@ -133,7 +156,20 @@ void FRayTracer::BuildHittableData(const Scene& InScene)
 			hittable->Material_ = Material();
 		}
 
-		Hittables.emplace_back(std::move(hittable));
+		if (auto light = tracingComp->GetNodePtr()->GetComponentPtr<LightComponent>())
+		{
+			if (light->GetLightType() == ELightType::Hittable)
+			{
+				if (light->GetLightPtr()->IsLightEnabled() && hittable->Material_.GetEmittance() > 0.0f)
+				{
+					auto hittableLight = static_cast<HittableLight*>(light->GetLightPtr());
+					hittableLight->SetHittable(hittable);
+					InLights.emplace_back(light);
+				}
+			}
+		}
+
+		Hittables.emplace_back(hittable);
 	}
 }
 
@@ -158,7 +194,7 @@ std::unique_ptr<FTracingCamera> FRayTracer::GetFirstTracingCamera(const Scene& I
 glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights)
 {
 	FHitRecord record;
-    bool objectHit = GetClosestObjectHit(InRay, record);
+    bool objectHit = GetClosestObjectHit(InRay, record, nullptr);
 
 	if (objectHit) 
 	{
@@ -183,13 +219,32 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 
 				FHitRecord shadowRecord;
 				FRay shadowRay = FRay(hitPosition, directionToLight);
-				bool wasShadowObjectHit = GetClosestObjectHit(shadowRay, shadowRecord);
+
+				// When using hittable lights, we pass it in as a mask to ignore
+				std::shared_ptr<IHittableBase> toIgnore = nullptr;
+				if (lightComp->GetLightType() == ELightType::Hittable) 
+				{
+					HittableLight* hittableLight = static_cast<HittableLight*>(lightComp->GetLightPtr());
+					toIgnore = hittableLight->GetHittable();
+				}
+
+				bool wasShadowObjectHit = GetClosestObjectHit(shadowRay, shadowRecord, toIgnore);
 				double distanceToHit = glm::length((double)shadowRecord.Time * directionToLight);
 				if (!wasShadowObjectHit || distanceToHit > distanceToLight)
 				{
 					// No object casting a shadow
 					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight);
-					overallIntensity += illumination * glm::dvec3(lightComp->GetLightPtr()->GetDiffuseColor()) * glm::dot(directionToLight, glm::dvec3(record.Normal));
+					overallIntensity += illumination * lightIntensity * glm::dot(directionToLight, glm::dvec3(record.Normal));
+
+					//std::cout << "Hit Point: " << glm::to_string(hitPosition) << std::endl;
+					//std::cout << "Direction To Light: " << glm::to_string(directionToLight) << std::endl;
+					//std::cout << "Illumination: " << glm::to_string(illumination) << std::endl;
+					//std::cout << "Light Intensity: " << glm::to_string(lightIntensity) << std::endl;
+					//std::cout << "Dot Result: " << (glm::dot(directionToLight, glm::dvec3(record.Normal))) << std::endl;
+				}
+				else
+				{
+					//std::cout << "In Shadow" << std::endl;
 				}
 			}
 		}
@@ -240,40 +295,73 @@ glm::vec3 FRayTracer::GetBackgroundColor(const glm::vec3& InDirection) const
 void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm::dvec3& hitPos, glm::dvec3& directionToLight, glm::dvec3& intensity, double& distanceToLight)
 {
 	auto lightPtr = lightComponent.GetLightPtr();
-	if (lightPtr->GetType() == ELightType::Directional) {
+	if (lightPtr->GetType() == ELightType::Directional) 
+	{
 		// TODO : Implement directional light type
 	}
-	else if (lightPtr->GetType() == ELightType::Point) {
+	else if (lightPtr->GetType() == ELightType::Point) 
+	{
 		auto pointLightPtr = static_cast<PointLight*>(lightPtr);
-		glm::dvec3 pointLightPos = lightComponent.GetNodePtr()->GetTransform().GetPosition();
+		glm::dvec3 pointLightPos = lightComponent.GetNodePtr()->GetTransform().GetWorldPosition();
 		glm::dvec3 surfaceToLight = pointLightPos - hitPos;
 		distanceToLight = glm::length(surfaceToLight);
 		directionToLight = glm::normalize(surfaceToLight);
+		intensity = pointLightPtr->GetDiffuseColor();
 	}
-	else {
+	else if (lightPtr->GetType() == ELightType::Hittable) 
+	{
+		auto hittableLightPtr = static_cast<HittableLight*>(lightPtr);
+		glm::vec3 outPosition;
+		glm::vec3 outNormal;
+		glm::vec3 transformedHitPosition = hittableLightPtr->GetHittable()->InverseModelMatrix * glm::vec4(hitPos, 1.0f);
+		float outProbability = hittableLightPtr->GetHittable()->Sample(transformedHitPosition, outPosition, outNormal);
+
+		// Transform normal and pos back to world space
+		outNormal = glm::normalize(glm::vec3(hittableLightPtr->GetHittable()->TransposeInverseModelMatrix * glm::vec4(outNormal, 0.0f)));
+
+		//std::cout << "Out Pos (Pre Transform): " << glm::to_string(outPosition) << std::endl;
+		outPosition = glm::vec3(hittableLightPtr->GetHittable()->ModelMatrix * glm::vec4(outPosition, 1.0f));
+		//std::cout << "Out Pos: " << glm::to_string(outPosition) << std::endl;
+
+		glm::vec3 displacement = (glm::dvec3)outPosition - hitPos;
+		distanceToLight = glm::length(displacement);
+		float cosine = glm::max(glm::dot(-displacement, outNormal), 0.0f) / distanceToLight;
+		float surfaceArea = glm::max(cosine, 0.0f) / (distanceToLight * distanceToLight);
+
+		intensity = (glm::vec3)hittableLightPtr->GetHittable()->Material_.GetAlbedo() * hittableLightPtr->GetHittable()->Material_.GetEmittance() * surfaceArea / outProbability;
+		directionToLight = displacement / (float)distanceToLight;
+	}
+	else 
+	{
 		throw std::runtime_error(
 			"Unrecognized light type when computing "
 			"illumination");
 	}
 }
 
-bool FRayTracer::GetClosestObjectHit(const FRay& InRay, FHitRecord& InRecord) const
+bool FRayTracer::GetClosestObjectHit(const FRay& InRay, FHitRecord& InRecord, std::shared_ptr<IHittableBase> InHittableToIgnore) const
 {
 	bool objectHit = false;
 	for (int i = 0; i < Hittables.size(); i++)
 	{
-		// Cast a ray in object space for this hittable
-		FRay objectSpaceRay = FRay(InRay.GetOrigin(), InRay.GetDirection());
-		objectSpaceRay.ApplyTransform(Hittables[i]->InverseModelMatrix);
-		bool bWasHitRecorded = Hittables[i]->Intersect(objectSpaceRay, .00001f, InRecord);
+		if (Hittables[i] != InHittableToIgnore)
+		{
+			
+			// Cast a ray in object space for this hittable
+			FRay objectSpaceRay = FRay(InRay.GetOrigin(), InRay.GetDirection());
+			objectSpaceRay.ApplyTransform(Hittables[i]->InverseModelMatrix);
+			bool bWasHitRecorded = Hittables[i]->Intersect(objectSpaceRay, .00001f, InRecord);
 
-		if (bWasHitRecorded) {
-			// Transform normal back to world space
-			objectHit = true;
-			InRecord.Normal = glm::normalize(glm::vec3(Hittables[i]->TransposeInverseModelMatrix * glm::vec4(InRecord.Normal, 0.0f)));
-			InRecord.Material_ = Hittables[i]->Material_;
+			if (bWasHitRecorded) {
+				// Transform normal back to world space
+				objectHit = true;
+				InRecord.Normal = glm::normalize(glm::vec3(Hittables[i]->TransposeInverseModelMatrix * glm::vec4(InRecord.Normal, 0.0f)));
+				InRecord.Material_ = Hittables[i]->Material_;
+			}
 		}
 	}
+
+		
 	return objectHit;
 }
 

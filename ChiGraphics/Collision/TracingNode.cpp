@@ -1,6 +1,6 @@
 #include "TracingNode.h"
 #include "ChiGraphics/Components/LightComponent.h"
-#include "ChiGraphics/Lights/PointLight.h"
+#include "ChiGraphics/Lights/HittableLight.h"
 #include "ChiGraphics/Meshes/PrimitiveFactory.h"
 #include "ChiGraphics/Components/RenderingComponent.h"
 #include "ChiGraphics/Components/TracingComponent.h"
@@ -20,6 +20,9 @@ TracingNode::TracingNode(std::string InName)
 	CreateComponent<MaterialComponent>(material);
 
 	auto tracingComponent = CreateComponent<TracingComponent>(std::move(sphereHittable));
+
+	auto hittableLight = std::make_shared<HittableLight>();
+	auto lightComponent = CreateComponent<LightComponent>(hittableLight);
 
 	// Construct debug visuals
 	std::shared_ptr<SimpleShader> shader = std::make_shared<SimpleShader>();

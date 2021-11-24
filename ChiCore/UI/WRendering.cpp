@@ -26,7 +26,8 @@ void WRendering::Render(Application& InApplication)
     if (ImGui::Button("Render Scene"))
     {
         FRayTraceSettings settings;
-        settings.BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
+        //settings.BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
+        settings.BackgroundColor = glm::vec3(0.0f);
         settings.bShadowsEnabled = false;
         settings.ImageSize = glm::ivec2(RenderWidth, RenderHeight);
         settings.MaxBounces = MaxBounces;
@@ -62,15 +63,17 @@ void WRendering::Render(Application& InApplication)
         ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)DisplayTexture->Width, (float)DisplayTexture->Height }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 });
     }
 
-    if (ImGui::Button("Show HDRI"))
+    if (ImGui::Button("Load HDRI"))
     {
-        HDRITexture = make_unique<FTexture>();
+        std::string hdriFileName = UILibrary::PickFileName("Supported Files (*.hdr)\0*.hdr\0");
+        if (hdriFileName.size() > 0)
+        {
+            HDRITexture = make_unique<FTexture>();
+            HDRI = FImage::LoadPNG(hdriFileName, false);
 
-        HDRI = FImage::LoadPNG(GetAssetDir() + "hdr/ballroom_4k.hdr", false);
-        //auto hdr = FImage::LoadPNG(GetAssetDir() + "left.png", false);
-
-        HDRITexture->Reserve(GL_RGB, HDRI->GetWidth(), HDRI->GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE);
-        HDRITexture->UpdateImage(*HDRI);
+            HDRITexture->Reserve(GL_RGB, HDRI->GetWidth(), HDRI->GetHeight(), GL_RGBA, GL_UNSIGNED_BYTE);
+            HDRITexture->UpdateImage(*HDRI);
+        }
     }
 
     if (HDRITexture)

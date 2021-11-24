@@ -8,12 +8,13 @@ enum class ELightType {
     Ambient,
     Point,
     Directional,
+    Hittable
 };
 
 class LightBase {
 public:
     LightBase()
-        : DiffuseColor(0.8f, 0.8f, 0.8f), SpecularColor(1.0f, 1.0f, 1.0f) {
+        : DiffuseColor(0.8f, 0.8f, 0.8f), SpecularColor(1.0f, 1.0f, 1.0f), bIsLightEnabled(true) {
     }
 
     virtual ~LightBase() {
@@ -37,9 +38,21 @@ public:
 
     virtual ELightType GetType() const = 0;
 
+    bool IsLightEnabled() const
+    {
+        return bIsLightEnabled;
+    }
+
+    void SetLightEnabled(bool InIsLightEnabled)
+    {
+        bIsLightEnabled = InIsLightEnabled;
+    }
+
 private:
     glm::vec3 DiffuseColor;
     glm::vec3 SpecularColor;
+
+    bool bIsLightEnabled;
 };
 
 }

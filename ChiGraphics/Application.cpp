@@ -14,6 +14,7 @@
 #include "ChiGraphics/Lights/AmbientLight.h"
 #include "ChiGraphics/Lights/PointLight.h"
 #include "ChiGraphics/Lights/LightNode.h"
+#include "ChiGraphics/Lights/HittableLight.h"
 #include "ChiGraphics/Lights/AmbientLightNode.h"
 #include "ChiGraphics/Shaders/PhongShader.h"
 #include "ChiGraphics/Shaders/PointShader.h"
@@ -191,7 +192,8 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType)
 	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
 	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
 	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
-
+	auto hittableLight = std::make_shared<HittableLight>();
+	cubeNode->CreateComponent<LightComponent>(hittableLight);
 	cubeNode->CreateComponent<MaterialComponent>(material);
 	SceneNode* ref = cubeNode.get();
 
@@ -245,8 +247,11 @@ SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 	meshNode->CreateComponent<RenderingComponent>(mesh);
 	meshNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
 	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
-
 	meshNode->CreateComponent<MaterialComponent>(material);
+
+	auto hittableLight = std::make_shared<HittableLight>();
+	meshNode->CreateComponent<LightComponent>(hittableLight);
+
 	SceneNode* ref = meshNode.get();
 
 	Scene_->GetRootNode().AddChild(std::move(meshNode));

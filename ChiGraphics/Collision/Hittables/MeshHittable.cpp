@@ -28,4 +28,9 @@ bool MeshHittable::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord
     return Octree_->Intersect(InRay, Tmin, InRecord);
 }
 
+float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
+{
+    return 0.0f;
+}
+
 }

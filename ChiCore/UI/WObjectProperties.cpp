@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "core.h"
 #include "ChiGraphics/Cameras/TracingCameraNode.h"
+#include "ChiGraphics/Lights/HittableLight.h"
 
 namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
@@ -113,36 +114,41 @@ namespace CHISTUDIO {
 		{
 			ELightType lightType = lightComponent->GetLightType();
 
-			glm::vec3 diffuseColor = lightComponent->GetLightPtr()->GetDiffuseColor();
-			glm::vec3 specularColor = lightComponent->GetLightPtr()->GetSpecularColor();
-			ImGui::Text("Diffuse Color");
-			ImGui::SetNextItemWidth(panelSize.x);
-			if (ImGui::ColorEdit3("##Diffuse Color", glm::value_ptr(diffuseColor)))
+			bool isLightEnabled = lightComponent->GetLightPtr()->IsLightEnabled();
+			if (ImGui::Checkbox("Enabled", &isLightEnabled))
 			{
-				lightComponent->GetLightPtr()->SetDiffuseColor(diffuseColor);
-			}
-
-			if (lightType != ELightType::Ambient)
-			{
-				ImGui::Text("Specular Color");
-				ImGui::SetNextItemWidth(panelSize.x);
-				if (ImGui::ColorEdit3("##Specular Color", glm::value_ptr(specularColor)))
-				{
-					lightComponent->GetLightPtr()->SetSpecularColor(specularColor);
-				}
-				
+				lightComponent->GetLightPtr()->SetLightEnabled(isLightEnabled);
 			}
 
 			if (lightType == ELightType::Ambient)
 			{
+				glm::vec3 diffuseColor = lightComponent->GetLightPtr()->GetDiffuseColor();
+				glm::vec3 specularColor = lightComponent->GetLightPtr()->GetSpecularColor();
+				ImGui::Text("Diffuse Color");
+				ImGui::SetNextItemWidth(panelSize.x);
+				if (ImGui::ColorEdit3("##Diffuse Color", glm::value_ptr(diffuseColor)))
+				{
+					lightComponent->GetLightPtr()->SetDiffuseColor(diffuseColor);
+				}
 			}
 			else if (lightType == ELightType::Point)
 			{
-
+				glm::vec3 diffuseColor = lightComponent->GetLightPtr()->GetDiffuseColor();
+				glm::vec3 specularColor = lightComponent->GetLightPtr()->GetSpecularColor();
+				ImGui::Text("Diffuse Color");
+				ImGui::SetNextItemWidth(panelSize.x);
+				if (ImGui::ColorEdit3("##Diffuse Color", glm::value_ptr(diffuseColor)))
+				{
+					lightComponent->GetLightPtr()->SetDiffuseColor(diffuseColor);
+				}
 			}
 			else if (lightType == ELightType::Directional)
 			{
 
+			}
+			else if (lightType == ELightType::Hittable)
+			{
+				
 			}
 			ImGui::Separator();
 
@@ -220,7 +226,7 @@ namespace CHISTUDIO {
 				mat.SetMetallic(metallic);
 			}
 			float emittance = mat.GetEmittance();
-			if (ImGui::SliderFloat("Emittance", &emittance, 0.0f, 1.0f))
+			if (ImGui::SliderFloat("Emittance", &emittance, 0.0f, 50.0f))
 			{
 				mat.SetEmittance(emittance);
 			}
