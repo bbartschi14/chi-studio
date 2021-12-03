@@ -40,7 +40,7 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	auto lightComponents = GetLightComponents(InScene);
 	BuildHittableData(InScene, lightComponents);
-	std::cout << "Size: " << lightComponents.size() << std::endl;
+	//std::cout << "Size: " << lightComponents.size() << std::endl;
 	FImage outputImage(Settings.ImageSize.x, Settings.ImageSize.y);
 
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) {
@@ -134,7 +134,7 @@ void FRayTracer::BuildHittableData(const Scene& InScene, std::vector<LightCompon
 			}
 
 			Hittables.emplace_back(hittable);
-			std::cout << "Added" << std::endl;
+			//std::cout << "Added" << std::endl;
 		}
 
 	}
@@ -264,15 +264,14 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 
 				if (glm::isnan(indirectIllumination.x))
 				{
-					//std::cout << "NAN" << std::endl;
 					return overallIntensity;
 				}
 				else
 				{
 					overallIntensity += indirectIllumination;
 				}
-				debugIndirectCount++;
-				debugAverageIndirect += indirectIllumination;
+				//debugIndirectCount++;
+				//debugAverageIndirect += indirectIllumination;
 			}
 			
 		}

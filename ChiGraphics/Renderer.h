@@ -5,11 +5,19 @@
 #include "ChiGraphics/GL_Wrapper/FrameBuffer.h"
 #include "ChiGraphics/GL_Wrapper/RenderBuffer.h"
 #include <unordered_map>
+#include "external/src/ImGuizmo/ImGuizmo.h"
 
 namespace CHISTUDIO {
 
 class Scene;
 class Application;
+enum class CustomImGuizmoMode
+{
+    HIDDEN,
+    TRANSLATE,
+    ROTATE,
+    SCALE
+};
 
 class Renderer 
 {
@@ -50,6 +58,13 @@ private:
     uint32_t CurrentWidth;
     uint32_t CurrentHeight;
 
+    CustomImGuizmoMode GizmoOperationType;
+    ImGuizmo::MODE GizmoSpace;
+
+    // Gizmo helpers
+    glm::vec3 StartingScaleOrigin;
+    std::vector<glm::vec3> PreScaleVertexPositions;
+    bool bIsScaling;
 };
 
 }

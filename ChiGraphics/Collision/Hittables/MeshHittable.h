@@ -12,7 +12,7 @@ class MeshHittable: public IHittableBase
 {
 
 public:
-    MeshHittable(const FPositionArray& positions, const FNormalArray& normals, const FIndexArray& indices);
+    MeshHittable(const FPositionArray& positions, const FNormalArray& normals, const FIndexArray& indices, bool InUseOctree = true);
 
     bool Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord) const override;
     float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const override;
@@ -24,6 +24,7 @@ public:
 private:
     std::vector<TriangleHittable> Triangles;
     std::unique_ptr<Octree> Octree_;
+    bool bUseOctree;
 };
 
 }

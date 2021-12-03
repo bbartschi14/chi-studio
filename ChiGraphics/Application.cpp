@@ -20,6 +20,8 @@
 #include "ChiGraphics/Shaders/PointShader.h"
 #include "ChiGraphics/Meshes/MeshLoader.h"
 #include "ChiGraphics/Collision/TracingNode.h"
+#include "external/src/ImGuizmo/ImGuizmo.h"
+#include "ChiGraphics/Collision/Hittables/MeshHittable.h"
 
 namespace CHISTUDIO {
 
@@ -73,11 +75,7 @@ void Application::SelectNode(SceneNode* nodeToSelect, bool addToSelection)
 {
 	if (!addToSelection || nodeToSelect == nullptr)
 	{
-		for (int i = 0; i < SelectedNodes.size(); i++)
-		{
-			SelectedNodes[i]->SetSelected(false);
-		}
-		SelectedNodes.clear();
+		DeselectAllNodes();
 
 		SetSceneMode(ESceneMode::Object);
 	}
@@ -93,6 +91,19 @@ void Application::SelectNode(SceneNode* nodeToSelect, bool addToSelection)
 			SetSceneMode(ESceneMode::Object);
 		}
 	}
+}
+
+void Application::DeselectNode(SceneNode* nodeToDeselect)
+{
+}
+
+void Application::DeselectAllNodes()
+{
+	for (int i = 0; i < SelectedNodes.size(); i++)
+	{
+		SelectedNodes[i]->SetSelected(false);
+	}
+	SelectedNodes.clear();
 }
 
 void Application::SetSceneMode(ESceneMode InSceneMode)
@@ -179,6 +190,51 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 		FRay mouseRay = Scene_->GetActiveCameraPtr()->GenerateRay(InMousePosition, SceneViewSize);
 		mouseRay.ApplyTransform(glm::inverse(SelectedNodes[0]->GetTransform().GetLocalToWorldMatrix()));
 		SelectedNodes[0]->GetComponentPtr<RenderingComponent>()->GetVertexObjectPtr()->HandleClick(mouseRay, this);
+	}
+	else if (CurrentSceneMode == ESceneMode::Object)
+	{
+		// Try selecting with mouse ray
+		auto& root = Scene_->GetRootNode();
+		std::vector<RenderingComponent*> renderingComps = root.GetComponentPtrsInChildren<RenderingComponent>();
+
+		FRay mouseRay = Scene_->GetActiveCameraPtr()->GenerateRay(InMousePosition, SceneViewSize);
+		FHitRecord record;
+		bool objectHit = false;
+		int indexHit = 0;
+
+		for (size_t i = 0; i < renderingComps.size(); i++)
+		{
+			RenderingComponent* renderingComp = renderingComps[i];
+			if (!renderingComp->bIsDebugRender)
+			{
+				VertexObject* vertexObject = renderingComp->GetVertexObjectPtr();
+				std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices(), false);
+
+				hittable->ModelMatrix = renderingComp->GetNodePtr()->GetTransform().GetLocalToWorldMatrix();
+				hittable->InverseModelMatrix = glm::inverse(hittable->ModelMatrix);
+				hittable->TransposeInverseModelMatrix = glm::transpose(hittable->InverseModelMatrix);
+
+				// Cast a ray in object space for this hittable
+				FRay objectSpaceRay = FRay(mouseRay.GetOrigin(), mouseRay.GetDirection());
+				objectSpaceRay.ApplyTransform(hittable->InverseModelMatrix);
+				bool bWasHitRecorded = hittable->Intersect(objectSpaceRay, .00001f, record);
+
+				if (bWasHitRecorded) 
+				{
+					objectHit = true;
+					indexHit = i;
+				}
+			}
+		}
+
+		if (objectHit)
+		{
+			SelectNode(renderingComps[indexHit]->GetNodePtr(), false);
+		}
+		else
+		{
+			DeselectAllNodes();
+		}
 	}
 }
 
@@ -368,6 +424,8 @@ void Application::UpdateGUI()
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+	ImGuizmo::BeginFrame();
+
 	DrawGUI();
 }
 

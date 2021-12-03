@@ -4,7 +4,7 @@
 #include "ChiGraphics/Meshes/VertexObject.h"
 
 namespace CHISTUDIO {
-    MeshHittable::MeshHittable(const FPositionArray& positions, const FNormalArray& normals, const FIndexArray& indices)
+    MeshHittable::MeshHittable(const FPositionArray& positions, const FNormalArray& normals, const FIndexArray& indices, bool InUseOctree)
 {
     size_t num_vertices = indices.size();
     if (num_vertices % 3 != 0 || normals.size() != positions.size())
@@ -17,15 +17,30 @@ namespace CHISTUDIO {
             normals.at(indices.at(i + 1)), normals.at(indices.at(i + 2)));
     }
     // Let mesh data destruct.
-
+    bUseOctree = InUseOctree;
     // Build Octree.
-    Octree_ = make_unique<Octree>();
-    Octree_->Build(*this);
+    if (bUseOctree)
+    {
+        Octree_ = make_unique<Octree>();
+        Octree_->Build(*this);
+    }
 }
 
 bool MeshHittable::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord) const
 {
-    return Octree_->Intersect(InRay, Tmin, InRecord);
+    if (bUseOctree)
+    {
+        return Octree_->Intersect(InRay, Tmin, InRecord);
+    }
+    else
+    {
+        bool bTriangleHit = false;
+        for (TriangleHittable tri : Triangles)
+        {
+            bTriangleHit |= tri.Intersect(InRay, Tmin, InRecord);
+        }
+        return bTriangleHit;
+    }
 }
 
 float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const

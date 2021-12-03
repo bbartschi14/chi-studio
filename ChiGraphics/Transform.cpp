@@ -49,7 +49,9 @@ void Transform::SetMatrix4x4(const glm::mat4& InMatrix)
 {
 	glm::vec3 skew;
 	glm::vec4 perspective;
-	glm::decompose(InMatrix, Scale, GetRotation(), Position, skew, perspective);
+	glm::quat Rotation;
+	glm::decompose(InMatrix, Scale, Rotation, Position, skew, perspective);
+	SetRotation(Rotation);
 	// Won't use skew or perspective.
 	UpdateLocalTransformMatrix();
 }

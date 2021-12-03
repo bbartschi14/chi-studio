@@ -54,12 +54,12 @@ void OutlineShader::AssociateVertexArray(const VertexArray& InVertexArray) const
     if (!InVertexArray.HasPositionBuffer()) {
         throw std::runtime_error("Phong shader requires vertex positions!");
     }
-    if (!InVertexArray.HasNormalBuffer()) {
-        throw std::runtime_error("Phong shader requires vertex normals!");
-    }
+    //if (!InVertexArray.HasNormalBuffer()) {
+    //    throw std::runtime_error("Phong shader requires vertex normals!");
+    //}
 
     InVertexArray.LinkPositionBuffer(GetAttributeLocation("vertex_position"));
-    InVertexArray.LinkNormalBuffer(GetAttributeLocation("vertex_normal"));
+    //InVertexArray.LinkNormalBuffer(GetAttributeLocation("vertex_normal"));
 }
 
 

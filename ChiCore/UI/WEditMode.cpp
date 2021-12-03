@@ -246,14 +246,14 @@ namespace CHISTUDIO {
 				glm::vec3 initialPosition = displayPosition;
 				if (UILibrary::DrawVector3Control("Position", displayPosition, 0.1f))
 				{
-					MoveSelectedPrims(vertexObject, displayPosition - initialPosition);
+					vertexObject->MoveSelectedPrims(displayPosition - initialPosition);
 				}
 
 				bool wasRotationDeactivated = false;
 				glm::vec3 previousRotationValue = RotationOperationValue;
 				if (UILibrary::DrawVector3ControlWithStates("Rotation", RotationOperationValue, wasRotationDeactivated, 1.f))
 				{
-					RotateSelectedPrims(vertexObject, RotationOperationValue - previousRotationValue);
+					vertexObject->RotateSelectedPrims(RotationOperationValue - previousRotationValue);
 				}
 				if (wasRotationDeactivated)
 				{
@@ -273,7 +273,7 @@ namespace CHISTUDIO {
 						}
 						StartingScaleOrigin = vertexObject->GetSelectedPrimAveragePosition();
 					}
-					ScaleSelectedPrims(vertexObject, ScaleOperationValue);
+					vertexObject->ScaleSelectedPrims(ScaleOperationValue, StartingScaleOrigin, PreScaleVertexPosition);
 				}
 				if (wasScaleDeactivated)
 				{
@@ -292,27 +292,27 @@ namespace CHISTUDIO {
 
 			if (ImGui::Button("X+", buttonSize))
 			{
-				MoveSelectedPrims(vertexObject, glm::vec3(PrimNudgeAmount, 0.0f, 0.0f));
+				vertexObject->MoveSelectedPrims(glm::vec3(PrimNudgeAmount, 0.0f, 0.0f));
 			} ImGui::SameLine();
 			if (ImGui::Button("X-", buttonSize))
 			{
-				MoveSelectedPrims(vertexObject, glm::vec3(-PrimNudgeAmount, 0.0f, 0.0f));
+				vertexObject->MoveSelectedPrims(glm::vec3(-PrimNudgeAmount, 0.0f, 0.0f));
 			} ImGui::SameLine();
 			if (ImGui::Button("Y+", buttonSize))
 			{
-				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, PrimNudgeAmount, 0.0f));
+				vertexObject->MoveSelectedPrims(glm::vec3(0.0f, PrimNudgeAmount, 0.0f));
 			} ImGui::SameLine();
 			if (ImGui::Button("Y-", buttonSize))
 			{
-				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, -PrimNudgeAmount, 0.0f));
+				vertexObject->MoveSelectedPrims(glm::vec3(0.0f, -PrimNudgeAmount, 0.0f));
 			} ImGui::SameLine();
 			if (ImGui::Button("Z+", buttonSize))
 			{
-				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, 0.0f, PrimNudgeAmount));
+				vertexObject->MoveSelectedPrims(glm::vec3(0.0f, 0.0f, PrimNudgeAmount));
 			} ImGui::SameLine();
 			if (ImGui::Button("Z-", buttonSize))
 			{
-				MoveSelectedPrims(vertexObject, glm::vec3(0.0f, 0.0f, -PrimNudgeAmount));
+				vertexObject->MoveSelectedPrims(glm::vec3(0.0f, 0.0f, -PrimNudgeAmount));
 			}
 
 			if (ImGui::Button("Delete"))
@@ -363,66 +363,6 @@ namespace CHISTUDIO {
 				}
 			}
 		}
-	}
-
-	void WEditMode::MoveSelectedPrims(VertexObject* InObject, glm::vec3 InDistance)
-	{
-		std::set<FVertex*> verticesToMove = InObject->GetAggregateSelectedVertices();
-		
-		for (FVertex* vertex : verticesToMove)
-		{
-			vertex->SetPosition(vertex->GetPosition() + InDistance);
-		}
-
-		InObject->MarkDirty();
-	}
-
-	void WEditMode::RotateSelectedPrims(VertexObject* InObject, glm::vec3 InRotation)
-	{
-		std::set<FVertex*> verticesToRotate = InObject->GetAggregateSelectedVertices();
-		glm::vec3 rotationOrigin = InObject->GetSelectedPrimAveragePosition();
-
-		glm::mat4 newMatrix(1.f);
-
-		// Order: scale, rotate, translate
-		newMatrix = glm::scale(glm::mat4(1.f), glm::vec3(1.0f)) * newMatrix;
-		newMatrix = glm::mat4_cast(glm::quat(glm::radians(InRotation))) * newMatrix;
-		newMatrix = glm::translate(glm::mat4(1.f), rotationOrigin) * newMatrix;
-
-		for (FVertex* vertex : verticesToRotate)
-		{
-			glm::vec3 localPositionToRotationOrigin = vertex->GetPosition() - rotationOrigin;
-			glm::vec3 newPosition = newMatrix * glm::vec4(localPositionToRotationOrigin, 1.0f);
-			vertex->SetPosition(newPosition);
-		}
-
-		InObject->MarkDirty();
-		//glm::quat rotationMatrix = glm::quat(cosf(InAngle / 2), InAxis.x * sinf(InAngle / 2),
-		//	InAxis.y * sinf(InAngle / 2), InAxis.z * sinf(InAngle / 2))
-	}
-
-	void WEditMode::ScaleSelectedPrims(VertexObject* InObject, glm::vec3 InScale)
-	{
-		std::set<FVertex*> verticesToScale = InObject->GetAggregateSelectedVertices();
-		glm::vec3 scaleOrigin = InObject->GetSelectedPrimAveragePosition();
-
-		glm::mat4 deltaMatrix(1.f);
-
-		// Order: scale, rotate, translate
-		deltaMatrix = glm::scale(glm::mat4(1.f), InScale) * deltaMatrix;
-		deltaMatrix = glm::mat4_cast(glm::quat(glm::vec3(0.0f))) * deltaMatrix;
-		deltaMatrix = glm::translate(glm::mat4(1.f), StartingScaleOrigin) * deltaMatrix;
-
-		int count = 0;
-		for (FVertex* vertex : verticesToScale)
-		{
-			glm::vec3 localPositionToScaleOrigin = PreScaleVertexPosition[count] - StartingScaleOrigin;
-			glm::vec3 newPosition = deltaMatrix * glm::vec4(localPositionToScaleOrigin, 1.0f);
-			vertex->SetPosition(newPosition);
-			count++;
-		}
-
-		InObject->MarkDirty();
 	}
 
 }

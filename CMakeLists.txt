@@ -90,6 +90,11 @@ list(APPEND external_srcs
 
 include_directories(${imgui_dir} ${imgui_dir}/backends)
 
+#ImGuizmo
+set(imguizmo_dir ${external_source_dir}/ImGuizmo)
+list(APPEND external_srcs
+    ${imguizmo_dir}/ImGuizmo.cpp)
+
 #fmt
 set(fmt_dir ${external_source_dir}/fmt)
 list(APPEND external_srcs
@@ -145,6 +150,8 @@ file(GLOB header_files
     ${core_dir}/*/*.h
     ${imgui_dir}/*.hpp
     ${imgui_dir}/*/*.hpp
+    ${imguizmo_dir}/*.h
+    ${imguizmo_dir}/*/*.h
 )
 
 set(all_files ${core_source_files};${external_srcs};${graphics_srcs};${header_files})

@@ -328,6 +328,14 @@ public:
     // Remove all primitives marked for deletion
     void CleanupDeletedPrimitives();
 
+    void MoveSelectedPrims(glm::vec3 InDistance);
+
+    // Rotates around average selection position and local object axes
+    void RotateSelectedPrims(glm::vec3 InRotation);
+
+    // Scales around average selection position and local object axes
+    void ScaleSelectedPrims(glm::vec3 InScale, glm::vec3 InStartingScaleOrigin, std::vector<glm::vec3> InPreScaleVertexPositions);
+
     void Render();
 
     bool IsDebugNormals() const {

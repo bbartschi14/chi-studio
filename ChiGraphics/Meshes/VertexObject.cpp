@@ -185,10 +185,10 @@ namespace CHISTUDIO {
 		FEdge* edge4 = CreateEdge(halfEdge4, halfEdge8);
 
 		// Vertices
-		FVertex* vertex1 = CreateVertex(glm::vec3(1.0f, 0.0f, 1.0f), halfEdge1);
-		FVertex* vertex2 = CreateVertex(glm::vec3(1.0f, 0.0f, -1.0f), halfEdge2);
-		FVertex* vertex3 = CreateVertex(glm::vec3(-1.0f, 0.0f, -1.0f), halfEdge3);
-		FVertex* vertex4 = CreateVertex(glm::vec3(-1.0f, 0.0f, 1.0f), halfEdge4);
+		FVertex* vertex4 = CreateVertex(glm::vec3(1.0f, 0.0f, 1.0f), halfEdge4);
+		FVertex* vertex3 = CreateVertex(glm::vec3(1.0f, 0.0f, -1.0f), halfEdge3);
+		FVertex* vertex2 = CreateVertex(glm::vec3(-1.0f, 0.0f, -1.0f), halfEdge2);
+		FVertex* vertex1 = CreateVertex(glm::vec3(-1.0f, 0.0f, 1.0f), halfEdge1);
 
 		// Finish Face
 		planeFace->SetHalfEdgeOnFace(halfEdge1);
@@ -466,7 +466,7 @@ namespace CHISTUDIO {
 			}
 			if (currentHalfEdge->GetOwningFace() == nullptr)
 			{
-				std::cout << baseMessage << baseHalfEdgeMessage << "Null owning face. Is this a mesh boundary half edge?" << std::endl;
+				//std::cout << baseMessage << baseHalfEdgeMessage << "Null owning face. Is this a mesh boundary half edge?" << std::endl;
 			}
 			if (currentHalfEdge->GetOwningEdge() == nullptr)
 			{
@@ -765,6 +765,40 @@ namespace CHISTUDIO {
 		MarkDirty();
 	}
 
+	void VertexObject::MoveSelectedPrims(glm::vec3 InDistance)
+	{
+		std::set<FVertex*> verticesToMove = GetAggregateSelectedVertices();
+
+		for (FVertex* vertex : verticesToMove)
+		{
+			vertex->SetPosition(vertex->GetPosition() + InDistance);
+		}
+
+		MarkDirty();
+	}
+
+	void VertexObject::RotateSelectedPrims(glm::vec3 InRotation)
+	{
+		std::set<FVertex*> verticesToRotate = GetAggregateSelectedVertices();
+		glm::vec3 rotationOrigin = GetSelectedPrimAveragePosition();
+
+		glm::mat4 newMatrix(1.f);
+
+		// Order: scale, rotate, translate
+		newMatrix = glm::scale(glm::mat4(1.f), glm::vec3(1.0f)) * newMatrix;
+		newMatrix = glm::mat4_cast(glm::quat(glm::radians(InRotation))) * newMatrix;
+		newMatrix = glm::translate(glm::mat4(1.f), rotationOrigin) * newMatrix;
+
+		for (FVertex* vertex : verticesToRotate)
+		{
+			glm::vec3 localPositionToRotationOrigin = vertex->GetPosition() - rotationOrigin;
+			glm::vec3 newPosition = newMatrix * glm::vec4(localPositionToRotationOrigin, 1.0f);
+			vertex->SetPosition(newPosition);
+		}
+
+		MarkDirty();
+	}
+
 	void VertexObject::DeleteSelectedVertices()
 	{
 		std::set<FVertex*> verticesToDelete = GetAggregateSelectedVertices();
@@ -864,6 +898,30 @@ namespace CHISTUDIO {
 			nextHalfEdge = nextHalfEdge->GetNextHalfEdge();
 		} while (startingHalfEdge != nextHalfEdge);
 		
+	}
+
+	void VertexObject::ScaleSelectedPrims(glm::vec3 InScale, glm::vec3 InStartingScaleOrigin, std::vector<glm::vec3> InPreScaleVertexPositions)
+	{
+		std::set<FVertex*> verticesToScale = GetAggregateSelectedVertices();
+		glm::vec3 scaleOrigin = GetSelectedPrimAveragePosition();
+
+		glm::mat4 deltaMatrix(1.f);
+
+		// Order: scale, rotate, translate
+		deltaMatrix = glm::scale(glm::mat4(1.f), InScale) * deltaMatrix;
+		deltaMatrix = glm::mat4_cast(glm::quat(glm::vec3(0.0f))) * deltaMatrix;
+		deltaMatrix = glm::translate(glm::mat4(1.f), InStartingScaleOrigin) * deltaMatrix;
+
+		int count = 0;
+		for (FVertex* vertex : verticesToScale)
+		{
+			glm::vec3 localPositionToScaleOrigin = InPreScaleVertexPositions[count] - InStartingScaleOrigin;
+			glm::vec3 newPosition = deltaMatrix * glm::vec4(localPositionToScaleOrigin, 1.0f);
+			vertex->SetPosition(newPosition);
+			count++;
+		}
+
+		MarkDirty();
 	}
 
 	void VertexObject::Render()

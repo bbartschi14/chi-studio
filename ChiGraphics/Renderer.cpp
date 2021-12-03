@@ -14,12 +14,12 @@
 #include <glm/gtx/string_cast.hpp>
 #include "ChiGraphics/Meshes/PrimitiveFactory.h"
 #include "ChiGraphics/InputManager.h"
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace CHISTUDIO {
 	Renderer::Renderer(Application& InApplication) : Application_(InApplication)
 	{
-		UNUSED(Application_);
-
 		OutlineShader_ = std::make_shared<OutlineShader>();
 		PointShader_ = std::make_shared<PointShader>();
 		EdgeShader_ = std::make_shared<EdgeShader>();
@@ -28,6 +28,11 @@ namespace CHISTUDIO {
 		TextureBlurShader_ = std::make_shared<TextureBlurShader>();
 
 		SceneRenderQuad = PrimitiveFactory::CreateQuad();
+
+		GizmoOperationType = CustomImGuizmoMode::HIDDEN;
+		GizmoSpace = (ImGuizmo::MODE)0;
+
+		bIsScaling = false;
 	}
 
 	void Renderer::Render(const Scene& InScene)
@@ -36,6 +41,9 @@ namespace CHISTUDIO {
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 		ImGui::Begin("Scene");
+
+		std::vector<SceneNode*> selection = Application_.GetSelectedNodes();
+
 		ImGui::BeginChild("ViewportArea");
 
 		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
@@ -52,8 +60,124 @@ namespace CHISTUDIO {
 		// Add rendered texture to ImGUI scene window
 		uint64_t textureID = SceneOutputTexture->GetHandle();
 		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)CurrentWidth, (float)CurrentHeight }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
-		ImGui::EndChild();
 
+		// ImGuizmo
+		{
+			bool bIsObjectModeGizmoActive = selection.size() > 0 && GizmoOperationType != CustomImGuizmoMode::HIDDEN && Application_.GetSceneMode() == ESceneMode::Object;
+			bool bIsEditModeGizmoActive = false;
+			RenderingComponent* renderingComponent;
+			if (selection.size() == 1 && GizmoOperationType != CustomImGuizmoMode::HIDDEN && Application_.GetSceneMode() == ESceneMode::Edit)
+			{
+				renderingComponent = selection[0]->GetComponentPtr<RenderingComponent>();
+				if (renderingComponent)
+				{
+					bIsEditModeGizmoActive = renderingComponent->GetVertexObjectPtr()->GetNumberOfPrimsSelected() > 0;
+				}
+			}
+
+			if (bIsObjectModeGizmoActive || bIsEditModeGizmoActive)
+			{
+				ImGuizmo::SetOrthographic(false);
+				ImGuizmo::Enable(true);
+				ImGuizmo::SetDrawlist();
+				float windowWidth = (float)ImGui::GetWindowWidth();
+				float windowHeight = (float)ImGui::GetWindowHeight();
+				float windowPosX = (float)ImGui::GetWindowPos().x;
+				float windowPosY = (float)ImGui::GetWindowPos().y;
+				ImGuizmo::SetRect(windowPosX, windowPosY, windowWidth, windowHeight);
+
+				CameraComponent* activeCamera = InScene.GetActiveCameraPtr();
+				glm::mat4 viewMatrix = activeCamera->GetViewMatrix();
+				glm::mat4 projectionMatrix = activeCamera->GetProjectionMatrix();
+
+				SceneNode* selectedNode = selection[0];
+				glm::mat4 transform;
+				glm::mat4 localToWorld = (selectedNode->GetTransform().GetLocalToWorldMatrix());
+				glm::vec3 editModePosition;
+				glm::vec3 originalWorldPoint;
+
+				if (bIsObjectModeGizmoActive)
+				{
+					transform = localToWorld;
+				}
+				else if (bIsEditModeGizmoActive)
+				{
+					// Get edit mode transform location
+					editModePosition = renderingComponent->GetVertexObjectPtr()->GetSelectedPrimAveragePosition();
+					transform = glm::translate(localToWorld, editModePosition);
+				}
+
+				ImGuizmo::OPERATION op;
+				switch (GizmoOperationType)
+				{
+				case (CustomImGuizmoMode::TRANSLATE):
+					op = ImGuizmo::OPERATION::TRANSLATE;
+					break;
+				case (CustomImGuizmoMode::ROTATE):
+					op = ImGuizmo::OPERATION::ROTATE;
+					break;
+				case (CustomImGuizmoMode::SCALE):
+					op = ImGuizmo::OPERATION::SCALE;
+					break;
+				default:
+					return;
+				}
+				glm::mat4 deltaMatrix;
+				ImGuizmo::Manipulate(glm::value_ptr(viewMatrix), glm::value_ptr(projectionMatrix), op, GizmoSpace, glm::value_ptr(transform), glm::value_ptr(deltaMatrix), nullptr);
+
+				if (ImGuizmo::IsUsing())
+				{
+					if (bIsObjectModeGizmoActive)
+					{
+						selectedNode->GetTransform().SetMatrix4x4(transform);
+					}
+					else if (bIsEditModeGizmoActive)
+					{
+						glm::vec3 skew, scale, translation;
+						glm::vec4 perspective;
+						glm::quat rotation;
+
+						switch (GizmoOperationType)
+						{
+						case (CustomImGuizmoMode::TRANSLATE):
+							glm::decompose(transform, scale, rotation, translation, skew, perspective);
+							glm::vec3 newLocalPoint = glm::inverse(localToWorld) * glm::vec4(translation, 1.0f);
+							glm::vec3 deltaTranslation = newLocalPoint - editModePosition;
+							renderingComponent->GetVertexObjectPtr()->MoveSelectedPrims(deltaTranslation);
+							break;
+						case (CustomImGuizmoMode::ROTATE):
+							glm::decompose(deltaMatrix, scale, rotation, translation, skew, perspective);
+							glm::vec3 eulerRotation = glm::degrees(glm::eulerAngles(rotation));
+							renderingComponent->GetVertexObjectPtr()->RotateSelectedPrims(eulerRotation);
+							break;
+						case (CustomImGuizmoMode::SCALE):
+							bIsScaling = true;
+							if (PreScaleVertexPositions.size() == 0)
+							{
+								// Cache pre scale positions
+								std::set<FVertex*> verticesToScale = renderingComponent->GetVertexObjectPtr()->GetAggregateSelectedVertices();
+								for (FVertex* vert : verticesToScale)
+								{
+									PreScaleVertexPositions.push_back(vert->GetPosition());
+								}
+								StartingScaleOrigin = renderingComponent->GetVertexObjectPtr()->GetSelectedPrimAveragePosition();
+							}
+							glm::decompose(deltaMatrix, scale, rotation, translation, skew, perspective);
+							renderingComponent->GetVertexObjectPtr()->ScaleSelectedPrims(scale, StartingScaleOrigin, PreScaleVertexPositions);
+							break;
+						}
+					}
+				}
+				else if (bIsScaling)
+				{
+					// Reaching this branch means that a scale operation just finished
+					bIsScaling = false;
+					PreScaleVertexPositions.clear();
+				}
+			}
+		}
+		
+		ImGui::EndChild();
 
 		ImGui::BeginChild("ViewportArea");
 		ImGui::SetCursorPos({ 6,6 });
@@ -61,40 +185,106 @@ namespace CHISTUDIO {
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{ 0.1, 0.1, 0.1, 1 });
 		ImGui::BeginChild("TopLeft");
 
-		std::vector<SceneNode*> selection = Application_.GetSelectedNodes();
 		// Draw mode dropdown
-		std::vector<std::string> viewportModeStrings;
-		viewportModeStrings.push_back("Object");
-		if (selection.size() == 1 && selection[0]->GetComponentPtr<RenderingComponent>() != nullptr)
-			viewportModeStrings.push_back("Edit");
-
-		int selectedMode = (int)Application_.GetSceneMode();
-		if (selectedMode < viewportModeStrings.size())
 		{
-			const char* currentSceneModeString = viewportModeStrings[selectedMode].c_str();
-			ImGui::Text("Mode");
-			ImGui::SetNextItemWidth(200);
-			if (ImGui::BeginCombo("##Mode", currentSceneModeString))
+			std::vector<std::string> viewportModeStrings;
+			viewportModeStrings.push_back("Object");
+			if (selection.size() == 1 && selection[0]->GetComponentPtr<RenderingComponent>() != nullptr)
+				viewportModeStrings.push_back("Edit");
+
+			int selectedMode = (int)Application_.GetSceneMode();
+			if (selectedMode < viewportModeStrings.size())
 			{
-				for (int i = 0; i < viewportModeStrings.size(); i++)
+				const char* currentSceneModeString = viewportModeStrings[selectedMode].c_str();
+				ImGui::Text("Mode");
+				ImGui::SetNextItemWidth(200);
+				if (ImGui::BeginCombo("##Mode", currentSceneModeString))
 				{
-					bool isSelected = currentSceneModeString == viewportModeStrings[i];
-					if (ImGui::Selectable(viewportModeStrings[i].c_str(), isSelected))
+					for (int i = 0; i < viewportModeStrings.size(); i++)
 					{
-						currentSceneModeString = viewportModeStrings[i].c_str();
-						Application_.SetSceneMode((ESceneMode)i);
+						bool isSelected = currentSceneModeString == viewportModeStrings[i];
+						if (ImGui::Selectable(viewportModeStrings[i].c_str(), isSelected))
+						{
+							currentSceneModeString = viewportModeStrings[i].c_str();
+							Application_.SetSceneMode((ESceneMode)i);
+						}
+
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
 					}
 
-					if (isSelected)
-						ImGui::SetItemDefaultFocus();
+					ImGui::EndCombo();
 				}
-
-				ImGui::EndCombo();
 			}
 		}
-		
+		// Draw Gizmo Type dropdown
+		{
+			std::vector<std::string> gizmoTypeStrings;
+			gizmoTypeStrings.push_back("Hidden");
+			gizmoTypeStrings.push_back("Translate");
+			gizmoTypeStrings.push_back("Rotate");
+			gizmoTypeStrings.push_back("Scale");
+
+			int selectedMode = (int)GizmoOperationType;
+			if (selectedMode < gizmoTypeStrings.size())
+			{
+				const char* currentGizmoTypeString = gizmoTypeStrings[selectedMode].c_str();
+				ImGui::Text("Gizmo Operation");
+				ImGui::SetNextItemWidth(200);
+				if (ImGui::BeginCombo("##GimzoOperation", currentGizmoTypeString))
+				{
+					for (int i = 0; i < gizmoTypeStrings.size(); i++)
+					{
+						bool isSelected = currentGizmoTypeString == gizmoTypeStrings[i];
+						if (ImGui::Selectable(gizmoTypeStrings[i].c_str(), isSelected))
+						{
+							currentGizmoTypeString = gizmoTypeStrings[i].c_str();
+							GizmoOperationType = (CustomImGuizmoMode)i;
+						}
+
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+
+					ImGui::EndCombo();
+				}
+			}
+		}
+		// Draw Gizmo space dropdown
+		{
+			std::vector<std::string> gizmoSpaceStrings;
+			gizmoSpaceStrings.push_back("Local");
+			gizmoSpaceStrings.push_back("World");
+
+			int selectedMode = (int)GizmoSpace;
+			if (selectedMode < gizmoSpaceStrings.size())
+			{
+				const char* currentGizmoSpaceString = gizmoSpaceStrings[selectedMode].c_str();
+				ImGui::Text("Gizmo Space");
+				ImGui::SetNextItemWidth(200);
+				if (ImGui::BeginCombo("##GimzoSpace", currentGizmoSpaceString))
+				{
+					for (int i = 0; i < gizmoSpaceStrings.size(); i++)
+					{
+						bool isSelected = currentGizmoSpaceString == gizmoSpaceStrings[i];
+						if (ImGui::Selectable(gizmoSpaceStrings[i].c_str(), isSelected))
+						{
+							currentGizmoSpaceString = gizmoSpaceStrings[i].c_str();
+							GizmoSpace = (ImGuizmo::MODE)i;
+						}
+
+						if (isSelected)
+							ImGui::SetItemDefaultFocus();
+					}
+
+					ImGui::EndCombo();
+				}
+			}
+		}
+
 		InputManager::GetInstance().SetInputBlocked(!ImGui::IsWindowHovered());
 
+		// Hovered hotkeys
 		if (ImGui::IsWindowHovered())
 		{
 			// Viewport hotkeys
@@ -102,12 +292,64 @@ namespace CHISTUDIO {
 			{
 				Application_.TryToggleEditMode();
 			}
-			if (ImGui::IsMouseClicked(0))
+			if (ImGui::IsKeyPressed(GLFW_KEY_Q))
+			{
+				GizmoOperationType = CustomImGuizmoMode::HIDDEN;
+			}
+			if (ImGui::IsKeyPressed(GLFW_KEY_W))
+			{
+				if (GizmoOperationType == CustomImGuizmoMode::TRANSLATE)
+				{
+					GizmoSpace = (ImGuizmo::MODE)!GizmoSpace;
+				}
+				else
+				{
+					GizmoOperationType = CustomImGuizmoMode::TRANSLATE;
+				}
+			}
+			if (ImGui::IsKeyPressed(GLFW_KEY_E))
+			{
+				if (GizmoOperationType == CustomImGuizmoMode::ROTATE)
+				{
+					GizmoSpace = (ImGuizmo::MODE)!GizmoSpace;
+				}
+				else
+				{
+					GizmoOperationType = CustomImGuizmoMode::ROTATE;
+				}
+			}
+			if (ImGui::IsKeyPressed(GLFW_KEY_R))
+			{
+				if (GizmoOperationType == CustomImGuizmoMode::SCALE)
+				{
+					GizmoSpace = (ImGuizmo::MODE)!GizmoSpace;
+				}
+				else
+				{
+					GizmoOperationType = CustomImGuizmoMode::SCALE;
+				}
+			}
+			if (ImGui::IsMouseClicked(0) && !ImGuizmo::IsUsing())
 			{
 				glm::vec2 mousePos = { ImGui::GetMousePos().x - ImGui::GetWindowPos().x + 8, ImGui::GetMousePos().y - ImGui::GetWindowPos().y + 8}; // Adding default padding manually
 				glm::vec2 viewportSize = { CurrentWidth, CurrentHeight };
-				std::cout << "Mouse clicked in scene. Mouse Pos: " << glm::to_string(mousePos) << ", Viewport: " << glm::to_string(viewportSize) << std::endl;
+				//std::cout << "Mouse clicked in scene. Mouse Pos: " << glm::to_string(mousePos) << ", Viewport: " << glm::to_string(viewportSize) << std::endl;
 				Application_.OnClick(0, mousePos, viewportSize);
+			}
+			if (Application_.GetSceneMode() == ESceneMode::Edit)
+			{
+				if (ImGui::IsKeyPressed(GLFW_KEY_1))
+				{
+					Application_.SetEditModeSelectionType(EEditModeSelectionType::Vertex);
+				}
+				if (ImGui::IsKeyPressed(GLFW_KEY_2))
+				{
+					Application_.SetEditModeSelectionType(EEditModeSelectionType::Edge);
+				}
+				if (ImGui::IsKeyPressed(GLFW_KEY_3))
+				{
+					Application_.SetEditModeSelectionType(EEditModeSelectionType::Face);
+				}
 			}
 		}
 		
@@ -218,28 +460,43 @@ namespace CHISTUDIO {
 								<< std::endl;
 							continue;
 						}
+											
+
+						if (isSelected && renderingComponentPointer->bRenderSolid)
+						{
+							ShaderProgram* customStencilShader = OutlineShader_.get();
+
+							GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+							GL_CHECK(glDrawBuffers(2, buffers));
+
+							BindGuard shader_bg(customStencilShader);
+
+							// Set various uniform variables in the shaders.
+							customStencilShader->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
+							customStencilShader->SetCamera(*activeCamera);
+
+							GL_CHECK(glDisable(GL_DEPTH_TEST));
+							renderingComponentPointer->Render();
+							GL_CHECK(glEnable(GL_DEPTH_TEST));
+
+						}
+												
 						ShaderProgram* shader = shadingPointer->GetShaderPtr();
-						if (shader == nullptr) {
+						if (shader == nullptr) 
+						{
 							std::cerr << "Shader program is null"
 								<< std::endl;
 							continue;
 						}
+
+						GLenum buffers[] = { GL_COLOR_ATTACHMENT0 };
+						GL_CHECK(glDrawBuffers(1, buffers));
+						
 						BindGuard shader_bg(shader);
 
 						// Set various uniform variables in the shaders.
 						shader->SetTargetNode(renderingNode, NodeAndMatrixPair.second);
 						shader->SetCamera(*activeCamera);
-
-						if (isSelected && renderingComponentPointer->bRenderSolid)
-						{
-							GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-							GL_CHECK(glDrawBuffers(2, buffers));
-						}
-						else
-						{
-							GLenum buffers[] = { GL_COLOR_ATTACHMENT0 };
-							GL_CHECK(glDrawBuffers(1, buffers));
-						}
 
 						renderingComponentPointer->Render();
 					}

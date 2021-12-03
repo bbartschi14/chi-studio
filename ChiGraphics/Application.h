@@ -40,6 +40,8 @@ public:
 
 	/** Can either add to the selection, or replace the selection */
 	void SelectNode(SceneNode* nodeToSelect, bool addToSelection);
+	void DeselectNode(SceneNode* nodeToDeselect);
+	void DeselectAllNodes();
 
 	ESceneMode GetSceneMode() const {
 		return CurrentSceneMode;
