@@ -10,19 +10,28 @@
 
 namespace CHISTUDIO {
 
-enum class EFaceExtrudeType {
+enum class EFaceExtrudeType 
+{
     Individual,
     Regions
 };
 
-enum class EDefaultObject {
+enum class EDefaultObject 
+{
     Cube,
     CustomMesh,
     Debug,
     Plane
 };
 
-struct FIncidentHalfEdges {
+enum class EShadingType
+{
+    Flat = 0,
+    Smooth = 1
+};
+
+struct FIncidentHalfEdges 
+{
     std::vector<FHalfEdge*> IncidentHalfEdges;
 };
 
@@ -88,6 +97,8 @@ public:
         bDebugNormals(false),
         NormalsDebugVertexArray_(make_unique<VertexArray>())
     {
+        ShadingType = EShadingType::Flat;
+
         SelectedVertexVertexArray_->CreatePositionBuffer();
         SelectedVertexVertexArray_->SetDrawMode(EDrawMode::Points);
 
@@ -365,6 +376,8 @@ public:
     FEdge* GetEdgeUnderRay(class FRay InSceneRay);
     FFace* GetFaceUnderRay(class FRay InSceneRay);
 
+    void SetShadingType(EShadingType InShadingType);
+    EShadingType GetShadingType() const;
 private:
     void ExtrudeRegion(FFaceRegion* InRegion);
 
@@ -398,6 +411,8 @@ private:
     std::unique_ptr<FColorArray> Colors;
     std::unique_ptr<FTexCoordArray> TexCoords;
     std::unique_ptr<FIndexArray> Indices;
+
+    EShadingType ShadingType;
 };
 
 }

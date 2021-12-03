@@ -38,4 +38,14 @@ int FVertex::GetIndexId() const
 	return IndexId;
 }
 
+void FVertex::SetPositionIndex(int InPositionIndex)
+{
+	PositionIndex = InPositionIndex;
+}
+
+int FVertex::GetPositionIndex() const
+{
+	return PositionIndex;
+}
+
 }

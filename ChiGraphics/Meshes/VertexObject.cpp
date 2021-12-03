@@ -7,7 +7,7 @@
 #include "ChiGraphics/Collision/Hittables/SphereHittable.h"
 #include "ChiGraphics/Collision/Hittables/CylinderHittable.h"
 #include "ChiGraphics/Collision/Hittables/TriangleHittable.h"
-
+#include "ChiGraphics/Utilities.h"
 #include <memory>
 #include <iostream>
 #include <stdexcept>
@@ -237,56 +237,131 @@ namespace CHISTUDIO {
 		auto newIndices = make_unique<FIndexArray>();
 
 		auto newWireframePositions = make_unique<FPositionArray>();
-		
-		unsigned int currentVertIndex = 0;
-		for (int i = 0; i < Faces.size(); i++)
+
+		if (ShadingType == EShadingType::Flat)
 		{
-			if (i == 6)
+			// Flat shaded objects must have unique vertices for each face
+			unsigned int currentVertIndex = 0;
+			for (int i = 0; i < Faces.size(); i++)
 			{
-				int i = 0;
-			}
-			FHalfEdge* startingHalfEdge = Faces[i].get()->GetHalfEdgeOnFace();
-			FVertex* firstVertex = startingHalfEdge->GetNextVertex();
-			newPositions->push_back(firstVertex->GetPosition());
-			newWireframePositions->push_back(firstVertex->GetPosition());
+				FHalfEdge* startingHalfEdge = Faces[i].get()->GetHalfEdgeOnFace();
+				FVertex* firstVertex = startingHalfEdge->GetNextVertex();
+				newPositions->push_back(firstVertex->GetPosition());
+				newWireframePositions->push_back(firstVertex->GetPosition());
 
-			unsigned int firstVertexIndex = currentVertIndex;
-			currentVertIndex++;
-
-			FHalfEdge* nextHalfEdge = startingHalfEdge->GetNextHalfEdge();
-			std::vector<unsigned int> vertexIndices;
-			while (startingHalfEdge != nextHalfEdge)
-			{
-				FVertex* nextVertex = nextHalfEdge->GetNextVertex();
-				newPositions->push_back(nextVertex->GetPosition());
-				newWireframePositions->push_back(nextVertex->GetPosition());
-				newWireframePositions->push_back(nextVertex->GetPosition());
-				vertexIndices.push_back(currentVertIndex);
+				unsigned int firstVertexIndex = currentVertIndex;
 				currentVertIndex++;
 
-				if (vertexIndices.size() == 2)
+				FHalfEdge* nextHalfEdge = startingHalfEdge->GetNextHalfEdge();
+				std::vector<unsigned int> vertexIndices;
+				while (startingHalfEdge != nextHalfEdge)
 				{
-					// Add triangle with first vertex and 2 vertices found
-					newIndices->push_back(firstVertexIndex);
-					newIndices->push_back(vertexIndices[0]);
-					newIndices->push_back(vertexIndices[1]);
+					FVertex* nextVertex = nextHalfEdge->GetNextVertex();
+					newPositions->push_back(nextVertex->GetPosition());
+					newWireframePositions->push_back(nextVertex->GetPosition());
+					newWireframePositions->push_back(nextVertex->GetPosition());
+					vertexIndices.push_back(currentVertIndex);
+					currentVertIndex++;
 
-					vertexIndices[0] = vertexIndices[1]; // Shift over vertex
-					vertexIndices.pop_back();
+					if (vertexIndices.size() == 2)
+					{
+						// Add triangle with first vertex and 2 vertices found
+						newIndices->push_back(firstVertexIndex);
+						newIndices->push_back(vertexIndices[0]);
+						newIndices->push_back(vertexIndices[1]);
+
+						vertexIndices[0] = vertexIndices[1]; // Shift over vertex
+						vertexIndices.pop_back();
+					}
+
+					nextHalfEdge = nextHalfEdge->GetNextHalfEdge();
 				}
+				newWireframePositions->push_back(firstVertex->GetPosition());
 
-				nextHalfEdge = nextHalfEdge->GetNextHalfEdge();
+				// Add normals
+				std::vector<glm::vec3>& positionsRef = *newPositions;
+				glm::vec3 firstDirection = positionsRef[firstVertexIndex + 1] - positionsRef[firstVertexIndex];
+				glm::vec3 secondDirection = positionsRef[firstVertexIndex + 2] - positionsRef[firstVertexIndex];
+				glm::vec3 normal = glm::normalize(glm::cross(secondDirection, firstDirection));
+				for (unsigned int i = 0; i < currentVertIndex - firstVertexIndex; i++)
+				{
+					newNormals->push_back(normal);
+				}
 			}
-			newWireframePositions->push_back(firstVertex->GetPosition());
-
-			// Add normals
-			std::vector<glm::vec3>& positionsRef = *newPositions;
-			glm::vec3 firstDirection = positionsRef[firstVertexIndex + 1] - positionsRef[firstVertexIndex];
-			glm::vec3 secondDirection = positionsRef[firstVertexIndex + 2] - positionsRef[firstVertexIndex];
-			glm::vec3 normal = glm::normalize(glm::cross(secondDirection, firstDirection));
-			for (unsigned int i = 0; i < currentVertIndex - firstVertexIndex; i++)
+		}
+		else
+		{
+			// Smooth shaded objects can share vertices across faces
+			
+			// Fill position array with vertex positions and give each vertex a reference to their index in the position array
+			for (size_t vertexIndex = 0; vertexIndex < Vertices.size(); vertexIndex++)
 			{
-				newNormals->push_back(normal);
+				FVertex* currentVertex = Vertices[vertexIndex].get();
+				currentVertex->SetPositionIndex(vertexIndex);
+				newPositions->push_back(currentVertex->GetPosition());
+			}
+
+			// Fill index array by triangulating faces
+			for (int i = 0; i < Faces.size(); i++)
+			{
+				FHalfEdge* startingHalfEdge = Faces[i].get()->GetHalfEdgeOnFace();
+				FVertex* firstVertex = startingHalfEdge->GetNextVertex();
+				newWireframePositions->push_back(firstVertex->GetPosition());
+
+				int firstVertexIndex = firstVertex->GetPositionIndex();
+				int currentVertexIndex = firstVertexIndex;
+				FHalfEdge* nextHalfEdge = startingHalfEdge->GetNextHalfEdge();
+				std::vector<int> vertexIndices;
+				while (startingHalfEdge != nextHalfEdge)
+				{
+					FVertex* nextVertex = nextHalfEdge->GetNextVertex();
+					currentVertexIndex = nextVertex->GetPositionIndex();
+					vertexIndices.push_back(currentVertexIndex);
+
+					// Store wireframe info
+					newWireframePositions->push_back(nextVertex->GetPosition());
+					newWireframePositions->push_back(nextVertex->GetPosition());
+
+					if (vertexIndices.size() == 2)
+					{
+						// Add triangle with first vertex and 2 vertices found
+						newIndices->push_back(firstVertexIndex);
+						newIndices->push_back(vertexIndices[0]);
+						newIndices->push_back(vertexIndices[1]);
+
+						vertexIndices[0] = vertexIndices[1]; // Shift over vertex
+						vertexIndices.pop_back();
+					}
+
+					nextHalfEdge = nextHalfEdge->GetNextHalfEdge();
+				}
+				newWireframePositions->push_back(firstVertex->GetPosition());
+			}
+
+			// Fill Normals
+			std::vector<glm::vec3>& positionsRef = *newPositions;
+			std::vector<unsigned int>& indicesRef = *newIndices;
+
+			auto normals = make_unique<FNormalArray>(positionsRef.size(), glm::vec3(0.0f));
+
+			for (size_t i = 0; i < indicesRef.size(); i += 3) {
+				int v1 = indicesRef[i];
+				int v2 = indicesRef[i + 1];
+				int v3 = indicesRef[i + 2];
+				auto& p1 = positionsRef[v1];
+				auto& p2 = positionsRef[v2];
+				auto& p3 = positionsRef[v3];
+				auto n = glm::cross(p3 - p1, p2 - p1);
+				// No need to normalize here, since the norm of n is
+				// proportional to the area.
+				(*normals)[v1] += n;
+				(*normals)[v2] += n;
+				(*normals)[v3] += n;
+			}
+
+			for (size_t i = 0; i < normals->size(); i++) {
+				(*normals)[i] = glm::normalize((*normals)[i]);
+				newNormals->push_back((*normals)[i]);
 			}
 		}
 
@@ -799,6 +874,30 @@ namespace CHISTUDIO {
 		MarkDirty();
 	}
 
+	void VertexObject::ScaleSelectedPrims(glm::vec3 InScale, glm::vec3 InStartingScaleOrigin, std::vector<glm::vec3> InPreScaleVertexPositions)
+	{
+		std::set<FVertex*> verticesToScale = GetAggregateSelectedVertices();
+		glm::vec3 scaleOrigin = GetSelectedPrimAveragePosition();
+
+		glm::mat4 deltaMatrix(1.f);
+
+		// Order: scale, rotate, translate
+		deltaMatrix = glm::scale(glm::mat4(1.f), InScale) * deltaMatrix;
+		deltaMatrix = glm::mat4_cast(glm::quat(glm::vec3(0.0f))) * deltaMatrix;
+		deltaMatrix = glm::translate(glm::mat4(1.f), InStartingScaleOrigin) * deltaMatrix;
+
+		int count = 0;
+		for (FVertex* vertex : verticesToScale)
+		{
+			glm::vec3 localPositionToScaleOrigin = InPreScaleVertexPositions[count] - InStartingScaleOrigin;
+			glm::vec3 newPosition = deltaMatrix * glm::vec4(localPositionToScaleOrigin, 1.0f);
+			vertex->SetPosition(newPosition);
+			count++;
+		}
+
+		MarkDirty();
+	}
+
 	void VertexObject::DeleteSelectedVertices()
 	{
 		std::set<FVertex*> verticesToDelete = GetAggregateSelectedVertices();
@@ -898,30 +997,6 @@ namespace CHISTUDIO {
 			nextHalfEdge = nextHalfEdge->GetNextHalfEdge();
 		} while (startingHalfEdge != nextHalfEdge);
 		
-	}
-
-	void VertexObject::ScaleSelectedPrims(glm::vec3 InScale, glm::vec3 InStartingScaleOrigin, std::vector<glm::vec3> InPreScaleVertexPositions)
-	{
-		std::set<FVertex*> verticesToScale = GetAggregateSelectedVertices();
-		glm::vec3 scaleOrigin = GetSelectedPrimAveragePosition();
-
-		glm::mat4 deltaMatrix(1.f);
-
-		// Order: scale, rotate, translate
-		deltaMatrix = glm::scale(glm::mat4(1.f), InScale) * deltaMatrix;
-		deltaMatrix = glm::mat4_cast(glm::quat(glm::vec3(0.0f))) * deltaMatrix;
-		deltaMatrix = glm::translate(glm::mat4(1.f), InStartingScaleOrigin) * deltaMatrix;
-
-		int count = 0;
-		for (FVertex* vertex : verticesToScale)
-		{
-			glm::vec3 localPositionToScaleOrigin = InPreScaleVertexPositions[count] - InStartingScaleOrigin;
-			glm::vec3 newPosition = deltaMatrix * glm::vec4(localPositionToScaleOrigin, 1.0f);
-			vertex->SetPosition(newPosition);
-			count++;
-		}
-
-		MarkDirty();
 	}
 
 	void VertexObject::Render()
@@ -1067,7 +1142,6 @@ namespace CHISTUDIO {
 			}
 		}
 	}
-
 
 	FVertex* VertexObject::CreateVertex(glm::vec3 InPosition, FHalfEdge* InParentHalfEdge)
 	{
@@ -1257,6 +1331,17 @@ namespace CHISTUDIO {
 		{
 			return nullptr;
 		}
+	}
+
+	void VertexObject::SetShadingType(EShadingType InShadingType)
+	{
+		ShadingType = InShadingType;
+		MarkDirty();
+	}
+
+	EShadingType VertexObject::GetShadingType() const
+	{
+		return ShadingType;
 	}
 
 }

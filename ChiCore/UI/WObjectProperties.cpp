@@ -177,6 +177,12 @@ namespace CHISTUDIO {
 				vertexObject->SetDebugNormals(isDebugNormals);
 			}
 			
+			bool isSmoothShaded = (bool)vertexObject->GetShadingType();
+			if (ImGui::Checkbox("Smooth Shading", &isSmoothShaded))
+			{
+			  vertexObject->SetShadingType((EShadingType)isSmoothShaded);
+			}
+
 			ImGui::Separator();
 
 		}

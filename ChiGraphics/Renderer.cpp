@@ -360,7 +360,6 @@ namespace CHISTUDIO {
 
 		ImGui::End();
 		ImGui::PopStyleVar();
-
 	}
 
 	uint64_t Renderer::GetSceneOutputTextureHandle() const
