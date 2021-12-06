@@ -7,6 +7,7 @@
 #include "Primitives/FEdge.h"
 #include <set>
 #include "core.h"
+#include <unordered_map>
 
 namespace CHISTUDIO {
 
@@ -21,7 +22,14 @@ enum class EDefaultObject
     Cube,
     CustomMesh,
     Debug,
-    Plane
+    Plane,
+    Cylinder
+};
+
+struct FDefaultObjectParams
+{
+    FDefaultObjectParams() : NumberOfSides(0) {};
+    int NumberOfSides;
 };
 
 enum class EShadingType
@@ -89,7 +97,7 @@ struct FFaceRegion {
 // for sending data from CPU to GPU via the Update* methods.
 class VertexObject {
 public:
-    VertexObject(EDefaultObject InDefaultObject) : VertexArray_(make_unique<VertexArray>()),
+    VertexObject(EDefaultObject InDefaultObject, FDefaultObjectParams InParams) : VertexArray_(make_unique<VertexArray>()),
         EdgeVertexArray_(make_unique<VertexArray>()),
         SelectedFaceVertexArray_(make_unique<VertexArray>()), 
         SelectedEdgeVertexArray_(make_unique<VertexArray>()), 
@@ -122,6 +130,11 @@ public:
         {
             CreateHalfEdgePlane();
         }
+        else if (InDefaultObject == EDefaultObject::Cylinder)
+        {
+            CreateHalfEdgeCylinder(InParams);
+        }
+
 
         if (InDefaultObject != EDefaultObject::Debug && InDefaultObject != EDefaultObject::CustomMesh)
         {
@@ -135,11 +148,12 @@ public:
     void UpdateColors(std::unique_ptr<FColorArray> InColors);
     void UpdateTexCoord(std::unique_ptr<FTexCoordArray> InTexCoords);
     void UpdateIndices(std::unique_ptr<FIndexArray> InIndices);
+
 private:
     
-
     void CreateHalfEdgeCube();
     void CreateHalfEdgePlane();
+    void CreateHalfEdgeCylinder(FDefaultObjectParams InParams);
     void CreateVertexArrayFromHalfEdgeStructure();
 
     /** Using the given faces (InFaces) on this vertex object, find all the contiguous regions */
@@ -378,6 +392,26 @@ public:
 
     void SetShadingType(EShadingType InShadingType);
     EShadingType GetShadingType() const;
+
+#pragma region Subdivision Surface Functions (Catmull-Clark Subdivision)
+ 
+    // Calculate and apply a single iteration of subdivision surface
+    void ApplySubdivisionSurface();
+
+    // Maps face indices to face centroid positions
+    std::unordered_map<int, glm::vec3> GetSubdivisionFaceCentroids() const;
+
+    // Maps edge indices to smoothed edge midpoint positions
+    std::unordered_map<int, glm::vec3> GetSmoothedEdgeMidpoints(std::unordered_map<int, glm::vec3> InFaceCentroids) const;
+
+    // Use the edge midpoints and face centroids to update the positions of the original vertices
+    void SmoothOriginalVertices(std::unordered_map<int, glm::vec3> InFaceCentroids, std::unordered_map<int, glm::vec3> InEdgeMidpoints);
+
+    // Split a face into 4, using the calculated face centroids and smoothed edge midpoints
+    void QuadrangleFace(FFace* InFace, std::unordered_map<int, FVertex*> InFaceCentroidVertices, std::unordered_map<int, FVertex*> InEdgeMidpointVertices, std::set<int>& InAlreadyQuadrangledFaces);
+
+#pragma endregion
+
 private:
     void ExtrudeRegion(FFaceRegion* InRegion);
 

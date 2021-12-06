@@ -1,5 +1,7 @@
 #pragma once
 #include "ChiGraphics/External.h"
+#include <vector>
+
 
 namespace CHISTUDIO {
 
@@ -23,6 +25,12 @@ public:
 	// Position Index is used for storing this vertex's position within a vertex position array
 	void SetPositionIndex(int InPositionIndex);
 	int GetPositionIndex() const;
+	
+	// Find all the adjacent edges to this vertex
+	std::vector<class FEdge*> GetAdjacentEdges() const;
+
+	// Find all the adjacent edges and faces. Slightly more optimized than doing both operations sequentially
+	void GetAdjacentEdgesAndFaces(std::vector<class FEdge*>& OutAdjacentEdges, std::vector<class FFace*>& OutAdjacentFaces) const;
 
 	bool bMarkedForDeletion;
 private:

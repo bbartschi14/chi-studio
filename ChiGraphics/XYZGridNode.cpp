@@ -9,7 +9,8 @@ namespace CHISTUDIO {
 XYZGridNode::XYZGridNode() : SceneNode("XYZGrid")
 {
 	std::shared_ptr<SimpleShader> shader = std::make_shared<SimpleShader>();
-	std::shared_ptr<VertexObject> mesh = std::make_shared<VertexObject>(EDefaultObject::Debug);
+	FDefaultObjectParams params;
+	std::shared_ptr<VertexObject> mesh = std::make_shared<VertexObject>(EDefaultObject::Debug, params);
 
 	auto vertexPositions = make_unique<FPositionArray>();
 	float range = 1000.0f;

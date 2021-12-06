@@ -1,5 +1,6 @@
 #include "FVertex.h"
 #include "FHalfEdge.h"
+#include "FEdge.h"
 
 namespace CHISTUDIO {
 
@@ -46,6 +47,39 @@ void FVertex::SetPositionIndex(int InPositionIndex)
 int FVertex::GetPositionIndex() const
 {
 	return PositionIndex;
+}
+
+std::vector<FEdge*> FVertex::GetAdjacentEdges() const
+{
+	std::vector<FEdge*> adjacentEdges;
+
+	FHalfEdge* firstHalfEdge = GetParentHalfEdge();
+	FHalfEdge* nextHalfEdge = firstHalfEdge;
+	do
+	{
+		adjacentEdges.push_back(nextHalfEdge->GetOwningEdge());
+		nextHalfEdge = nextHalfEdge->GetNextHalfEdge()->GetSymmetricalHalfEdge();
+	} while (nextHalfEdge != firstHalfEdge);
+
+	return adjacentEdges;
+}
+
+void FVertex::GetAdjacentEdgesAndFaces(std::vector<class FEdge*>& OutAdjacentEdges, std::vector<class FFace*>& OutAdjacentFaces) const
+{
+	OutAdjacentEdges.clear();
+	OutAdjacentFaces.clear();
+
+	FHalfEdge* firstHalfEdge = GetParentHalfEdge();
+	FHalfEdge* nextHalfEdge = firstHalfEdge;
+	do
+	{
+		OutAdjacentEdges.push_back(nextHalfEdge->GetOwningEdge());
+		if (FFace* owningFace = nextHalfEdge->GetOwningFace())
+		{
+			OutAdjacentFaces.push_back(owningFace);
+		}
+		nextHalfEdge = nextHalfEdge->GetNextHalfEdge()->GetSymmetricalHalfEdge();
+	} while (nextHalfEdge != firstHalfEdge);
 }
 
 }

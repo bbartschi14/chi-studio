@@ -15,7 +15,8 @@ TracingCameraNode::TracingCameraNode(std::string InName, float InFOV, float InAs
 	Camera = camera.get();
 	// Construct debug visuals
 	std::shared_ptr<SimpleShader> shader = std::make_shared<SimpleShader>();
-	std::shared_ptr<VertexObject> mesh = std::make_shared<VertexObject>(EDefaultObject::Debug);
+	FDefaultObjectParams params;
+	std::shared_ptr<VertexObject> mesh = std::make_shared<VertexObject>(EDefaultObject::Debug, params);
 	DebugMesh = mesh.get();
 	mesh->UpdatePositions(std::move(GetDebugPositions()));
 

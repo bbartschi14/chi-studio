@@ -21,7 +21,7 @@ namespace CHISTUDIO {
 		if (selectedNodes.size() == 1 && InApplication.GetSceneMode() == ESceneMode::Edit)
 		{
 			ImGui::Begin("Edit Mode");
-
+			
 			const char* typeStrings[] = { "Vertex", "Edge", "Face" };
 			const char* currentTypeString = typeStrings[(int)InApplication.GetEditModeSelectionType()];
 			if (ImGui::BeginCombo("Selection Mode", currentTypeString))
@@ -57,6 +57,11 @@ namespace CHISTUDIO {
 	{
 		VertexObject* vertexObject = renderingComponent->GetVertexObjectPtr();
 		ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
+
+		if (ImGui::Button("Subdivision Surface"))
+		{
+			vertexObject->ApplySubdivisionSurface();
+		}
 
 		if (InApplication.AreEditModeVerticesSelectable())
 		{

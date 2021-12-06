@@ -89,4 +89,18 @@ namespace CHISTUDIO {
 		return triangles;
 	}
 
+	glm::vec3 FFace::GetCentroid() const
+	{
+		std::vector<FVertex*> vertices = GetVerticesOnFace();
+
+		glm::vec3 average = glm::vec3(0.0f);
+
+		for (FVertex* vert : vertices)
+		{
+			average += vert->GetPosition();
+		}
+
+		return average / (float)vertices.size();
+	}
+
 }

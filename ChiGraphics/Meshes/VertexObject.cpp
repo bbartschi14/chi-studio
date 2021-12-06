@@ -180,9 +180,9 @@ namespace CHISTUDIO {
 
 		// Edges
 		FEdge* edge1 = CreateEdge(halfEdge1, halfEdge5);
-		FEdge* edge2 = CreateEdge(halfEdge2, halfEdge6);
+		FEdge* edge2 = CreateEdge(halfEdge2, halfEdge8);
 		FEdge* edge3 = CreateEdge(halfEdge3, halfEdge7);
-		FEdge* edge4 = CreateEdge(halfEdge4, halfEdge8);
+		FEdge* edge4 = CreateEdge(halfEdge4, halfEdge6);
 
 		// Vertices
 		FVertex* vertex4 = CreateVertex(glm::vec3(1.0f, 0.0f, 1.0f), halfEdge4);
@@ -205,9 +205,9 @@ namespace CHISTUDIO {
 		halfEdge4->SetNextVertex(vertex4);
 
 		halfEdge1->SetSymmetricalHalfEdge(halfEdge5);
-		halfEdge2->SetSymmetricalHalfEdge(halfEdge6);
+		halfEdge2->SetSymmetricalHalfEdge(halfEdge8);
 		halfEdge3->SetSymmetricalHalfEdge(halfEdge7);
-		halfEdge4->SetSymmetricalHalfEdge(halfEdge8);
+		halfEdge4->SetSymmetricalHalfEdge(halfEdge6);
 
 		// Finish Outer Loop
 		halfEdge5->SetNextHalfEdge(halfEdge6);
@@ -221,9 +221,95 @@ namespace CHISTUDIO {
 		halfEdge8->SetNextVertex(vertex1);
 
 		halfEdge5->SetSymmetricalHalfEdge(halfEdge1);
-		halfEdge6->SetSymmetricalHalfEdge(halfEdge2);
+		halfEdge6->SetSymmetricalHalfEdge(halfEdge4);
 		halfEdge7->SetSymmetricalHalfEdge(halfEdge3);
-		halfEdge8->SetSymmetricalHalfEdge(halfEdge4);
+		halfEdge8->SetSymmetricalHalfEdge(halfEdge2);
+	}
+
+	void VertexObject::CreateHalfEdgeCylinder(FDefaultObjectParams InParams)
+	{
+		int InNumberOfSides = InParams.NumberOfSides;
+
+		if (InNumberOfSides < 3)
+		{
+			std::cerr << "Can't create a cylinder with less than 3 sides" << std::endl;
+		}
+
+		float radius = 1.0f;
+
+		FFace* topFace = CreateFace(nullptr);
+		FFace* bottomFace = CreateFace(nullptr);
+
+		std::vector<FVertex*> bottomVertices;
+		std::vector<FVertex*> topVertices;
+		std::vector<FHalfEdge*> bottomHalfEdges;
+		std::vector<FHalfEdge*> topHalfEdges;
+
+		for (int i = 0; i < InNumberOfSides; i++)
+		{
+			float radians = ToRadian(360.0f * i / (float)InNumberOfSides);
+			float x = radius * cosf(radians);
+			float z = radius * sinf(radians);
+
+			bottomVertices.push_back(CreateVertex(glm::vec3(x, -1.0f, z), nullptr));
+			topVertices.push_back(CreateVertex(glm::vec3(x, 1.0f, z), nullptr));
+		}
+
+		for (int i = 0; i < InNumberOfSides; i++)
+		{
+			bottomHalfEdges.push_back(CreateHalfEdge(nullptr, nullptr, bottomFace, nullptr, bottomVertices[(i + InNumberOfSides - 1) % InNumberOfSides]));
+			bottomVertices[(i + InNumberOfSides - 1) % InNumberOfSides]->SetParentHalfEdge(bottomHalfEdges[i]);
+
+			topHalfEdges.push_back(CreateHalfEdge(nullptr, nullptr, topFace, nullptr, topVertices[i]));
+			topVertices[i]->SetParentHalfEdge(topHalfEdges[i]);
+		}
+
+		for (int i = 0; i < InNumberOfSides; i++)
+		{
+			bottomHalfEdges[i]->SetNextHalfEdge(bottomHalfEdges[(i + InNumberOfSides - 1) % InNumberOfSides]);
+			topHalfEdges[i]->SetNextHalfEdge(topHalfEdges[(i + 1) % InNumberOfSides]);
+		}
+
+		bottomFace->SetHalfEdgeOnFace(bottomHalfEdges[0]);
+		topFace->SetHalfEdgeOnFace(topHalfEdges[0]);
+
+		std::vector<FHalfEdge*> ringHalfEdges;
+
+		for (int i = 0; i < InNumberOfSides; i++)
+		{
+			FFace* face = CreateFace(nullptr);
+
+			FHalfEdge* firstHalfEdge = CreateHalfEdge(nullptr, nullptr, face, nullptr, bottomVertices[(i + InNumberOfSides - 1) % InNumberOfSides]);
+			ringHalfEdges.push_back(firstHalfEdge);
+
+			FHalfEdge* secondHalfEdge = CreateHalfEdge(nullptr, bottomHalfEdges[i], face, nullptr, bottomVertices[i]);
+			bottomHalfEdges[i]->SetSymmetricalHalfEdge(secondHalfEdge);
+			CreateEdge(secondHalfEdge, bottomHalfEdges[i]);
+			
+			FHalfEdge* thirdHalfEdge = CreateHalfEdge(nullptr, nullptr, face, nullptr, topVertices[i]);
+			ringHalfEdges.push_back(thirdHalfEdge);
+			
+			FHalfEdge* fourthHalfEdge = CreateHalfEdge(nullptr, topHalfEdges[i], face, nullptr, topVertices[(i + InNumberOfSides - 1) % InNumberOfSides]);
+			topHalfEdges[i]->SetSymmetricalHalfEdge(fourthHalfEdge);
+			CreateEdge(fourthHalfEdge, topHalfEdges[i]);
+
+			firstHalfEdge->SetNextHalfEdge(secondHalfEdge);
+			secondHalfEdge->SetNextHalfEdge(thirdHalfEdge);
+			thirdHalfEdge->SetNextHalfEdge(fourthHalfEdge);
+			fourthHalfEdge->SetNextHalfEdge(firstHalfEdge);
+
+			face->SetHalfEdgeOnFace(firstHalfEdge);
+		}
+
+		for (int i = 0; i < InNumberOfSides; i++)
+		{
+			FHalfEdge* firstHalfEdge = ringHalfEdges[i * 2];
+			FHalfEdge* secondHalfEdge = ringHalfEdges[((i * 2) + ringHalfEdges.size() - 1) % ringHalfEdges.size()];
+
+			firstHalfEdge->SetSymmetricalHalfEdge(secondHalfEdge);
+			secondHalfEdge->SetSymmetricalHalfEdge(firstHalfEdge);
+			CreateEdge(firstHalfEdge, secondHalfEdge);
+		}
 	}
 
 	void VertexObject::CreateVertexArrayFromHalfEdgeStructure()
@@ -1342,6 +1428,251 @@ namespace CHISTUDIO {
 	EShadingType VertexObject::GetShadingType() const
 	{
 		return ShadingType;
+	}
+
+	void VertexObject::ApplySubdivisionSurface()
+	{
+		std::unordered_map<int, glm::vec3> centroids = GetSubdivisionFaceCentroids();
+		std::unordered_map<int, glm::vec3> smoothedMidpoints = GetSmoothedEdgeMidpoints(centroids);
+		SmoothOriginalVertices(centroids, smoothedMidpoints);
+
+		std::unordered_map<int, FVertex*> faceCentroidVertices;
+		for (auto centroidPair : centroids)
+		{
+			FVertex* vert = CreateVertex(centroidPair.second, nullptr);
+			faceCentroidVertices.insert({ centroidPair.first, vert });
+		}
+
+		std::unordered_map<int, FVertex*> edgeMidpointVertices;
+		for (auto midpointPair : smoothedMidpoints)
+		{
+			FVertex* vert = CreateVertex(midpointPair.second, nullptr);
+			edgeMidpointVertices.insert({ midpointPair.first, vert });
+		}
+
+		// Keep track of quadrangled faces
+		std::set<int> alreadyQuadrangledFaces;
+		std::vector<FFace*> facesToQuadrangle;
+		for (size_t i = 0; i < Faces.size(); i++)
+		{
+			facesToQuadrangle.emplace_back(Faces[i].get());
+		}
+		for (size_t i = 0; i < facesToQuadrangle.size(); i++)
+		{
+			QuadrangleFace(facesToQuadrangle[i], faceCentroidVertices, edgeMidpointVertices, alreadyQuadrangledFaces);
+		}
+
+		MarkDirty();
+	}
+
+	std::unordered_map<int, glm::vec3> VertexObject::GetSubdivisionFaceCentroids() const
+	{
+		// Algorithm: For each face, calculate the centroid (the average of all the vertex positions that construct the face)
+		std::unordered_map<int, glm::vec3> centroids;
+
+		for (size_t i = 0; i < Faces.size(); i++)
+		{
+			int id = Faces[i]->GetIndexId();
+			glm::vec3 centroid = Faces[i]->GetCentroid();
+			//std::cout << fmt::format("Centroid of {}: {}", id, glm::to_string(centroid)) << std::endl;
+			centroids.insert({ id, centroid });
+		}
+
+		return centroids;
+	}
+
+	std::unordered_map<int, glm::vec3> VertexObject::GetSmoothedEdgeMidpoints(std::unordered_map<int, glm::vec3> InFaceCentroids) const
+	{
+		// Algorithm: For each edge, calculate the smoothed midpoint by averaging the two vertex positions of the edge with the centroids of incident faces.
+		std::unordered_map<int, glm::vec3> midpoints;
+
+		for (size_t i = 0; i < Edges.size(); i++)
+		{
+			FEdge* edge = Edges[i].get();
+			int id = edge->GetIndexId();
+			glm::vec3 vertexAverage = (edge->GetFirstHalfEdge()->GetNextVertex()->GetPosition() + edge->GetSecondHalfEdge()->GetNextVertex()->GetPosition());
+			int vertexCount = 2;
+			if (FFace* firstFace = edge->GetFirstHalfEdge()->GetOwningFace())
+			{
+				auto centroidPair = InFaceCentroids.find(firstFace->GetIndexId());
+				vertexAverage += centroidPair->second;
+				vertexCount++;
+			}
+			if (FFace* secondFace = edge->GetSecondHalfEdge()->GetOwningFace())
+			{
+				auto centroidPair = InFaceCentroids.find(secondFace->GetIndexId());
+				vertexAverage += centroidPair->second;
+				vertexCount++;
+			}
+			// TODO: Not sure if this quite gets the correct midpoint for border edges. Need to research more
+
+			glm::vec3 smoothedMidpoint = vertexAverage / (float)vertexCount;
+			//std::cout << fmt::format("Smoothed Midpoint of {}: {}", id, glm::to_string(smoothedMidpoint)) << std::endl;
+			midpoints.insert({ id, smoothedMidpoint });
+		}
+
+		return midpoints;
+	}
+
+	void VertexObject::SmoothOriginalVertices(std::unordered_map<int, glm::vec3> InFaceCentroids, std::unordered_map<int, glm::vec3> InEdgeMidpoints)
+	{
+		// Algorithm: For each vertex, smooth it by calculating the barycenter of the original position with the adjacent
+		// edge midpoints and incident faces. 
+		// 
+		// Smoothed position = v` = (n-2)*v/n + sum(e)/n^2 + sum(f)/n^2, where:
+		//		n is the number of adjacent edge midpoints
+		//		sum(e) is the sum of the adjacent midpoints
+		//		sum(f) is the sum of incident face centroids
+
+		for (size_t i = 0; i < Vertices.size(); i++)
+		{
+			FVertex* vertex = Vertices[i].get();
+			glm::vec3 originalPosition = vertex->GetPosition();
+
+			std::vector<FEdge*> adjacentEdges;
+			std::vector<FFace*> incidentFaces;
+			vertex->GetAdjacentEdgesAndFaces(adjacentEdges, incidentFaces);
+
+			glm::vec3 adjacentMidpointSum = glm::vec3(0.0f);
+			size_t n = adjacentEdges.size();
+			for (FEdge* edge : adjacentEdges)
+			{
+				auto midpointPair = InEdgeMidpoints.find(edge->GetIndexId());
+				adjacentMidpointSum += midpointPair->second;
+			}
+
+			glm::vec3 incidentFaceSum = glm::vec3(0.0f);
+			for (FFace* face : incidentFaces)
+			{
+				auto centroidPair = InFaceCentroids.find(face->GetIndexId());
+				incidentFaceSum += centroidPair->second;
+			}
+
+			bool isOnBorder = n != incidentFaces.size();
+			glm::vec3 smoothedPosition;
+			if (isOnBorder)
+			{
+				// TODO : this border calculation isn't quite correct. Might need to ignore midpoints that aren't on the boundary
+				smoothedPosition = (adjacentMidpointSum + originalPosition) / (float)(n + 1);
+			}
+			else
+			{
+				smoothedPosition = (float)(n - 2) * originalPosition / (float)n
+								+ adjacentMidpointSum / (float)(n * n)
+								+ incidentFaceSum / (float)(n * n);
+			}
+
+			//std::cout << fmt::format("Smoothed Position of {}: {}", vertex->GetIndexId(), glm::to_string(smoothedPosition)) << std::endl;
+			vertex->SetPosition(smoothedPosition);
+		}
+	}
+
+	void VertexObject::QuadrangleFace(FFace* InFace, std::unordered_map<int, FVertex*> InFaceCentroidVertices, std::unordered_map<int, FVertex*> InEdgeMidpointVertices, std::set<int>& InAlreadyQuadrangledFaces)
+	{
+		//	Each edge gets split into 2, and 4 new edges are created on the inside.
+		//  When creating new half edges, we can update the symmetrical references if the face of the original symm ref has already been quadrangled.
+		//  Make sure that all 4 new faces are added to the quadrangled faces set.
+		//   _____________
+		//  |      |      |
+		//  |______|______|
+		//  |      |      |
+		//  |______|______|
+		//
+
+		FFace* secondFace = CreateFace(nullptr);
+		FFace* thirdFace = CreateFace(nullptr);
+		FFace* fourthFace = CreateFace(nullptr);
+		std::vector<FFace*> newFaces;
+		newFaces.push_back(InFace);
+		newFaces.push_back(secondFace);
+		newFaces.push_back(thirdFace);
+		newFaces.push_back(fourthFace);
+
+		std::vector<FHalfEdge*> originalHalfEdges;
+		originalHalfEdges.push_back(InFace->GetHalfEdgeOnFace());
+		originalHalfEdges.push_back(originalHalfEdges[0]->GetNextHalfEdge());
+		originalHalfEdges.push_back(originalHalfEdges[1]->GetNextHalfEdge());
+		originalHalfEdges.push_back(originalHalfEdges[2]->GetNextHalfEdge());
+
+		std::vector<FHalfEdge*> newHalfEdges;
+		for (int i = 0; i < 4; i++)
+		{
+			// Initialize new half edges to point to edge midpoint vertices
+			FVertex* midpointVertex = InEdgeMidpointVertices.find(originalHalfEdges[i]->GetOwningEdge()->GetIndexId())->second;
+			FHalfEdge* newHalfEdge = CreateHalfEdge(nullptr, nullptr, newFaces[i], nullptr, midpointVertex);
+			midpointVertex->SetParentHalfEdge(newHalfEdge);
+
+			newHalfEdges.push_back(newHalfEdge);
+
+			newFaces[i]->SetHalfEdgeOnFace(newHalfEdge);
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			originalHalfEdges[i]->SetNextHalfEdge(newHalfEdges[(i + 1) % 4]);
+			originalHalfEdges[i]->SetOwningFace(newFaces[(i + 1) % 4]);
+
+			bool existsSymmetricalFace = originalHalfEdges[i]->GetSymmetricalHalfEdge()->GetOwningFace() != nullptr;
+			if (existsSymmetricalFace)
+			{
+				bool isSymmetricalFaceQuadrangled = InAlreadyQuadrangledFaces.find(originalHalfEdges[i]->GetSymmetricalHalfEdge()->GetOwningFace()->GetIndexId()) != InAlreadyQuadrangledFaces.end();
+				if (isSymmetricalFaceQuadrangled)
+				{
+					FHalfEdge* symmetricalHalfEdge = originalHalfEdges[i]->GetSymmetricalHalfEdge();
+					newHalfEdges[i]->SetSymmetricalHalfEdge(symmetricalHalfEdge);
+					symmetricalHalfEdge->SetSymmetricalHalfEdge(newHalfEdges[i]);
+					FEdge* newEdge = CreateEdge(newHalfEdges[i], symmetricalHalfEdge);
+
+					originalHalfEdges[i]->SetSymmetricalHalfEdge(symmetricalHalfEdge->GetPreviousHalfEdge()->GetSymmetricalHalfEdge()->GetPreviousHalfEdge());
+					originalHalfEdges[i]->GetSymmetricalHalfEdge()->SetSymmetricalHalfEdge(originalHalfEdges[i]);
+					originalHalfEdges[i]->GetOwningEdge()->SetFirstHalfEdge(originalHalfEdges[i]);
+					originalHalfEdges[i]->GetOwningEdge()->SetSecondHalfEdge(originalHalfEdges[i]->GetSymmetricalHalfEdge());
+				}
+			}
+			else
+			{
+				// Split border edge
+				FHalfEdge* borderHalfEdge = originalHalfEdges[i]->GetSymmetricalHalfEdge();
+				FHalfEdge* newBorderHalfEdge = CreateHalfEdge(borderHalfEdge, originalHalfEdges[i], nullptr, nullptr, newHalfEdges[i]->GetNextVertex());
+				borderHalfEdge->GetPreviousHalfEdge()->SetNextHalfEdge(newBorderHalfEdge);
+				originalHalfEdges[i]->SetSymmetricalHalfEdge(newBorderHalfEdge);
+				originalHalfEdges[i]->GetOwningEdge()->SetFirstHalfEdge(originalHalfEdges[i]);
+				originalHalfEdges[i]->GetOwningEdge()->SetSecondHalfEdge(newBorderHalfEdge);
+
+				borderHalfEdge->SetSymmetricalHalfEdge(newHalfEdges[i]);
+				newHalfEdges[i]->SetSymmetricalHalfEdge(borderHalfEdge);
+				FEdge* newEdge = CreateEdge(newHalfEdges[i], borderHalfEdge);
+			}
+		}
+
+		FVertex* centroidVertex = InFaceCentroidVertices.find(InFace->GetIndexId())->second;
+
+		std::vector<FHalfEdge*> newInnerHalfEdges;
+		for (int i = 0; i < 4; i++)
+		{
+			FHalfEdge* newHalfEdgeToCentroid = CreateHalfEdge(nullptr, nullptr, newFaces[i], nullptr, centroidVertex);
+			FHalfEdge* newHalfEdgeFromCentroid = CreateHalfEdge(originalHalfEdges[(i + 3) % 4], nullptr, newFaces[i], nullptr, newHalfEdges[(i+3) % 4]->GetNextVertex());
+			newHalfEdgeToCentroid->SetNextHalfEdge(newHalfEdgeFromCentroid);
+			newHalfEdges[i]->SetNextHalfEdge(newHalfEdgeToCentroid);
+
+			newInnerHalfEdges.push_back(newHalfEdgeToCentroid);
+			newInnerHalfEdges.push_back(newHalfEdgeFromCentroid);
+		}
+
+		centroidVertex->SetParentHalfEdge(newInnerHalfEdges[0]);
+
+		std::vector<FEdge*> newInnerEdges;
+		for (int i = 0; i < 4; i++)
+		{
+			newInnerHalfEdges[i*2]->SetSymmetricalHalfEdge(newInnerHalfEdges[(i*2 + 3) % 8]);
+			newInnerHalfEdges[(i*2 + 3) % 8]->SetSymmetricalHalfEdge(newInnerHalfEdges[i*2]);
+			newInnerEdges.push_back(CreateEdge(newInnerHalfEdges[i*2], newInnerHalfEdges[(i*2 + 3) % 8]));
+		}
+
+		InAlreadyQuadrangledFaces.insert(InFace->GetIndexId());
+		InAlreadyQuadrangledFaces.insert(secondFace->GetIndexId());
+		InAlreadyQuadrangledFaces.insert(thirdFace->GetIndexId());
+		InAlreadyQuadrangledFaces.insert(fourthFace->GetIndexId());
 	}
 
 }

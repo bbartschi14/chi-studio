@@ -8,7 +8,7 @@ namespace CHISTUDIO {
 class FHalfEdge;
 class FVertex;
 /** One of three primitive classes that make up a mesh data structure. 
- *  Does not store vertices of th face, instead traverses the mesh using a pointer
+ *  Does not store vertices of the face, instead traverses the mesh using a pointer
  *  to a half-edge that lies on this face.
  */
 class FFace
@@ -32,6 +32,9 @@ public:
 	glm::vec3 CalculateNaiveFaceNormal() const;
 
 	std::vector<TriangleHittable> GetTrianglesOnFace() const;
+
+	/** Calculate and return the centroid based on the average of the vertices on this face */
+	glm::vec3 GetCentroid() const;
 
 	/** Flagged used for stages of primitive deletion operations */
 	bool bMarkedForDeletion;

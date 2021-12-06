@@ -41,6 +41,7 @@ namespace CHISTUDIO {
     }
 
     // Hierarchy context menu
+    bool openCylinderModal = false;
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 4, 4 });
     if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
         ImGui::OpenPopup("HierarchyContext");
@@ -50,11 +51,17 @@ namespace CHISTUDIO {
         ImGui::Separator();
         if (ImGui::Selectable("Add Cube"))
         {
-            InApplication.CreatePrimitiveNode(EDefaultObject::Cube);
+            FDefaultObjectParams params;
+            InApplication.CreatePrimitiveNode(EDefaultObject::Cube, params);
         }
         if (ImGui::Selectable("Add Plane"))
         {
-            InApplication.CreatePrimitiveNode(EDefaultObject::Plane);
+            FDefaultObjectParams params;
+            InApplication.CreatePrimitiveNode(EDefaultObject::Plane, params);
+        }
+        if (ImGui::Selectable("Add Cylinder"))
+        {
+            openCylinderModal = true;
         }
         if (ImGui::Selectable("Add Camera"))
         {
@@ -80,6 +87,36 @@ namespace CHISTUDIO {
 
 	ImGui::End();
     ImGui::PopStyleVar();
+
+
+    // Always center this window when appearing
+    //ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+   // ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+
+    if (openCylinderModal)
+    {
+        ImGui::OpenPopup("Create Cylinder");
+    }
+    if (ImGui::BeginPopupModal("Create Cylinder", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        static int cylinderSideSegments = 6;
+        ImGui::SliderInt("Side Segments", &cylinderSideSegments, 3, 100);
+        ImGui::Separator();
+
+        if (ImGui::Button("Create", ImVec2(120, 0))) 
+        { 
+            FDefaultObjectParams params;
+            params.NumberOfSides = cylinderSideSegments;
+            InApplication.CreatePrimitiveNode(EDefaultObject::Cylinder, params);
+            ImGui::CloseCurrentPopup(); 
+        }
+        ImGui::SetItemDefaultFocus();
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+
+        ImGui::EndPopup();
+    }
 
     bool bDeleted = false;
     for (SceneNode* node : NodesToDelete)

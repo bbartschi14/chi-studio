@@ -53,8 +53,8 @@ void ChiStudioApplication::SetupScene()
 
 	//SceneNode* tracingPointLight = CreatePointLight();
 	//tracingPointLight->GetTransform().SetPosition(glm::vec3(0.0f, 5.0f, 5.0f));
-
-	SceneNode* plane = CreatePrimitiveNode(EDefaultObject::Plane);
+	FDefaultObjectParams params;
+	SceneNode* plane = CreatePrimitiveNode(EDefaultObject::Plane, params);
 	plane->GetTransform().SetScale(glm::vec3(5.0f, 1.0f, 5.0f));
 	plane->GetComponentPtr<MaterialComponent>()->GetMaterial().SetAlbedo(glm::vec3(.1f));
 

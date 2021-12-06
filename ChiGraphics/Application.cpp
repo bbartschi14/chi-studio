@@ -238,10 +238,10 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 	}
 }
 
-SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType)
+SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams)
 {
 	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();
-	std::shared_ptr<VertexObject> cubeMesh = std::make_shared<VertexObject>(InObjectType);
+	std::shared_ptr<VertexObject> cubeMesh = std::make_shared<VertexObject>(InObjectType, InParams);
 
 	std::string name = "Object";
 	switch (InObjectType)
@@ -251,6 +251,9 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType)
 		break;
 	case (EDefaultObject::Plane):
 		name = "Plane";
+		break;
+	case (EDefaultObject::Cylinder):
+		name = "Cylinder";
 		break;
 	}
 	auto cubeNode = make_unique<SceneNode>(fmt::format("{}.{}", name, Scene_->GetRootNode().GetChildrenCount()));
