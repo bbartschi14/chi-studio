@@ -61,6 +61,105 @@ namespace CHISTUDIO {
 		VertexArray_->UpdateIndices(*Indices);
 	}
 
+	void VertexObject::CopyVertexObject(VertexObject* InVertexObject)
+	{
+		// Start by resetting the half edge data
+		Faces.clear();
+		Edges.clear();
+		HalfEdges.clear();
+		Vertices.clear();
+
+		SelectedFaces.clear();
+		SelectedEdges.clear();
+		SelectedHalfEdges.clear();
+		SelectedVertices.clear();
+
+		FaceIndex = 0;
+		EdgeIndex = 0;
+		HalfEdgeIndex = 0;
+		VertexIndex = 0;
+
+		// Now iterate over the other vertex object's half edge data structure to copy
+
+		// Keep track of index to pointer so we can easily re-link our data
+		std::unordered_map<int, FVertex*> verticesMap;
+		std::unordered_map<int, FHalfEdge*> halfEdgesMap;
+		std::unordered_map<int, FEdge*> edgesMap;
+		std::unordered_map<int, FFace*> facesMap;
+
+		// Copy each primitive object with the data currently available. 
+		const std::vector<std::unique_ptr<FVertex>>& verticesToCopy = InVertexObject->GetVertices();
+		for (size_t i = 0; i < verticesToCopy.size(); i++)
+		{
+			FVertex* vertToCopy = verticesToCopy[i].get();
+			FVertex* newVert = CreateVertex(vertToCopy->GetPosition(), nullptr);
+			newVert->SetIndexId(vertToCopy->GetIndexId());
+			verticesMap.insert( {newVert->GetIndexId(), newVert} );
+		}
+
+		const std::vector<std::unique_ptr<FHalfEdge>>& halfEdgesToCopy = InVertexObject->GetHalfEdges();
+		for (size_t i = 0; i < halfEdgesToCopy.size(); i++)
+		{
+			FHalfEdge* halfEdgeToCopy = halfEdgesToCopy[i].get();
+			auto nextVertexPair = verticesMap.find(halfEdgeToCopy->GetNextVertex()->GetIndexId());
+			FHalfEdge* newHalfEdge = CreateHalfEdge(nullptr, nullptr, nullptr, nullptr, nextVertexPair->second);
+			newHalfEdge->SetIndexId(halfEdgeToCopy->GetIndexId());
+			halfEdgesMap.insert({ newHalfEdge->GetIndexId(), newHalfEdge });
+		}
+		
+		const std::vector<std::unique_ptr<FEdge>>& edgesToCopy = InVertexObject->GetEdges();
+		for (size_t i = 0; i < edgesToCopy.size(); i++)
+		{
+			FEdge* edgeToCopy = edgesToCopy[i].get();
+			auto firstHalfEdgePair = halfEdgesMap.find(edgeToCopy->GetFirstHalfEdge()->GetIndexId());
+			auto secondHalfEdgePair = halfEdgesMap.find(edgeToCopy->GetSecondHalfEdge()->GetIndexId());
+			FEdge* newEdge = CreateEdge(firstHalfEdgePair->second, secondHalfEdgePair->second);
+			newEdge->SetIndexId(edgeToCopy->GetIndexId());
+			edgesMap.insert({ newEdge->GetIndexId(), newEdge });
+		}
+		
+		const std::vector<std::unique_ptr<FFace>>& facesToCopy = InVertexObject->GetFaces();
+		for (size_t i = 0; i < facesToCopy.size(); i++)
+		{
+			FFace* faceToCopy = facesToCopy[i].get();
+			auto halfEdgeOnFacePair = halfEdgesMap.find(faceToCopy->GetHalfEdgeOnFace()->GetIndexId());
+			FFace* newFace = CreateFace(halfEdgeOnFacePair->second);
+			newFace->SetIndexId(faceToCopy->GetIndexId());
+			facesMap.insert({ newFace->GetIndexId(), newFace });
+		}
+		
+		// Finish primitives with all data, now that each primitive has been created
+		for (size_t i = 0; i < verticesToCopy.size(); i++)
+		{
+			FVertex* vertToCopy = verticesToCopy[i].get();
+			FVertex* newVert = verticesMap.find(vertToCopy->GetIndexId())->second;
+			auto parentHalfEdgePair = halfEdgesMap.find(vertToCopy->GetParentHalfEdge()->GetIndexId());
+			newVert->SetParentHalfEdge(parentHalfEdgePair->second);
+		}
+		
+		for (size_t i = 0; i < halfEdgesToCopy.size(); i++)
+		{
+			FHalfEdge* halfEdgeToCopy = halfEdgesToCopy[i].get();
+			FHalfEdge* newHalfEdge = halfEdgesMap.find(halfEdgeToCopy->GetIndexId())->second;
+			FHalfEdge* nextHalfEdge = halfEdgesMap.find(halfEdgeToCopy->GetNextHalfEdge()->GetIndexId())->second;
+			FHalfEdge* symmetricalHalfEdge = halfEdgesMap.find(halfEdgeToCopy->GetSymmetricalHalfEdge()->GetIndexId())->second;
+			if (halfEdgeToCopy->GetOwningFace())
+			{
+				FFace* owningFace = facesMap.find(halfEdgeToCopy->GetOwningFace()->GetIndexId())->second;
+				newHalfEdge->SetOwningFace(owningFace);
+			}
+		
+			newHalfEdge->SetNextHalfEdge(nextHalfEdge);
+			newHalfEdge->SetSymmetricalHalfEdge(symmetricalHalfEdge);
+		}
+		
+		// Copy indices (must be done after constructing primitives
+		FaceIndex = InVertexObject->GetFaceIndex();
+		EdgeIndex = InVertexObject->GetEdgeIndex();
+		HalfEdgeIndex = InVertexObject->GetHalfEdgeIndex();
+		VertexIndex = InVertexObject->GetVertexIndex();
+	}
+
 	void VertexObject::CreateHalfEdgeCube()
 	{
 		std::set<int> usedHalfEdgeIndices;
@@ -554,9 +653,12 @@ namespace CHISTUDIO {
 			FHalfEdge* nextIncidentHalfEdge = InStartingEdge->GetNextHalfEdge()->GetSymmetricalHalfEdge();
 			do
 			{
-				if (usableFaceIDs.find(nextIncidentHalfEdge->GetOwningFace()->GetIndexId()) != usableFaceIDs.end())
+				if (nextIncidentHalfEdge->GetOwningFace())
 				{
-					incidentHalfEdges.IncidentHalfEdges.emplace_back(nextIncidentHalfEdge);
+					if (usableFaceIDs.find(nextIncidentHalfEdge->GetOwningFace()->GetIndexId()) != usableFaceIDs.end())
+					{
+						incidentHalfEdges.IncidentHalfEdges.emplace_back(nextIncidentHalfEdge);
+					}
 				}
 				nextIncidentHalfEdge = nextIncidentHalfEdge->GetNextHalfEdge()->GetSymmetricalHalfEdge();
 			} while (nextIncidentHalfEdge != InStartingEdge);
@@ -1461,8 +1563,6 @@ namespace CHISTUDIO {
 		{
 			QuadrangleFace(facesToQuadrangle[i], faceCentroidVertices, edgeMidpointVertices, alreadyQuadrangledFaces);
 		}
-
-		MarkDirty();
 	}
 
 	std::unordered_map<int, glm::vec3> VertexObject::GetSubdivisionFaceCentroids() const

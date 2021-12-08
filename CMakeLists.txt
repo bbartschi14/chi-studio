@@ -131,6 +131,7 @@ file(GLOB graphics_srcs
     ${graphics_dir}/Collision/*.cpp
     ${graphics_dir}/Collision/Hittables/*.cpp
     ${graphics_dir}/RayTracing/*.cpp
+    ${graphics_dir}/Modifiers/*.cpp
 )
 
 ###################################################

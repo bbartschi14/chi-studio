@@ -19,11 +19,11 @@ namespace CHISTUDIO {
 
 	private:
 		void RenderTransformPanel(std::vector<SceneNode*> selectedNodes);
-		void RenderComponents(std::vector<SceneNode*> selectedNodes);
+		void RenderComponents(std::vector<SceneNode*> selectedNodes, Application& InApplication);
 
 		// Component Panels
 		void RenderLightComponent(std::vector<SceneNode*> selectedNodes, LightComponent* lightComponent);
-		void RenderRenderingComponent(std::vector<SceneNode*> selectedNodes, RenderingComponent* renderingComponent);
+		void RenderRenderingComponent(std::vector<SceneNode*> selectedNodes, RenderingComponent* renderingComponent, Application& InApplication);
 		void RenderCameraComponent(std::vector<SceneNode*> selectedNodes, CameraComponent* cameraComponent);
 		void RenderMaterialComponent(std::vector<SceneNode*> selectedNodes, MaterialComponent* materialComponent);
 	};

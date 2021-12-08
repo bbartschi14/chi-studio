@@ -121,11 +121,11 @@ namespace CHISTUDIO {
     bool bDeleted = false;
     for (SceneNode* node : NodesToDelete)
     {
-        node->GetParentPtr()->RemoveChild(node);
         if (node->IsSelected())
         {
             InApplication.SelectNode(nullptr, false);
         }
+        node->GetParentPtr()->RemoveChild(node);
         bDeleted = true;
     }
     if (bDeleted)

@@ -59,7 +59,8 @@ struct FBoundaryLoop {
     }
 };
 
-struct FFaceRegion {
+struct FFaceRegion 
+{
     std::vector<FFace*> FacesInRegion;
     std::vector<std::shared_ptr<FBoundaryLoop>> BoundaryLoops;
     std::vector<FHalfEdge*> UnsortedLoopEdges;
@@ -91,6 +92,19 @@ struct FFaceRegion {
 
         return result;
     }
+};
+
+struct FHalfEdgeMeshData
+{
+    std::vector<std::unique_ptr<FFace>> Faces;
+    std::vector<std::unique_ptr<FHalfEdge>> HalfEdges;
+    std::vector<std::unique_ptr<FEdge>> Edges;
+    std::vector<std::unique_ptr<FVertex>> Vertices;
+
+    int FaceIndex;
+    int HalfEdgeIndex;
+    int EdgeIndex;
+    int VertexIndex;
 };
 
 // Instances of this class store various vertex data and are responsible
@@ -148,6 +162,9 @@ public:
     void UpdateColors(std::unique_ptr<FColorArray> InColors);
     void UpdateTexCoord(std::unique_ptr<FTexCoordArray> InTexCoords);
     void UpdateIndices(std::unique_ptr<FIndexArray> InIndices);
+
+    // Create a deep copy of another vertex object
+    void CopyVertexObject(VertexObject* InVertexObject);
 
 private:
     
@@ -242,6 +259,23 @@ public:
     const std::vector<std::unique_ptr<FVertex>>& GetVertices() const
     {
         return Vertices;
+    }
+
+    int GetFaceIndex() const
+    {
+        return FaceIndex;
+    }
+    int GetHalfEdgeIndex() const
+    {
+        return HalfEdgeIndex;
+    }
+    int GetEdgeIndex() const
+    {
+        return EdgeIndex;
+    }
+    int GetVertexIndex() const
+    {
+        return VertexIndex;
     }
 
     const std::set<int>& GetSelectedFaces() const

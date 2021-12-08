@@ -20,6 +20,12 @@ namespace CHISTUDIO {
     bRenderSolid = true;
     bRenderWireframe = false;
     bRenderPoints = false;
+    bDisplayUnmodified = false;
+
+    ShadingType = EShadingType::Flat;
+
+    FDefaultObjectParams dummyParams;
+    PostModifierVertexObj = std::make_shared<VertexObject>(EDefaultObject::CustomMesh, dummyParams);
 }
 
 void RenderingComponent::SetDrawRange(int InStartIndex, int InNumIndices)
@@ -36,6 +42,7 @@ void RenderingComponent::SetVertexObject(std::shared_ptr<VertexObject> InVertexO
 void RenderingComponent::SetDrawMode(EDrawMode InDrawMode)
 {
     VertexObj->GetVertexArray().SetDrawMode( InDrawMode );
+    PostModifierVertexObj->GetVertexArray().SetDrawMode( InDrawMode );
 }
 
 EDrawMode RenderingComponent::GetDrawMode()
@@ -46,6 +53,7 @@ EDrawMode RenderingComponent::GetDrawMode()
 void RenderingComponent::SetPolygonMode(EPolygonMode InPolygonMode)
 {
     VertexObj->GetVertexArray().SetPolygonMode( InPolygonMode );
+    PostModifierVertexObj->GetVertexArray().SetPolygonMode( InPolygonMode );
 }
 
 EPolygonMode RenderingComponent::GetPolygonMode()
@@ -64,8 +72,43 @@ void RenderingComponent::Render() const
     //        static_cast<size_t>(NumIndices));
     //}
     
-    VertexObj->Render();
-    
+    GetVertexObjectPtr()->Render();
+}
+
+void RenderingComponent::AddModifier(std::unique_ptr<IModifier> InModifier)
+{
+    Modifiers.push_back(std::move(InModifier));
+    RecalculateModifiers();
+}
+
+void RenderingComponent::RecalculateModifiers()
+{
+    PostModifierVertexObj->CopyVertexObject(VertexObj.get());
+
+    for (size_t i = 0; i < Modifiers.size(); i++)
+    {
+        Modifiers[i]->ApplyModifier(PostModifierVertexObj.get());
+    }
+
+    PostModifierVertexObj->MarkDirty();
+}
+
+void RenderingComponent::SetShadingType(EShadingType InShadingType)
+{
+    ShadingType = InShadingType;
+    if (VertexObj) VertexObj->SetShadingType(ShadingType);
+    if (PostModifierVertexObj) PostModifierVertexObj->SetShadingType(ShadingType);
+}
+
+void RenderingComponent::OnEnterEditMode()
+{
+    bDisplayUnmodified = true;
+}
+
+void RenderingComponent::OnExitEditMode()
+{
+    bDisplayUnmodified = false;
+    RecalculateModifiers();
 }
 
 }

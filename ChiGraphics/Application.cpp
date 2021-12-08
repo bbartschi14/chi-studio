@@ -75,9 +75,9 @@ void Application::SelectNode(SceneNode* nodeToSelect, bool addToSelection)
 {
 	if (!addToSelection || nodeToSelect == nullptr)
 	{
-		DeselectAllNodes();
-
 		SetSceneMode(ESceneMode::Object);
+
+		DeselectAllNodes();
 	}
 
 	if (nodeToSelect)
@@ -109,6 +109,22 @@ void Application::DeselectAllNodes()
 void Application::SetSceneMode(ESceneMode InSceneMode)
 {
 	CurrentSceneMode = InSceneMode;
+
+	if (SelectedNodes.size() > 0)
+	{
+		if (auto renderingComp = SelectedNodes[0]->GetComponentPtr<RenderingComponent>())
+		{
+			if (CurrentSceneMode == ESceneMode::Edit)
+			{
+				renderingComp->OnEnterEditMode();
+			}
+			else
+			{
+				renderingComp->OnExitEditMode();
+			}
+		}
+	}
+	
 }
 
 void Application::SetEditModeSelectionType(EEditModeSelectionType InSelectionType)
@@ -267,6 +283,30 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaul
 	SceneNode* ref = cubeNode.get();
 
 	Scene_->GetRootNode().AddChild(std::move(cubeNode));
+	return ref;
+}
+
+SceneNode* Application::CreateVertexObjectCopy(VertexObject* InVertexObjectToCopy)
+{
+	std::shared_ptr<PhongShader> shader = std::make_shared<PhongShader>();
+	FDefaultObjectParams dummyParams;
+	std::shared_ptr<VertexObject> mesh = std::make_shared<VertexObject>(EDefaultObject::CustomMesh, dummyParams);
+	mesh->CopyVertexObject(InVertexObjectToCopy);
+	mesh->MarkDirty();
+
+	std::string name = "Copy";
+
+	auto node = make_unique<SceneNode>(fmt::format("{}.{}", name, Scene_->GetRootNode().GetChildrenCount()));
+	node->CreateComponent<ShadingComponent>(shader);
+	node->CreateComponent<RenderingComponent>(mesh);
+	node->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
+	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
+	auto hittableLight = std::make_shared<HittableLight>();
+	node->CreateComponent<LightComponent>(hittableLight);
+	node->CreateComponent<MaterialComponent>(material);
+	SceneNode* ref = node.get();
+
+	Scene_->GetRootNode().AddChild(std::move(node));
 	return ref;
 }
 

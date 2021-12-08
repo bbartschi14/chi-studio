@@ -5,6 +5,8 @@
 #include <imgui_internal.h>
 #include <functional>
 #include <windows.h>
+#include "ChiGraphics/Modifiers/Modifier.h"
+#include <core.h>
 
 namespace CHISTUDIO {
 
@@ -118,6 +120,30 @@ namespace CHISTUDIO {
 			return fileNameStr;
 		}
 
+		// Returns true if the modifier had any properties changed
+		static bool RenderModifier(IModifier* InModifier, int count)
+		{
+				ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
+				ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+				ImGui::BeginChild(fmt::format("Modifier{}", count).c_str(), ImVec2(0, 20 + InModifier->GetUIHeight()), true, window_flags);
+				
+				if (ImGui::BeginMenuBar())
+				{
+					if (ImGui::BeginMenu(InModifier->GetName().c_str()))
+					{
+						//ShowExampleMenuFile();
+						ImGui::EndMenu();
+					}
+					ImGui::EndMenuBar();
+				}
+				
+				bool wasModified = InModifier->RenderUI();
+
+				ImGui::EndChild();
+				ImGui::PopStyleVar();
+				
+				return wasModified;
+		}
 	};
 
 }

@@ -5,6 +5,7 @@
 #include "core.h"
 #include "ChiGraphics/Cameras/TracingCameraNode.h"
 #include "ChiGraphics/Lights/HittableLight.h"
+#include "ChiGraphics/Modifiers/SubdivisionSurfaceModifier.h"
 
 namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
@@ -39,7 +40,7 @@ namespace CHISTUDIO {
 
 		
 		RenderTransformPanel(selectedNodes);
-		RenderComponents(selectedNodes);
+		RenderComponents(selectedNodes, InApplication);
 
 		ImGui::End();
 
@@ -80,7 +81,7 @@ namespace CHISTUDIO {
 		}
 	}
 
-	void WObjectProperties::RenderComponents(std::vector<SceneNode*> selectedNodes)
+	void WObjectProperties::RenderComponents(std::vector<SceneNode*> selectedNodes, Application& InApplication)
 	{
 		ImVec2 panelSize = ImGui::GetContentRegionAvail();
 		if (selectedNodes.size() == 1)
@@ -96,7 +97,7 @@ namespace CHISTUDIO {
 			if (RenderingComponent* render = selectedNodes[0]->GetComponentPtr<RenderingComponent>())
 			{
 				if (!render->bIsDebugRender)
-					RenderRenderingComponent(selectedNodes, render);
+					RenderRenderingComponent(selectedNodes, render, InApplication);
 			}
 			if (MaterialComponent* material = selectedNodes[0]->GetComponentPtr<MaterialComponent>())
 			{
@@ -155,34 +156,74 @@ namespace CHISTUDIO {
 		}
 	}
 
-	void WObjectProperties::RenderRenderingComponent(std::vector<SceneNode*> selectedNodes, RenderingComponent* renderingComponent) 
+	void WObjectProperties::RenderRenderingComponent(std::vector<SceneNode*> selectedNodes, RenderingComponent* renderingComponent, Application& InApplication)
 	{
 		if (ImGui::CollapsingHeader("Rendering", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			VertexObject* vertexObject = renderingComponent->GetVertexObjectPtr();
-			ImGui::Text("Vertex Object Data");
-			ImGui::BulletText(fmt::format("Vertices: {}", vertexObject->HasPositions() ? vertexObject->GetPositions().size() : 0).c_str());
-			ImGui::BulletText(fmt::format("Tris: {}", vertexObject->HasIndices() ? vertexObject->GetIndices().size()/3 : 0).c_str());
-			ImGui::BulletText(fmt::format("Normals: {}", vertexObject->HasNormals() ? vertexObject->GetNormals().size() : 0).c_str());
-			ImGui::BulletText(fmt::format("UVs: {}", vertexObject->HasTexCoords() ? vertexObject->GetTexCoords().size() : 0).c_str());
-			ImGui::BulletText(fmt::format("Colors: {}", vertexObject->HasColors() ? vertexObject->GetColors().size() : 0).c_str());
+
+			if (ImGui::Button("Copy Object"))
+			{
+				InApplication.CreateVertexObjectCopy(vertexObject);
+			}
+			//ImGui::Text("Vertex Object Data");
+			//ImGui::BulletText(fmt::format("Vertices: {}", vertexObject->HasPositions() ? vertexObject->GetPositions().size() : 0).c_str());
+			//ImGui::BulletText(fmt::format("Tris: {}", vertexObject->HasIndices() ? vertexObject->GetIndices().size()/3 : 0).c_str());
+			//ImGui::BulletText(fmt::format("Normals: {}", vertexObject->HasNormals() ? vertexObject->GetNormals().size() : 0).c_str());
+			//ImGui::BulletText(fmt::format("UVs: {}", vertexObject->HasTexCoords() ? vertexObject->GetTexCoords().size() : 0).c_str());
+			//ImGui::BulletText(fmt::format("Colors: {}", vertexObject->HasColors() ? vertexObject->GetColors().size() : 0).c_str());
+			ImGui::Text("Visibility");
 
 			ImGui::Checkbox("Solid", &renderingComponent->bRenderSolid);
+			ImGui::SameLine();
 			ImGui::Checkbox("Wireframe", &renderingComponent->bRenderWireframe);
+			ImGui::SameLine();
 			ImGui::Checkbox("Points", &renderingComponent->bRenderPoints);
+			ImGui::SameLine();
 
 			bool isDebugNormals = vertexObject->IsDebugNormals();
-			if (ImGui::Checkbox("Debug Normals", &isDebugNormals))
+			if (ImGui::Checkbox("Normals", &isDebugNormals))
 			{
 				vertexObject->SetDebugNormals(isDebugNormals);
 			}
-			
-			bool isSmoothShaded = (bool)vertexObject->GetShadingType();
-			if (ImGui::Checkbox("Smooth Shading", &isSmoothShaded))
+			ImGui::SameLine();
+
+			bool isSmoothShaded = (bool)renderingComponent->GetShadingType();
+			if (ImGui::Checkbox("Smooth", &isSmoothShaded))
 			{
-			  vertexObject->SetShadingType((EShadingType)isSmoothShaded);
+				renderingComponent->SetShadingType((EShadingType)isSmoothShaded);
 			}
 
+			ImGui::Separator();
+
+			ImGui::Text("Modifiers");
+			ImGui::SameLine();
+			if (ImGui::Button("Add Modifier"))
+			{
+				ImGui::OpenPopup("ModifierPopup");
+			}
+			if (ImGui::BeginPopup("ModifierPopup"))
+			{
+				ImGui::Text("Select a Modifier");
+				ImGui::Separator();
+				if (ImGui::Selectable("Subdivision Surface"))
+				{
+					auto subdivMod = make_unique<SubdivisionSurfaceModifier>(1);
+					renderingComponent->AddModifier(std::move(subdivMod));
+				}
+
+				ImGui::EndPopup();
+			}
+			const std::vector<std::unique_ptr<IModifier>>& modifiers = renderingComponent->GetModifiers();
+			bool wasModified = false;
+			for (size_t i = 0; i < modifiers.size(); i++)
+			{
+				wasModified |= UILibrary::RenderModifier(modifiers[i].get(), i);
+			}
+			if (wasModified)
+			{
+				renderingComponent->RecalculateModifiers();
+			}
 			ImGui::Separator();
 
 		}
