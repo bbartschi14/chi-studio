@@ -1,7 +1,9 @@
 #include "SubdivisionSurfaceModifier.h"
 #include "ChiGraphics/Meshes/VertexObject.h"
 
-void CHISTUDIO::SubdivisionSurfaceModifier::ApplyModifier(VertexObject* InObjectToModify) const
+namespace CHISTUDIO {
+
+void SubdivisionSurfaceModifier::ApplyModifier(VertexObject* InObjectToModify) const
 {
 	for (int i = 0; i < NumberOfIterations; i++)
 	{
@@ -9,7 +11,7 @@ void CHISTUDIO::SubdivisionSurfaceModifier::ApplyModifier(VertexObject* InObject
 	}
 }
 
-bool CHISTUDIO::SubdivisionSurfaceModifier::RenderUI()
+bool SubdivisionSurfaceModifier::RenderUI()
 {
 	bool wasModified = false;
 	if (ImGui::SliderInt("Iterations", &NumberOfIterations, 0, 8))
@@ -17,4 +19,6 @@ bool CHISTUDIO::SubdivisionSurfaceModifier::RenderUI()
 		wasModified = true;
 	}
 	return wasModified;
+}
+
 }

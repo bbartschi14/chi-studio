@@ -6,6 +6,7 @@
 #include "ChiGraphics/Cameras/TracingCameraNode.h"
 #include "ChiGraphics/Lights/HittableLight.h"
 #include "ChiGraphics/Modifiers/SubdivisionSurfaceModifier.h"
+#include "ChiGraphics/Modifiers/MirrorModifier.h"
 
 namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
@@ -210,6 +211,11 @@ namespace CHISTUDIO {
 				{
 					auto subdivMod = make_unique<SubdivisionSurfaceModifier>(1);
 					renderingComponent->AddModifier(std::move(subdivMod));
+				}
+				if (ImGui::Selectable("Mirror"))
+				{
+					auto mirrorMod = make_unique<MirrorModifier>();
+					renderingComponent->AddModifier(std::move(mirrorMod));
 				}
 
 				ImGui::EndPopup();
