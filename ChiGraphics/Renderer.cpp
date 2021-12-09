@@ -350,6 +350,10 @@ namespace CHISTUDIO {
 				{
 					Application_.SetEditModeSelectionType(EEditModeSelectionType::Face);
 				}
+				if (ImGui::IsKeyPressed(GLFW_KEY_A))
+				{
+					Application_.SelectAllEditModePrims();
+				}
 			}
 		}
 		

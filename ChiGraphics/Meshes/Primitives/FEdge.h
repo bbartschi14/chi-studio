@@ -21,6 +21,10 @@ public:
 	void SetIndexId(int InIndexId);
 	int GetIndexId() const;
 
+	// Returns null if there is no boundary half edge
+	FHalfEdge* GetBoundaryHalfEdge() const;
+
+	bool IsBoundaryEdge() const;
 	bool bMarkedForDeletion;
 private:
 	FHalfEdge* FirstHalfEdge;

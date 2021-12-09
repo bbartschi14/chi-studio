@@ -354,6 +354,10 @@ public:
     void SelectEdge(int InIndex, bool addToSelection);
     void SelectFace(int InIndex, bool addToSelection);
 
+    void SelectAllVertices();
+    void SelectAllEdges();
+    void SelectAllFaces();
+
     void DeselectVertex(int InIndex);
     void DeselectEdge(int InIndex);
     void DeselectFace(int InIndex);
@@ -413,7 +417,9 @@ public:
     }
 
     void ExtrudeSelectedFaces(EFaceExtrudeType InType);
-    
+    void ExtrudeSelectedEdges(EFaceExtrudeType InType);
+    void ExtrudeEdge(FEdge* InEdgeToExtrude);
+
     FVertex* CreateVertex(glm::vec3 InPosition, FHalfEdge* InOwningHalfEdge);
     FHalfEdge* CreateHalfEdge(FHalfEdge* InNextHalfEdge, FHalfEdge* InSymmetricalHalfEdge, FFace* InOwningFace, FEdge* InOwningEdge, FVertex* InNextVertex);
     FEdge* CreateEdge(FHalfEdge* InFirstHalfEdge, FHalfEdge* InSecondHalfEdge);

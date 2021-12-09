@@ -808,6 +808,34 @@ namespace CHISTUDIO {
 		OnSelectionChanged();
 	}
 
+	void VertexObject::SelectAllVertices()
+	{
+		ClearSelectedVertices();
+		for (size_t i = 0; i < Vertices.size(); i++)
+		{
+			SelectVertex(Vertices[i]->GetIndexId(), true);
+		}
+		OnSelectionChanged();
+	}
+	void VertexObject::SelectAllEdges()
+	{
+		ClearSelectedEdges();
+		for (size_t i = 0; i < Edges.size(); i++)
+		{
+			SelectEdge(Edges[i]->GetIndexId(), true);
+		}
+		OnSelectionChanged();
+	}
+	void VertexObject::SelectAllFaces()
+	{
+		ClearSelectedFaces();
+		for (size_t i = 0; i < Faces.size(); i++)
+		{
+			SelectFace(Faces[i]->GetIndexId(), true);
+		}
+		OnSelectionChanged();
+	}
+
 	void VertexObject::DeselectVertex(int InIndex)
 	{
 		SelectedVertices.erase(InIndex);
@@ -1220,8 +1248,6 @@ namespace CHISTUDIO {
 
 	void VertexObject::ExtrudeSelectedFaces(EFaceExtrudeType InType)
 	{
-		
-		
 		if (InType == EFaceExtrudeType::Individual)
 		{
 			for (FFace* face : GetSelectedFacesPtrs())
@@ -1245,6 +1271,62 @@ namespace CHISTUDIO {
 			}
 		}
 		
+		MarkDirty();
+	}
+
+	void VertexObject::ExtrudeEdge(FEdge* InEdgeToExtrude)
+	{
+		FHalfEdge* boundaryHalfEdge = InEdgeToExtrude->GetBoundaryHalfEdge();
+		if (boundaryHalfEdge != nullptr)
+		{
+			FHalfEdge* previousHalfEdgeToBoundary = boundaryHalfEdge->GetPreviousHalfEdge();
+
+			FFace* newFace = CreateFace(nullptr);
+			newFace->SetHalfEdgeOnFace(boundaryHalfEdge);
+
+			glm::vec3 deltaPos = glm::vec3(0.0f, 1.0f, 0.0f);
+			FVertex* firstNewVert = CreateVertex(boundaryHalfEdge->GetNextVertex()->GetPosition() + deltaPos, nullptr);
+			FVertex* secondNewVert = CreateVertex(boundaryHalfEdge->GetPreviousHalfEdge()->GetNextVertex()->GetPosition() + deltaPos, nullptr);
+
+			FHalfEdge* firstNewHalfEdgeInside = CreateHalfEdge(nullptr, nullptr, newFace, nullptr, firstNewVert);
+			firstNewVert->SetParentHalfEdge(firstNewHalfEdgeInside);
+			FHalfEdge* firstNewHalfEdgeOutside = CreateHalfEdge(boundaryHalfEdge->GetNextHalfEdge(), firstNewHalfEdgeInside, nullptr, nullptr, boundaryHalfEdge->GetNextVertex());
+			firstNewHalfEdgeInside->SetSymmetricalHalfEdge(firstNewHalfEdgeOutside);
+			FEdge* firstEdge = CreateEdge(firstNewHalfEdgeInside, firstNewHalfEdgeOutside);
+			
+			FHalfEdge* secondNewHalfEdgeInside = CreateHalfEdge(nullptr, nullptr, newFace, nullptr, secondNewVert);
+			secondNewVert->SetParentHalfEdge(secondNewHalfEdgeInside);
+			FHalfEdge* secondNewHalfEdgeOutside = CreateHalfEdge(firstNewHalfEdgeOutside, secondNewHalfEdgeInside, nullptr, nullptr, firstNewVert);
+			secondNewHalfEdgeInside->SetSymmetricalHalfEdge(secondNewHalfEdgeOutside);
+			FEdge* secondEdge = CreateEdge(secondNewHalfEdgeInside, secondNewHalfEdgeOutside);
+			
+			FHalfEdge* thirdNewHalfEdgeInside = CreateHalfEdge(boundaryHalfEdge, nullptr, newFace, nullptr, boundaryHalfEdge->GetPreviousHalfEdge()->GetNextVertex());
+			FHalfEdge* thirdNewHalfEdgeOutside = CreateHalfEdge(secondNewHalfEdgeOutside, thirdNewHalfEdgeInside, nullptr, nullptr, secondNewVert);
+			previousHalfEdgeToBoundary->SetNextHalfEdge(thirdNewHalfEdgeOutside);
+			thirdNewHalfEdgeInside->SetSymmetricalHalfEdge(thirdNewHalfEdgeOutside);
+			FEdge* thirdEdge = CreateEdge(thirdNewHalfEdgeInside, thirdNewHalfEdgeOutside);
+
+			boundaryHalfEdge->SetNextHalfEdge(firstNewHalfEdgeInside);
+			boundaryHalfEdge->SetOwningFace(newFace);
+			firstNewHalfEdgeInside->SetNextHalfEdge(secondNewHalfEdgeInside);
+			secondNewHalfEdgeInside->SetNextHalfEdge(thirdNewHalfEdgeInside);
+		}
+		else
+		{
+			std::cout << "Can't exture non-boundary edge" << std::endl;
+		}
+	}
+
+	void VertexObject::ExtrudeSelectedEdges(EFaceExtrudeType InType)
+	{
+		if (InType == EFaceExtrudeType::Individual)
+		{
+			for (FEdge* edge : GetSelectedEdgesPtrs())
+			{
+				ExtrudeEdge(edge);
+			}
+		}
+
 		MarkDirty();
 	}
 

@@ -49,4 +49,34 @@ namespace CHISTUDIO {
 		return IndexId;
 	}
 
+	FHalfEdge* FEdge::GetBoundaryHalfEdge() const
+	{
+		if (FirstHalfEdge && FirstHalfEdge->IsBoundaryHalfEdge())
+		{
+			return FirstHalfEdge;
+		}
+
+		if (SecondHalfEdge && SecondHalfEdge->IsBoundaryHalfEdge())
+		{
+			return SecondHalfEdge;
+		}
+
+		return nullptr;
+	}
+
+	bool FEdge::IsBoundaryEdge() const
+	{
+		if (FirstHalfEdge && FirstHalfEdge->IsBoundaryHalfEdge())
+		{
+			return true;
+		}
+
+		if (SecondHalfEdge && SecondHalfEdge->IsBoundaryHalfEdge())
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 }

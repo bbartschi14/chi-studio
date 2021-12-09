@@ -367,6 +367,25 @@ namespace CHISTUDIO {
 					ImGui::EndPopup();
 				}
 			}
+
+			if (vertexObject->GetSelectedEdges().size() > 0)
+			{
+				if (ImGui::Button("Extrude"))
+					ImGui::OpenPopup("extrudeEdgesPopup");
+
+				if (ImGui::BeginPopup("extrudeEdgesPopup"))
+				{
+					if (ImGui::Selectable("Individual Edges"))
+					{
+						vertexObject->ExtrudeSelectedEdges(EFaceExtrudeType::Individual);
+					}
+
+					ImGui::Separator();
+					ImGui::Text("Mode");
+
+					ImGui::EndPopup();
+				}
+			}
 		}
 	}
 

@@ -254,6 +254,27 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 	}
 }
 
+void Application::SelectAllEditModePrims()
+{
+	if (CurrentSceneMode == ESceneMode::Edit) 
+	{
+		VertexObject* obj = SelectedNodes[0]->GetComponentPtr<RenderingComponent>()->GetVertexObjectPtr();
+
+		if (EditModeSelectionType == EEditModeSelectionType::Vertex)
+		{
+			obj->SelectAllVertices();
+		}
+		else if (EditModeSelectionType == EEditModeSelectionType::Edge)
+		{
+			obj->SelectAllEdges();
+		}
+		else if (EditModeSelectionType == EEditModeSelectionType::Face)
+		{
+			obj->SelectAllFaces();
+		}
+	}
+}
+
 SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams)
 {
 	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();
