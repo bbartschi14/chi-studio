@@ -166,16 +166,23 @@ public:
     // Create a deep copy of another vertex object
     void CopyVertexObject(VertexObject* InVertexObject);
 
+    /** Using the given faces (InFaces) on this vertex object, find all the contiguous regions */
+    std::vector<std::unique_ptr<FFaceRegion>> FindRegionsFromFaces(std::vector<FFace*> InFaces) const;
+    void SortRegionBoundaryLoops(FFaceRegion* InFaceRegion) const;
+
+    void SelectEdgeLoop(FEdge* InStartingEdge);
+    
+    // Create faces bridging between the two boundary loops. Both boundary loops should be the same size,
+    // and each half edge on the loop 
+    void BridgeBoundaryLoops(FBoundaryLoop* loopOne, FBoundaryLoop* loopTwo);
+
+    void DeleteFaces(std::vector<FFace*> InFaces);
 private:
     
     void CreateHalfEdgeCube();
     void CreateHalfEdgePlane();
     void CreateHalfEdgeCylinder(FDefaultObjectParams InParams);
     void CreateVertexArrayFromHalfEdgeStructure();
-
-    /** Using the given faces (InFaces) on this vertex object, find all the contiguous regions */
-    std::vector<std::unique_ptr<FFaceRegion>> FindRegionsFromFaces(std::vector<FFace*> InFaces) const;
-    void SortRegionBoundaryLoops(FFaceRegion* InFaceRegion) const;
 
     /** Checks for nullptrs across all half edge primitives */
     void VerifyHalfEdgeStability();
@@ -391,6 +398,8 @@ public:
     // Remove all primitives marked for deletion
     void CleanupDeletedPrimitives();
 
+    void MergeVerticesByDistance(float InDistance);
+
     void MoveSelectedPrims(glm::vec3 InDistance);
 
     // Rotates around average selection position and local object axes
@@ -417,7 +426,7 @@ public:
     }
 
     void ExtrudeSelectedFaces(EFaceExtrudeType InType);
-    void ExtrudeSelectedEdges(EFaceExtrudeType InType);
+    void ExtrudeSelectedEdges(EFaceExtrudeType InType, glm::vec3 InExtrudeDelta);
     void ExtrudeEdge(FEdge* InEdgeToExtrude);
 
     FVertex* CreateVertex(glm::vec3 InPosition, FHalfEdge* InOwningHalfEdge);

@@ -45,6 +45,9 @@ public:
     // Add a modifier to the list of modifiers on this rendering componenet. Immediately recalculates the post-modifier VO
     void AddModifier(std::unique_ptr<IModifier> InModifier);
 
+    // Remove at an index
+    void RemoveModifier(int InIndex);
+
     // Copy the main VO to the post-modifier VO, then apply all modifiers in order
     void RecalculateModifiers();
 

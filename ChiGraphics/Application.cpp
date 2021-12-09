@@ -275,6 +275,37 @@ void Application::SelectAllEditModePrims()
 	}
 }
 
+void Application::HandleEditModeHotkeys()
+{
+	if (ImGui::IsKeyPressed(GLFW_KEY_1))
+	{
+		SetEditModeSelectionType(EEditModeSelectionType::Vertex);
+	}
+	if (ImGui::IsKeyPressed(GLFW_KEY_2))
+	{
+		SetEditModeSelectionType(EEditModeSelectionType::Edge);
+	}
+	if (ImGui::IsKeyPressed(GLFW_KEY_3))
+	{
+		SetEditModeSelectionType(EEditModeSelectionType::Face);
+	}
+	if (ImGui::IsKeyPressed(GLFW_KEY_A))
+	{
+		SelectAllEditModePrims();
+	}
+	if (ImGui::IsKeyPressed(GLFW_KEY_L))
+	{
+		if (CurrentSceneMode == ESceneMode::Edit)
+		{
+			VertexObject* obj = SelectedNodes[0]->GetComponentPtr<RenderingComponent>()->GetVertexObjectPtr();
+			if (obj->GetSelectedEdges().size() > 0)
+			{
+				obj->SelectEdgeLoop(obj->GetSelectedEdgesPtrs()[0]);
+			}
+		}
+	}
+}
+
 SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams)
 {
 	std::shared_ptr<PhongShader> cubeShader = std::make_shared<PhongShader>();

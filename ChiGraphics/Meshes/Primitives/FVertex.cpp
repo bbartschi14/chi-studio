@@ -64,6 +64,21 @@ std::vector<FEdge*> FVertex::GetAdjacentEdges() const
 	return adjacentEdges;
 }
 
+std::vector<FHalfEdge*> FVertex::GetIncomingHalfEdges() const
+{
+	std::vector<FHalfEdge*> incomingHalfEdges;
+
+	FHalfEdge* firstHalfEdge = GetParentHalfEdge();
+	FHalfEdge* nextHalfEdge = firstHalfEdge;
+	do
+	{
+		incomingHalfEdges.push_back(nextHalfEdge);
+		nextHalfEdge = nextHalfEdge->GetNextHalfEdge()->GetSymmetricalHalfEdge();
+	} while (nextHalfEdge != firstHalfEdge);
+
+	return incomingHalfEdges;
+}
+
 void FVertex::GetAdjacentEdgesAndFaces(std::vector<class FEdge*>& OutAdjacentEdges, std::vector<class FFace*>& OutAdjacentFaces) const
 {
 	OutAdjacentEdges.clear();

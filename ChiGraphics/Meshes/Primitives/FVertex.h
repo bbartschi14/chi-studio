@@ -29,6 +29,9 @@ public:
 	// Find all the adjacent edges to this vertex
 	std::vector<class FEdge*> GetAdjacentEdges() const;
 
+	// Find all the incoming half edges to this vertex
+	std::vector<class FHalfEdge*> GetIncomingHalfEdges() const;
+
 	// Find all the adjacent edges and faces. Slightly more optimized than doing both operations sequentially
 	void GetAdjacentEdgesAndFaces(std::vector<class FEdge*>& OutAdjacentEdges, std::vector<class FFace*>& OutAdjacentFaces) const;
 

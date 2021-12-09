@@ -7,6 +7,8 @@
 #include "ChiGraphics/Lights/HittableLight.h"
 #include "ChiGraphics/Modifiers/SubdivisionSurfaceModifier.h"
 #include "ChiGraphics/Modifiers/MirrorModifier.h"
+#include "ChiGraphics/Modifiers/ScrewModifier.h"
+#include "ChiGraphics/Modifiers/TransformModifier.h"
 
 namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
@@ -217,14 +219,29 @@ namespace CHISTUDIO {
 					auto mirrorMod = make_unique<MirrorModifier>();
 					renderingComponent->AddModifier(std::move(mirrorMod));
 				}
+				if (ImGui::Selectable("Screw"))
+				{
+					auto screwMod = make_unique<ScrewModifier>();
+					renderingComponent->AddModifier(std::move(screwMod));
+				}
+				if (ImGui::Selectable("Transform"))
+				{
+					auto transformMod = make_unique<TransformModifier>();
+					renderingComponent->AddModifier(std::move(transformMod));
+				}
 
 				ImGui::EndPopup();
 			}
 			const std::vector<std::unique_ptr<IModifier>>& modifiers = renderingComponent->GetModifiers();
 			bool wasModified = false;
+			int indexToRemove = -1;
 			for (size_t i = 0; i < modifiers.size(); i++)
 			{
-				wasModified |= UILibrary::RenderModifier(modifiers[i].get(), i);
+				wasModified |= UILibrary::RenderModifier(modifiers[i].get(), i, indexToRemove);
+			}
+			if (indexToRemove > -1)
+			{
+				renderingComponent->RemoveModifier(indexToRemove);
 			}
 			if (wasModified)
 			{

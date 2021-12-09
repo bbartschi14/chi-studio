@@ -109,10 +109,13 @@ void MirrorModifier::ApplyMirrorFromReflectionMatrix(VertexObject* InObjectToMod
 
 		FHalfEdge* nextHalfEdge = originalHalfEdgeToNewHalfEdge.find(originalHalfEdge->GetPreviousHalfEdge())->second; // Get previous instead of next in order to reverse direction
 		FHalfEdge* symmHalfEdge = originalHalfEdgeToNewHalfEdge.find(originalHalfEdge->GetSymmetricalHalfEdge())->second;
-		FFace* owningFace = originalFaceToNewFace.find(originalHalfEdge->GetOwningFace())->second;
+		if (originalHalfEdge->GetOwningFace())
+		{
+			FFace* owningFace = originalFaceToNewFace.find(originalHalfEdge->GetOwningFace())->second;
+			newHalfEdge->SetOwningFace(owningFace);
+		}
 		newHalfEdge->SetNextHalfEdge(nextHalfEdge);
 		newHalfEdge->SetSymmetricalHalfEdge(symmHalfEdge);
-		newHalfEdge->SetOwningFace(owningFace);
 	}
 
 	for (size_t i = 0; i < numberOfOriginalEdges; i++)

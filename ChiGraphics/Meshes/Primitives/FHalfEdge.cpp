@@ -85,4 +85,9 @@ int FHalfEdge::GetIndexId() const
 	return IndexId;
 }
 
+bool FHalfEdge::HasNonDeletedFace() const
+{
+	return GetOwningFace() && !GetOwningFace()->bMarkedForDeletion;
+}
+
 }

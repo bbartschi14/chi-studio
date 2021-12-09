@@ -58,11 +58,6 @@ namespace CHISTUDIO {
 		VertexObject* vertexObject = renderingComponent->GetVertexObjectPtr();
 		ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
 
-		if (ImGui::Button("Subdivision Surface"))
-		{
-			vertexObject->ApplySubdivisionSurface();
-		}
-
 		if (InApplication.AreEditModeVerticesSelectable())
 		{
 			if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen))
@@ -337,6 +332,7 @@ namespace CHISTUDIO {
 				if (ImGui::Selectable("Faces"))
 				{
 					//Delete faces
+					vertexObject->DeleteFaces(vertexObject->GetSelectedFacesPtrs());
 				}
 				ImGui::Separator();
 				ImGui::Text("Type");
@@ -377,7 +373,7 @@ namespace CHISTUDIO {
 				{
 					if (ImGui::Selectable("Individual Edges"))
 					{
-						vertexObject->ExtrudeSelectedEdges(EFaceExtrudeType::Individual);
+						vertexObject->ExtrudeSelectedEdges(EFaceExtrudeType::Individual, glm::vec3(1.0f));
 					}
 
 					ImGui::Separator();

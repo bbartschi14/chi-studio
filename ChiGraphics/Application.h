@@ -68,6 +68,8 @@ public:
 	void OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2 SceneViewSize);
 	void SelectAllEditModePrims();
 
+	void HandleEditModeHotkeys();
+
 	SceneNode* CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams);
 	SceneNode* CreateVertexObjectCopy(VertexObject* InVertexObjectToCopy);
 	SceneNode* CreateCamera();

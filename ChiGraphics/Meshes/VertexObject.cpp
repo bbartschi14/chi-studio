@@ -13,6 +13,7 @@
 #include <stdexcept>
 #include <functional>
 #include "ChiGraphics/Application.h"
+#include <unordered_set>
 
 namespace CHISTUDIO {
 
@@ -561,6 +562,75 @@ namespace CHISTUDIO {
 		VerifyHalfEdgeStability();
 	}
 
+
+	void VertexObject::BridgeBoundaryLoops(FBoundaryLoop* loopOne, FBoundaryLoop* loopTwo)
+	{
+		// Verify constraints
+		for (FHalfEdge* halfEdge : loopOne->Loop)
+		{
+			if (!halfEdge->IsBoundaryHalfEdge())
+			{
+				std::cout << "Cannot bridge interior loop" << std::endl;
+				return;
+			}
+		}
+		for (FHalfEdge* halfEdge : loopTwo->Loop)
+		{
+			if (!halfEdge->IsBoundaryHalfEdge())
+			{
+				std::cout << "Cannot bridge interior loop" << std::endl;
+				return;
+			}
+		}
+		if (loopOne->Loop.size() != loopTwo->Loop.size())
+		{
+			std::cout << "Cannot bridge two loops of different size" << std::endl;
+			return;
+		}
+
+		// Bridge
+		std::vector<FHalfEdge*> newHalfEdgeRing;
+		size_t loopSize = loopOne->Loop.size();
+		for (size_t i = 0; i < loopSize; i++)
+		{
+			FVertex* vertOne = loopTwo->Loop[(loopSize - i) % loopSize]->GetPreviousHalfEdge()->GetNextVertex();
+			FVertex* vertTwo = loopOne->Loop[i]->GetPreviousHalfEdge()->GetNextVertex();
+			// For each half edge on the loop, create 1 face and 2 half edges.
+			FFace* newFace = CreateFace(loopOne->Loop[i]);
+			FHalfEdge* nextHalfEdge = CreateHalfEdge(loopTwo->Loop[(loopSize - i) % loopSize], nullptr, newFace, nullptr, vertOne);
+			FHalfEdge* previousHalfEdge = CreateHalfEdge(loopOne->Loop[i], nullptr, newFace, nullptr, vertTwo);
+			loopOne->Loop[i]->SetOwningFace(newFace);
+			loopTwo->Loop[(loopSize - i) % loopSize]->SetOwningFace(newFace);
+			loopOne->Loop[i]->SetNextHalfEdge(nextHalfEdge);
+			loopTwo->Loop[(loopSize - i) % loopSize]->SetNextHalfEdge(previousHalfEdge);
+
+			newHalfEdgeRing.emplace_back(previousHalfEdge);
+			newHalfEdgeRing.emplace_back(nextHalfEdge);
+		}
+
+		for (size_t i = 0; i < loopSize; i++)
+		{
+			FHalfEdge* firstHalfEdge = newHalfEdgeRing[i * 2];
+			FHalfEdge* secondHalfEdge = newHalfEdgeRing[((i * 2) + (loopSize * 2) - 1) % (loopSize * 2)];
+			firstHalfEdge->SetSymmetricalHalfEdge(secondHalfEdge);
+			secondHalfEdge->SetSymmetricalHalfEdge(firstHalfEdge);
+			FEdge* newEdge = CreateEdge(firstHalfEdge, secondHalfEdge);
+		}
+	}
+
+
+	void VertexObject::SelectEdgeLoop(FEdge* InStartingEdge)
+	{
+		ClearSelectedEdges();
+		FHalfEdge* startingHalfEdge = InStartingEdge->GetFirstHalfEdge();
+		FHalfEdge* currentHalfEdge = startingHalfEdge;
+		do
+		{
+			SelectEdge(currentHalfEdge->GetOwningEdge()->GetIndexId(), true);
+			currentHalfEdge = currentHalfEdge->GetNextHalfEdge()->GetSymmetricalHalfEdge()->GetNextHalfEdge();
+		} while (currentHalfEdge != startingHalfEdge);
+	}
+
 	std::vector<std::unique_ptr<FFaceRegion>> VertexObject::FindRegionsFromFaces(std::vector<FFace*> InFaces) const
 	{
 		// High Level: General idea is a flood fill type algorithm.
@@ -595,7 +665,7 @@ namespace CHISTUDIO {
 				{
 					RecursiveFloodFill(neighborFace, InCurrentRegion);
 				}
-				else if (neighborFace && (usedFaceIDs.find(neighborFace->GetIndexId()) == usedFaceIDs.end()))
+				else if (!neighborFace  || (neighborFace && (usedFaceIDs.find(neighborFace->GetIndexId()) == usedFaceIDs.end())))
 				{
 					// Only add edges if the face hasn't been use used and is not usable
 					InCurrentRegion->UnsortedLoopEdges.emplace_back(halfEdge);
@@ -770,6 +840,64 @@ namespace CHISTUDIO {
 				std::cout << baseMessage << baseVertexMessage << "Parent of vertex doesn't point to it" << std::endl;
 			}
 		}
+	}
+
+	void VertexObject::DeleteFaces(std::vector<FFace*> InFaces)
+	{
+		for (FFace* face : InFaces)
+		{
+			face->bMarkedForDeletion = true;
+			for (FHalfEdge* halfEdge : face->GetHalfEdgesOnFace())
+			{
+				halfEdge->SetOwningFace(nullptr);
+			}
+		}
+
+		for (size_t i = 0; i < Edges.size(); i++)
+		{
+			FHalfEdge* firstHE = Edges[i]->GetFirstHalfEdge();
+			FHalfEdge* secondHE = Edges[i]->GetSecondHalfEdge();
+			if (!firstHE->HasNonDeletedFace() && !secondHE->HasNonDeletedFace())
+			{
+				Edges[i]->bMarkedForDeletion = true;
+				firstHE->bMarkedForDeletion = true;
+				secondHE->bMarkedForDeletion = true;
+			}
+		}
+
+		for (size_t i = 0; i < Vertices.size(); i++)
+		{
+			if (Vertices[i]->GetParentHalfEdge()->bMarkedForDeletion)
+			{
+				bool bHasNewParent = false;
+				for (FHalfEdge* incomingHE : Vertices[i]->GetIncomingHalfEdges())
+				{
+					if (!incomingHE->bMarkedForDeletion)
+					{
+						Vertices[i]->SetParentHalfEdge(incomingHE);
+						bHasNewParent = true;
+						break;
+					}
+				}
+				if (!bHasNewParent)
+				{
+					Vertices[i]->bMarkedForDeletion = true;
+				}
+			}
+		}
+
+		for (size_t i = 0; i < Edges.size(); i++)
+		{
+			if (Edges[i]->bMarkedForDeletion)
+			{
+				FHalfEdge* firstHE = Edges[i]->GetFirstHalfEdge();
+				FHalfEdge* secondHE = Edges[i]->GetSecondHalfEdge();
+				firstHE->GetPreviousHalfEdge()->SetNextHalfEdge(secondHE->GetNextHalfEdge());
+				secondHE->GetPreviousHalfEdge()->SetNextHalfEdge(firstHE->GetNextHalfEdge());
+			}
+		}
+
+		CleanupDeletedPrimitives();
 	}
 
 	void VertexObject::SelectVertex(int InIndex, bool addToSelection)
@@ -1246,6 +1374,127 @@ namespace CHISTUDIO {
 		NormalsDebugVertexArray_->UpdatePositions(*std::move(vertexPositions));
 	}
 
+	void VertexObject::MergeVerticesByDistance(float InDistance)
+	{
+		// Check all distances and store merges as a set of vertices
+		std::unordered_map<int, FVertex*> indexToVertex;
+		std::vector<std::unordered_set<int>> merges;
+
+		for (size_t i = 0; i < Vertices.size(); i++)
+		{
+			indexToVertex.insert({ Vertices[i]->GetIndexId(), Vertices[i].get() });
+			for (size_t otherIndex = 0; otherIndex < Vertices.size(); otherIndex++)
+			{
+				if (otherIndex != i) // Skip matching a vert with itself
+				{
+					float distance = glm::distance(Vertices[i]->GetPosition(), Vertices[otherIndex]->GetPosition());
+					if (distance < InDistance)
+					{
+						// Should be merged. Check exisiting merges to see if we create a new or insert to an existing
+						// Cases:
+						//	1. Neither vertices are in a merge. Create new merge with these two verts
+						//	2. First vert is in a merge, second is not. Add the second to the merge of the first
+						//	3. Second vert is in a merge, first is not. Add the first to the merge of the second
+						//	4. Both verts are in the same merge. Do nothing.
+						//	5. Both verts are in different merges. Combine both merges into one. TODO: Not sure if this is the correct propagation.
+						int firstVertIndex = Vertices[i]->GetIndexId();
+						int secondVertIndex = Vertices[otherIndex]->GetIndexId();
+
+						int firstMergeIndex = -1;
+						int secondMergeIndex = -1;
+						for (size_t mergeIndex = 0; mergeIndex < merges.size(); mergeIndex++)
+						{
+							if (merges[mergeIndex].find(firstVertIndex) != merges[mergeIndex].end())
+							{
+								firstMergeIndex = mergeIndex;
+							}
+							if (merges[mergeIndex].find(secondVertIndex) != merges[mergeIndex].end())
+							{
+								secondMergeIndex = mergeIndex;
+							}
+						}
+
+						bool firstIsInMerge = firstMergeIndex > -1;
+						bool secondIsInMerge = secondMergeIndex > -1;
+						bool areInSameMerge = firstMergeIndex == secondMergeIndex;
+
+						// Case 1
+						if (!firstIsInMerge && !secondIsInMerge)
+						{
+							std::unordered_set<int> newMerge;
+							newMerge.insert({ firstVertIndex, secondVertIndex });
+							merges.push_back(newMerge);
+						}
+						// Case 2
+						else if (firstIsInMerge && !secondIsInMerge)
+						{
+							merges[firstMergeIndex].insert(secondVertIndex);
+						}
+						// Case 3
+						else if (!firstIsInMerge && secondIsInMerge)
+						{
+							merges[secondMergeIndex].insert(firstVertIndex);
+						}
+						// Case 4
+						else if (firstIsInMerge && secondIsInMerge && areInSameMerge)
+						{
+							// Empty
+						}
+						// Case 5
+						else if (firstIsInMerge && secondIsInMerge && !areInSameMerge)
+						{
+							for (int otherMergeVert : merges[secondMergeIndex])
+							{
+								merges[firstMergeIndex].insert(otherMergeVert); // Move over
+							}
+							// Remove second merge set
+							merges.erase(merges.begin() + secondMergeIndex);
+						}
+					}
+				}
+			}
+		}
+
+		/*for (auto merge : merges)
+		{
+			std::cout << "Merge :" << std::endl;
+			for (auto i : merge)
+			{
+				std::cout << i << ", " << std::endl;
+			}
+		}*/
+
+		// Now merge verts and update pointers
+		for (auto merge : merges)
+		{
+			glm::vec3 averagePos = glm::vec3(0.0f);
+			// Get average position of verts to merge
+			for (int index : merge)
+			{
+				FVertex* vert = indexToVertex.find(index)->second;
+				averagePos += vert->GetPosition();
+			}
+			averagePos /= merge.size();
+
+			// Merge to "first" in unordered set
+			int count = 0;
+			for (int index : merge)
+			{
+				FVertex* vert = indexToVertex.find(index)->second;
+				if (count == 0)
+				{
+					vert->SetPosition(averagePos);
+				}
+				else
+				{
+					vert->bMarkedForDeletion = true;
+					vert->GetIncomingHalfEdges();
+				}
+				count++;
+			}
+		}
+	}
+
 	void VertexObject::ExtrudeSelectedFaces(EFaceExtrudeType InType)
 	{
 		if (InType == EFaceExtrudeType::Individual)
@@ -1317,7 +1566,7 @@ namespace CHISTUDIO {
 		}
 	}
 
-	void VertexObject::ExtrudeSelectedEdges(EFaceExtrudeType InType)
+	void VertexObject::ExtrudeSelectedEdges(EFaceExtrudeType InType, glm::vec3 InExtrudeDelta)
 	{
 		if (InType == EFaceExtrudeType::Individual)
 		{
@@ -1325,6 +1574,10 @@ namespace CHISTUDIO {
 			{
 				ExtrudeEdge(edge);
 			}
+		}
+		else if (InType == EFaceExtrudeType::Regions)
+		{
+
 		}
 
 		MarkDirty();
@@ -1536,7 +1789,7 @@ namespace CHISTUDIO {
 		FVertex* hitVertex = nullptr;
 		for (size_t i = 0; i < Vertices.size(); i++)
 		{
-			SphereHittable vertexCollision = SphereHittable(.15f, Vertices[i]->GetPosition());
+			SphereHittable vertexCollision = SphereHittable(.05f, Vertices[i]->GetPosition());
 			bool hitRecorded = vertexCollision.Intersect(InSceneRay, 0.0001f, hitRecord);
 			bWasAnyVertexFound |= hitRecorded;
 			if (hitRecorded) hitVertex = Vertices[i].get();
@@ -1562,7 +1815,7 @@ namespace CHISTUDIO {
 			glm::vec3 firstVertexPos = Edges[i]->GetFirstHalfEdge()->GetNextVertex()->GetPosition();
 			glm::vec3 secondVertexPos = Edges[i]->GetSecondHalfEdge()->GetNextVertex()->GetPosition();
 
-			CylinderHittable edgeCollision = CylinderHittable(.15f, firstVertexPos, glm::normalize(secondVertexPos - firstVertexPos), glm::length(secondVertexPos - firstVertexPos));
+			CylinderHittable edgeCollision = CylinderHittable(.05f, firstVertexPos, glm::normalize(secondVertexPos - firstVertexPos), glm::length(secondVertexPos - firstVertexPos));
 			bool hitRecorded = edgeCollision.Intersect(InSceneRay, 0.0001f, hitRecord);
 			bWasAnyEdgeFound |= hitRecorded;
 			if (hitRecorded) hitEdge = Edges[i].get();

@@ -35,6 +35,7 @@ public:
 	int GetIndexId() const;
 
 	bool IsBoundaryHalfEdge() const { return OwningFace == nullptr; }
+	bool HasNonDeletedFace() const;
 	bool bMarkedForDeletion;
 private:
 	FHalfEdge* NextHalfEdge; // The next HalfEdge in the loop of HalfEdges that lie on this HalfEdge's Face

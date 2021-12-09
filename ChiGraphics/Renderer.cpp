@@ -338,22 +338,8 @@ namespace CHISTUDIO {
 			}
 			if (Application_.GetSceneMode() == ESceneMode::Edit)
 			{
-				if (ImGui::IsKeyPressed(GLFW_KEY_1))
-				{
-					Application_.SetEditModeSelectionType(EEditModeSelectionType::Vertex);
-				}
-				if (ImGui::IsKeyPressed(GLFW_KEY_2))
-				{
-					Application_.SetEditModeSelectionType(EEditModeSelectionType::Edge);
-				}
-				if (ImGui::IsKeyPressed(GLFW_KEY_3))
-				{
-					Application_.SetEditModeSelectionType(EEditModeSelectionType::Face);
-				}
-				if (ImGui::IsKeyPressed(GLFW_KEY_A))
-				{
-					Application_.SelectAllEditModePrims();
-				}
+				Application_.HandleEditModeHotkeys();
+				
 			}
 		}
 		

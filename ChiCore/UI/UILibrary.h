@@ -121,23 +121,26 @@ namespace CHISTUDIO {
 		}
 
 		// Returns true if the modifier had any properties changed
-		static bool RenderModifier(IModifier* InModifier, int count)
+		static bool RenderModifier(IModifier* InModifier, int count, int &indexToRemove)
 		{
 				ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
 				ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
 				ImGui::BeginChild(fmt::format("Modifier{}", count).c_str(), ImVec2(0, 20 + InModifier->GetUIHeight()), true, window_flags);
 				
+				bool wasModified = false;
+
 				if (ImGui::BeginMenuBar())
 				{
 					if (ImGui::BeginMenu(InModifier->GetName().c_str()))
 					{
-						//ShowExampleMenuFile();
+						if (ImGui::MenuItem("Delete")) { wasModified = true; indexToRemove = count; }
+						//if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Do stuff */ }
 						ImGui::EndMenu();
 					}
 					ImGui::EndMenuBar();
 				}
 				
-				bool wasModified = InModifier->RenderUI();
+				wasModified |= InModifier->RenderUI();
 
 				ImGui::EndChild();
 				ImGui::PopStyleVar();

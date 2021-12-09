@@ -81,6 +81,14 @@ void RenderingComponent::AddModifier(std::unique_ptr<IModifier> InModifier)
     RecalculateModifiers();
 }
 
+void RenderingComponent::RemoveModifier(int InIndex)
+{
+    if (InIndex < Modifiers.size())
+    {
+        Modifiers.erase(Modifiers.begin() + InIndex);
+    }
+}
+
 void RenderingComponent::RecalculateModifiers()
 {
     PostModifierVertexObj->CopyVertexObject(VertexObj.get());
