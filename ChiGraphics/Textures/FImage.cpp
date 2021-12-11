@@ -42,6 +42,7 @@ std::unique_ptr<FImage> FImage::LoadPNG(const std::string& filename, bool y_reve
         }
     }
     stbi_image_free(buffer);
+    image->ImportedFileName = filename;
     return image;
 }
 

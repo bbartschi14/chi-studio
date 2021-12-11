@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include "ChiGraphics/External.h"
+
 namespace CHISTUDIO {
 
 class WRendering : public IWidget
@@ -24,6 +26,9 @@ private:
 	int MaxBounces;
 	int SamplesPerPixel; // Corresponds to super sampling anti aliasing
 	std::shared_ptr<class FImage> HDRI;
+	bool bUseHDRI;
+	glm::vec3 BackgroundColor;
+	float ResultZoomScale;
 };
 
 }

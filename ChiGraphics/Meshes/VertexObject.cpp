@@ -1533,7 +1533,11 @@ namespace CHISTUDIO {
 			FFace* newFace = CreateFace(nullptr);
 			newFace->SetHalfEdgeOnFace(boundaryHalfEdge);
 
-			glm::vec3 deltaPos = glm::vec3(0.0f, 1.0f, 0.0f);
+			// Get edge normal
+			FVertex* edgeVert = boundaryHalfEdge->GetSymmetricalHalfEdge()->GetNextVertex();
+			FVertex* edgeVert2 = boundaryHalfEdge->GetSymmetricalHalfEdge()->GetNextHalfEdge()->GetNextVertex();
+
+			glm::vec3 deltaPos = glm::normalize(edgeVert->GetPosition() - edgeVert2->GetPosition());
 			FVertex* firstNewVert = CreateVertex(boundaryHalfEdge->GetNextVertex()->GetPosition() + deltaPos, nullptr);
 			FVertex* secondNewVert = CreateVertex(boundaryHalfEdge->GetPreviousHalfEdge()->GetNextVertex()->GetPosition() + deltaPos, nullptr);
 

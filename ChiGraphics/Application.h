@@ -37,6 +37,22 @@ public:
 	{
 		return SelectedNodes;
 	}
+	
+	// Finds all nodes in the visible hierarchy that don't have InSceneNode as an ancestor
+	void GetNonChildNodes(SceneNode* InStartingNode, SceneNode* InSceneNode, std::vector<SceneNode*>& OutNodes) const
+	{
+		size_t numChildren = InStartingNode->GetChildrenCount();
+		for (size_t i = 0; i < numChildren; i++)
+		{
+			SceneNode* child = InStartingNode->GetChildPtr(i);
+			if (child->IsHierarchyVisible() && child != InSceneNode)
+			{
+				OutNodes.emplace_back(child);
+				GetNonChildNodes(child, InSceneNode, OutNodes);
+			}
+		}
+
+	}
 
 	/** Can either add to the selection, or replace the selection */
 	void SelectNode(SceneNode* nodeToSelect, bool addToSelection);

@@ -214,6 +214,10 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 		std::vector<RenderingComponent*> renderingComps = root.GetComponentPtrsInChildren<RenderingComponent>();
 
 		FRay mouseRay = Scene_->GetActiveCameraPtr()->GenerateRay(InMousePosition, SceneViewSize);
+		
+		//std::cout << "Ray Origin: " << glm::to_string(mouseRay.GetOrigin()) << " Dir: " << glm::to_string(mouseRay.GetDirection()) << std::endl;
+		//Scene_->AddDebugRay(mouseRay);
+		
 		FHitRecord record;
 		bool objectHit = false;
 		int indexHit = 0;

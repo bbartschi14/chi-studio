@@ -7,6 +7,9 @@
 #include "ChiGraphics/Components/CameraComponent.h"
 #include "ChiGraphics/Components/RenderingComponent.h"
 #include "ChiGraphics/InputManager.h"
+#include "ChiGraphics/Components/ShadingComponent.h"
+#include "ChiGraphics/Shaders/SimpleShader.h"
+#include "ChiGraphics/Components/MaterialComponent.h"
 
 namespace CHISTUDIO {
 
@@ -64,6 +67,7 @@ void ArcBallCameraNode::Update(double delta_time) {
     auto scroll = input_manager.FetchAndResetMouseScroll();
     if (scroll != 0.0) {
       DistanceZoom(-float(scroll) * 0.1f);
+      GetComponentPtr<CameraComponent>()->orthoWidth -= (scroll * 1.0f);
     }
     prev_released = true;
     start_position_ = GetTransform().GetPosition();

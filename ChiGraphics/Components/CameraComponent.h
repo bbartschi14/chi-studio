@@ -3,6 +3,7 @@
 #include "ComponentBase.h"
 #include <glm/glm.hpp>
 #include "ChiGraphics/SceneNode.h"
+#include "glm/gtc/quaternion.hpp"
 namespace CHISTUDIO {
 
 class CameraComponent : public ComponentBase
@@ -36,7 +37,7 @@ public:
         
         return glm::vec3(0.0f, 0.0f, 0.0f);
     }
-
+    
     class FRay GenerateRay(glm::vec2 InMousePosition, glm::vec2 InViewportSize);
 
     float GetFOV() const
@@ -56,6 +57,8 @@ public:
 
     float FocusDistance;
     float Aperture;
+    bool bIsPerspective;
+    float orthoWidth = 15.0f;
 
 private:
     glm::vec2 GetNormalizedDeviceCoords(glm::vec2 InMousePosition, glm::vec2 InViewportSize);

@@ -14,7 +14,7 @@ enum class ELightType {
 class LightBase {
 public:
     LightBase()
-        : DiffuseColor(0.8f, 0.8f, 0.8f), SpecularColor(1.0f, 1.0f, 1.0f), bIsLightEnabled(true) {
+        : DiffuseColor(0.8f, 0.8f, 0.8f), SpecularColor(1.0f, 1.0f, 1.0f), bIsLightEnabled(true), Intensity(1.0f) {
     }
 
     virtual ~LightBase() {
@@ -47,11 +47,21 @@ public:
     {
         bIsLightEnabled = InIsLightEnabled;
     }
+    
+    float GetIntensity() const
+    {
+        return Intensity;
+    }
+
+    void SetIntensity(float InIntensity)
+    {
+        Intensity = InIntensity;
+    }
 
 private:
     glm::vec3 DiffuseColor;
     glm::vec3 SpecularColor;
-
+    float Intensity;
     bool bIsLightEnabled;
 };
 

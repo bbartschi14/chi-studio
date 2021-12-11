@@ -14,20 +14,51 @@
 #include "ChiGraphics/Lights/AmbientLight.h"
 #include "ChiGraphics/Lights/HittableLight.h"
 #include "core.h"
+#include <chrono>
 
 namespace CHISTUDIO {
+
+const float FIREFLY_CLAMP = 10.0f;
 
 FRayTracer::FRayTracer(FRayTraceSettings InSettings)
 	: Settings(InSettings)
 {
 }
 
+static std::mutex RowsCompleteMutex;
+
+void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, FTracingCamera* InTracingCamera, FImage* InOutputImage)
+{
+	for (size_t x = 0; x < Settings.ImageSize.x; x++) {
+		glm::vec3 pixelColor(0.f);
+
+		for (size_t sampleNumber = 0; sampleNumber < Settings.SamplesPerPixel; sampleNumber++)
+		{
+			double jitterX = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
+			double jitterY = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
+
+			// Set coords from [ -1, 1 ] for both x and y.
+			float cameraX = ((float(x) + (float)jitterX) / (Settings.ImageSize.x - 1)) * 2 - 1;
+			float cameraY = ((float(InY) + (float)jitterY) / (Settings.ImageSize.y - 1)) * 2 - 1;
+
+			// Use camera coords to generate a ray into the scene
+			FRay cameraToSceneRay = InTracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
+			pixelColor += TraceRay(cameraToSceneRay, 0, *InLights);
+		}
+		float superSamplingScale = 1.0 / Settings.SamplesPerPixel;
+		pixelColor *= superSamplingScale;
+		glm::vec3 gammaCorrectedPixelColor = glm::vec3(sqrt(pixelColor.x), sqrt(pixelColor.y), sqrt(pixelColor.z));
+		InOutputImage->SetPixel(x, InY, gammaCorrectedPixelColor);
+	}
+	RowsCompleteMutex.lock();
+	RowsComplete++;
+	std::cout << "Rendered: " << (float)RowsComplete / Settings.ImageSize.y * 100 << " %" << std::endl;
+	RowsCompleteMutex.unlock();
+}
+
 std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::string& InOutputFile)
 {
-	debugNANCount = 0;
-	debugIndirectCount = 0;
-	debugAverageIndirect = glm::vec3(0.f);
-
+	RowsComplete = 0;
 	auto OutputTexture = make_unique<FTexture>();
 	OutputTexture->Reserve(GL_RGB, Settings.ImageSize.x, Settings.ImageSize.y, GL_RGBA, GL_UNSIGNED_BYTE);
 
@@ -40,39 +71,32 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	auto lightComponents = GetLightComponents(InScene);
 	BuildHittableData(InScene, lightComponents);
-	//std::cout << "Size: " << lightComponents.size() << std::endl;
 	FImage outputImage(Settings.ImageSize.x, Settings.ImageSize.y);
 
-	for (size_t y = 0; y < Settings.ImageSize.y; y++) {
-		for (size_t x = 0; x < Settings.ImageSize.x; x++) {
-			glm::vec3 pixelColor(0.f);
+	std::chrono::steady_clock::time_point beginTime = std::chrono::steady_clock::now();
 
-			for (size_t sampleNumber = 0; sampleNumber < Settings.SamplesPerPixel; sampleNumber++)
-			{
-				double jitterX = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
-				double jitterY = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
-
-				// Set coords from [ -1, 1 ] for both x and y.
-				float cameraX = ((float(x) + (float)jitterX) / (Settings.ImageSize.x - 1)) * 2 - 1;
-				float cameraY = ((float(y) + (float)jitterY) / (Settings.ImageSize.y - 1)) * 2 - 1;
-
-				// Use camera coords to generate a ray into the scene
-				FRay cameraToSceneRay = tracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
-				pixelColor += TraceRay(cameraToSceneRay, 0, lightComponents);
-			}
-			float superSamplingScale = 1.0 / Settings.SamplesPerPixel;
-			pixelColor *= superSamplingScale;
-			glm::vec3 gammaCorrectedPixelColor = glm::vec3(sqrt(pixelColor.x), sqrt(pixelColor.y), sqrt(pixelColor.z));
-			outputImage.SetPixel(x, y, gammaCorrectedPixelColor);
-		}
-		std::cout << "Rendered: " << (float)y / Settings.ImageSize.y * 100 << " %" << std::endl;
+	for (size_t y = 0; y < Settings.ImageSize.y; y++) 
+	{
+		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), &outputImage));
+		//RenderRow(y, &lightComponents, tracingCamera.get(), &outputImage);
+		//std::cout << "Rendered: " << (float)y / Settings.ImageSize.y * 100 << " %" << std::endl;
 	}
+
+	for (auto& future : Futures) {
+		future.wait();
+	}
+
+	std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
+
+	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - beginTime).count() << "[ms], " 
+		<< std::chrono::duration_cast<std::chrono::seconds>(endTime - beginTime).count() << "[s]" << std::endl;
 
 	if (InOutputFile.size())
 		outputImage.SavePNG(InOutputFile);
 
 	// Send pixel data to output texture for viewing
 	OutputTexture->UpdateImage(outputImage);
+
 
 	return OutputTexture;
 }
@@ -206,6 +230,9 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 		glm::dvec3 overallIntensity = (double)record.Material_.GetEmittance() * record.Material_.GetAlbedo();
 
 		for (LightComponent* lightComp : InLights) {
+
+			if (!lightComp->GetLightPtr()->IsLightEnabled()) continue;
+
 			// Set up light variables and check for ambient light strength/Color
 			if (lightComp->GetLightPtr()->GetType() == ELightType::Ambient) {
 				overallIntensity += glm::dvec3(lightComp->GetLightPtr()->GetDiffuseColor()) * record.Material_.GetAlbedo();
@@ -258,20 +285,16 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				glm::dvec3 term = indirect * traceResult;
 				glm::dvec3 indirectIllumination = 1.0 / rayProbability * term * glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal)));
 
-				//std::cout << "Ray probability: " << rayProbability << std::endl;
-				//std::cout << "Term: " << glm::to_string(term) << std::endl;
-				//std::cout << "Dot: " << glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal))) << std::endl;
-
 				if (glm::isnan(indirectIllumination.x))
 				{
 					return overallIntensity;
 				}
 				else
 				{
-					overallIntensity += indirectIllumination;
+					overallIntensity.x += glm::min((float)indirectIllumination.x, FIREFLY_CLAMP);
+					overallIntensity.y += glm::min((float)indirectIllumination.y, FIREFLY_CLAMP);
+					overallIntensity.z += glm::min((float)indirectIllumination.z, FIREFLY_CLAMP);
 				}
-				//debugIndirectCount++;
-				//debugAverageIndirect += indirectIllumination;
 			}
 			
 		}
@@ -286,7 +309,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 
 glm::vec3 FRayTracer::GetBackgroundColor(const glm::vec3& InDirection) const
 {
-	if (Settings.HDRI != nullptr)
+	if (Settings.HDRI != nullptr && Settings.UseHDRI)
 	{
 		return Settings.HDRI->SampleHDRI(InDirection);
 	}
@@ -307,7 +330,7 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 		glm::dvec3 surfaceToLight = pointLightPos - hitPos;
 		distanceToLight = glm::length(surfaceToLight);
 		directionToLight = glm::normalize(surfaceToLight);
-		intensity = pointLightPtr->GetDiffuseColor();
+		intensity = pointLightPtr->GetDiffuseColor() * pointLightPtr->GetIntensity();
 	}
 	else if (lightPtr->GetType() == ELightType::Hittable) 
 	{

@@ -6,6 +6,7 @@
 #include "glm/glm.hpp"
 #include "ChiGraphics/Collision/FHitRecord.h"
 #include "ChiGraphics/Collision/Hittables/HittableBase.h"
+#include <future>
 
 namespace CHISTUDIO {
 
@@ -18,6 +19,7 @@ public:
     bool bShadowsEnabled;
     int SamplesPerPixel;
     class FImage* HDRI;
+    bool UseHDRI;
 };
 
 /** Allows for rendering the scene via ray tracing */
@@ -46,6 +48,11 @@ private:
     glm::vec3 GetBackgroundColor(const glm::vec3& InDirection) const;
     void GetIllumination(const LightComponent& lightComponent, const glm::dvec3& hitPos, glm::dvec3& directionToLight, glm::dvec3& intensity, double& distanceToLight);
     bool GetClosestObjectHit(const class FRay& InRay, FHitRecord& InRecord, std::shared_ptr<IHittableBase> InHittableToIgnore) const;
+    void RenderRow(size_t InY, std::vector<LightComponent*>* InLights, FTracingCamera* InTracingCamera, FImage* InOutputImage);
+
+    // Multi-threading
+    std::vector<std::future<void>> Futures;
+    int RowsComplete;
 };
 
 }

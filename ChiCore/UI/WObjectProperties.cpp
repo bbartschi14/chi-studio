@@ -32,6 +32,30 @@ namespace CHISTUDIO {
 				selectedNodes[0]->SetNodeName(std::string(buffer));
 			}
 
+			ImGui::SameLine();
+			if (ImGui::Button("Set Parent", ImVec2(80, 20)))
+			{
+				ImGui::OpenPopup("ParentList");
+			}
+			if (ImGui::BeginPopup("ParentList"))
+			{
+				std::vector<SceneNode*> nodes;
+				InApplication.GetNonChildNodes(&InApplication.GetScene().GetRootNode(), selectedNodes[0], nodes);
+				if (ImGui::Selectable("None"))
+				{
+					std::unique_ptr<SceneNode> nodePtr = selectedNodes[0]->GetParentPtr()->RemoveChild(selectedNodes[0]);
+					InApplication.GetScene().GetRootNode().AddChild(std::move(nodePtr));
+				}
+				for (SceneNode* node : nodes)
+				{
+					if (ImGui::Selectable(node->GetNodeName().c_str()))
+					{
+						node->AddChild(std::move(selectedNodes[0]->GetParentPtr()->RemoveChild(selectedNodes[0])));
+					}
+				}
+				ImGui::EndPopup();
+			}
+
 			ImGui::Separator();
 		}
 		else if (selectedNodes.size() > 1)
@@ -122,6 +146,12 @@ namespace CHISTUDIO {
 			if (ImGui::Checkbox("Enabled", &isLightEnabled))
 			{
 				lightComponent->GetLightPtr()->SetLightEnabled(isLightEnabled);
+			}
+
+			float intensity = lightComponent->GetLightPtr()->GetIntensity();
+			if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 50.0f))
+			{
+				lightComponent->GetLightPtr()->SetIntensity(intensity);
 			}
 
 			if (lightType == ELightType::Ambient)

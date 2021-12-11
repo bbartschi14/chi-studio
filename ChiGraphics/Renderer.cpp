@@ -93,6 +93,7 @@ namespace CHISTUDIO {
 				SceneNode* selectedNode = selection[0];
 				glm::mat4 transform;
 				glm::mat4 localToWorld = (selectedNode->GetTransform().GetLocalToWorldMatrix());
+				glm::mat4 parentToWorld = (selectedNode->GetParentPtr()->GetTransform().GetLocalToWorldMatrix());
 				glm::vec3 editModePosition;
 				glm::vec3 originalWorldPoint;
 
@@ -129,7 +130,13 @@ namespace CHISTUDIO {
 				{
 					if (bIsObjectModeGizmoActive)
 					{
-						selectedNode->GetTransform().SetMatrix4x4(transform);
+						// Get local to parent back from local to world. 
+						// L = local to parent, W = parent to world.
+						// LocalToWorld = W*L
+						// NewLocalToWorld = W * L'
+						// L' = W^-1 * NewLocalToWorld
+						
+						selectedNode->GetTransform().SetMatrix4x4(glm::inverse(parentToWorld) * transform);
 					}
 					else if (bIsEditModeGizmoActive)
 					{
@@ -281,6 +288,12 @@ namespace CHISTUDIO {
 				}
 			}
 		}
+		// Ortho toggle
+		/*bool isPerspective = Application_.GetScene().GetActiveCameraPtr()->bIsPerspective;
+		if (ImGui::Checkbox("Perspective View", &isPerspective))
+		{
+			Application_.GetScene().GetActiveCameraPtr()->bIsPerspective = isPerspective;
+		}*/
 
 		InputManager::GetInstance().SetInputBlocked(!ImGui::IsWindowHovered());
 

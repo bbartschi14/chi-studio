@@ -54,6 +54,7 @@ public:
 
     glm::vec3 SampleHDRI(const glm::vec3& InDirection);
     glm::vec3 BilinearSample(float InX, float InY);
+    std::string ImportedFileName;
 private:
     std::vector<glm::vec3> Data;
     size_t Width;

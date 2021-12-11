@@ -54,11 +54,12 @@ void ChiStudioApplication::SetupScene()
 	//SceneNode* tracingPointLight = CreatePointLight();
 	//tracingPointLight->GetTransform().SetPosition(glm::vec3(0.0f, 5.0f, 5.0f));
 	FDefaultObjectParams params;
-	SceneNode* plane = CreatePrimitiveNode(EDefaultObject::Plane, params);
-	plane->GetComponentPtr<MaterialComponent>()->GetMaterial().SetAlbedo(glm::vec3(.1f));
+	//SceneNode* plane = CreatePrimitiveNode(EDefaultObject::Plane, params);
+	//plane->GetComponentPtr<MaterialComponent>()->GetMaterial().SetAlbedo(glm::vec3(.1f));
 
 	//SceneNode* teapot = CreateImportMeshNode("teapot.obj");
-
+	SceneNode* pegasus = CreateImportMeshNode("pegasus.obj");
+	pegasus->GetTransform().SetScale(glm::vec3(3.0f));
 }
 
 void ChiStudioApplication::DrawGUI()

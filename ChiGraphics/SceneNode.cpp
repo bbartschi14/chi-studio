@@ -13,7 +13,7 @@ void SceneNode::AddChild(std::unique_ptr<SceneNode> InChild)
 	Children.emplace_back(std::move(InChild));
 }
 
-void SceneNode::RemoveChild(SceneNode* InChildToRemove)
+std::unique_ptr<SceneNode> SceneNode::RemoveChild(SceneNode* InChildToRemove)
 {
 	int indexToRemove = -1;
 	for (size_t i = 0; i < Children.size(); i++)
@@ -25,10 +25,14 @@ void SceneNode::RemoveChild(SceneNode* InChildToRemove)
 		}
 	}
 
-	if (indexToRemove > 0)
+	std::unique_ptr<SceneNode> child = std::move(Children[indexToRemove]);
+
+	if (indexToRemove > -1)
 	{
 		Children.erase(Children.begin() + indexToRemove);
 	}
+
+	return child;
 }
 
 ComponentBase* SceneNode::GetComponentPtrByType(EComponentType InType) const

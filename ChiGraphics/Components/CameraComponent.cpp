@@ -5,17 +5,29 @@
 #include "ChiGraphics/Collision/FRay.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include "ChiGraphics/Cameras/ArcBallCameraNode.h"
 
 namespace CHISTUDIO {
 
 CameraComponent::CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar, float InFocusDistance, float InAperture)
-	: FOV(InFOV), AspectRatio(InAspectRatio), ZNear(InZNear), ZFar(InZFar), ViewMatrix(nullptr), FocusDistance(InFocusDistance), Aperture(InAperture)
+	: FOV(InFOV), AspectRatio(InAspectRatio), ZNear(InZNear), ZFar(InZFar), ViewMatrix(nullptr), FocusDistance(InFocusDistance), Aperture(InAperture), bIsPerspective(true)
 {
 }
 
 glm::mat4 CameraComponent::GetProjectionMatrix() const
 {
-	return glm::perspective(FOV * kPi / 180.f, AspectRatio, ZNear, ZFar);
+	if (bIsPerspective)
+	{
+		return glm::perspective(FOV * kPi / 180.f, AspectRatio, ZNear, ZFar);
+	}
+	else
+	{
+		float orthoHeight = orthoWidth / AspectRatio;
+		return glm::ortho(-(orthoWidth / 2.0f), orthoWidth / 2.0f,
+			-orthoHeight / 2.0f, (orthoHeight / 2.0f),
+			-1000.0f, 1000.0f);
+	}
 }
 
 glm::mat4 CameraComponent::GetViewMatrix() const
@@ -56,10 +68,25 @@ FRay CameraComponent::GenerateRay(glm::vec2 InMousePosition, glm::vec2 InViewpor
 	glm::vec2 normalizedCoords = GetNormalizedDeviceCoords(InMousePosition, InViewportSize);
 	glm::vec4 clipCoords = glm::vec4(normalizedCoords[0], normalizedCoords[1], -1.0f, 1.0f);
 	glm::vec4 eyeCoords = GetEyeCoords(clipCoords);
-
 	glm::vec3 worldRay = glm::normalize(GetWorldCoords(eyeCoords));
 
-	return FRay(GetAbsoluteCameraPosition(), worldRay);
+	FRay ray = FRay(glm::vec3(0.0f), glm::vec3(0.0f));
+	if (bIsPerspective)
+	{
+		ray =  FRay(GetAbsoluteCameraPosition(), worldRay);
+	}
+	else
+	{
+		glm::vec3 cameraRight = glm::normalize(glm::cross(-worldRay, glm::vec3(0.0f, 1.0f, 0.0f)));
+		glm::vec3 cameraUp = glm::normalize(glm::cross(cameraRight, -worldRay));
+		std::cout << "Camera Up: " << glm::to_string(cameraUp) << " Camera Right: " << glm::to_string(cameraRight) << std::endl;
+
+		glm::vec3 origin = GetAbsoluteCameraPosition();// + (cameraUp * normalizedCoords.y * orthoWidth / AspectRatio / 2.0f) + (cameraRight * normalizedCoords.x * orthoWidth / 2.0f);
+		//std::cout << glm::to_string(-worldRay) << std::endl;
+		//std::cout << glm::to_string(normalizedCoords) << std::endl;
+		ray = FRay(origin, -worldRay);
+	}
+	return ray;
 }
 
 }

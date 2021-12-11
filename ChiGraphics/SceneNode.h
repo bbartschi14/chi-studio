@@ -30,12 +30,16 @@ public:
         return *Children.at(InIndex);
     }
 
+    SceneNode* GetChildPtr(size_t InIndex) const {
+        return Children.at(InIndex).get();
+    }
+
     SceneNode* GetParentPtr() const {
         return Parent;
     }
 
     void AddChild(std::unique_ptr<SceneNode> InChild);
-    void RemoveChild(SceneNode* InChildToRemove);
+    std::unique_ptr<SceneNode> RemoveChild(SceneNode* InChildToRemove);
 
     template <class T>
     void AddComponent(std::unique_ptr<T> InComponent) {
