@@ -9,6 +9,7 @@
 #include "ChiGraphics/Modifiers/MirrorModifier.h"
 #include "ChiGraphics/Modifiers/ScrewModifier.h"
 #include "ChiGraphics/Modifiers/TransformModifier.h"
+#include "ChiGraphics/Materials/MaterialManager.h"
 
 namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
@@ -148,10 +149,13 @@ namespace CHISTUDIO {
 				lightComponent->GetLightPtr()->SetLightEnabled(isLightEnabled);
 			}
 
-			float intensity = lightComponent->GetLightPtr()->GetIntensity();
-			if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 50.0f))
+			if (lightType != ELightType::Hittable)
 			{
-				lightComponent->GetLightPtr()->SetIntensity(intensity);
+				float intensity = lightComponent->GetLightPtr()->GetIntensity();
+				if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 50.0f))
+				{
+					lightComponent->GetLightPtr()->SetIntensity(intensity);
+				}
 			}
 
 			if (lightType == ELightType::Ambient)
@@ -212,7 +216,6 @@ namespace CHISTUDIO {
 			ImGui::Checkbox("Wireframe", &renderingComponent->bRenderWireframe);
 			ImGui::SameLine();
 			ImGui::Checkbox("Points", &renderingComponent->bRenderPoints);
-			ImGui::SameLine();
 
 			bool isDebugNormals = vertexObject->IsDebugNormals();
 			if (ImGui::Checkbox("Normals", &isDebugNormals))
@@ -309,7 +312,42 @@ namespace CHISTUDIO {
 	{
 		if (ImGui::CollapsingHeader("Material", ImGuiTreeNodeFlags_DefaultOpen))
 		{
+			ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
+			ImGui::BeginChild("MaterialLibrary", ImVec2{ ImGui::GetContentRegionAvailWidth(), 100 }, true, window_flags);
+			if (ImGui::BeginMenuBar())
+			{
+				if (ImGui::BeginMenu("Library"))
+				{
+					if (ImGui::MenuItem("Create Material")) { MaterialManager::GetInstance().CreateNewMaterial(); }
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenuBar();
+			}
+
+			Material* matPtr = materialComponent->GetMaterialPtr();
+			auto materials = MaterialManager::GetInstance().GetMaterials();
+			for (auto matPair : materials)
+			{
+				if (ImGui::Selectable(matPair.first.c_str(), matPtr == matPair.second))
+				{
+					materialComponent->SetMaterial(MaterialManager::GetInstance().GetMaterial(matPair.first));
+				}
+			}
+			
+			ImGui::EndChild();
+
 			Material& mat = materialComponent->GetMaterial();
+
+			char matName[256];
+			std::string originalName = MaterialManager::GetInstance().GetNameOfMaterial(&mat);
+			memset(matName, 0, sizeof(matName));
+			std::strncpy(matName, originalName.c_str(), sizeof(matName));
+			ImGui::InputText("##MaterialName", matName, sizeof(matName));
+			if (ImGui::IsItemDeactivated())
+			{
+				MaterialManager::GetInstance().RenameMaterial(originalName, matName);
+			}
+
 			glm::vec3 albedo = mat.GetAlbedo();
 			if (ImGui::ColorEdit3("Albedo", glm::value_ptr(albedo)))
 			{

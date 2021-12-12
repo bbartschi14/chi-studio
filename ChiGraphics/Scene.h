@@ -39,6 +39,9 @@ public:
     SceneNode& GetRootNode() {
         return *RootNode;
     }
+    SceneNode* GetRootNodePtr() const{
+        return RootNode.get();
+    }
     const SceneNode& GetRootNode() const {
         return *RootNode;
     }

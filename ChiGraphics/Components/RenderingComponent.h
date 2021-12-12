@@ -33,6 +33,11 @@ public:
     VertexObject* GetPostModifierVertexObjectPtr() const {
         return PostModifierVertexObj.get();
     }
+    
+    // Returns the pre-modifier vertex object
+    VertexObject* GetPreModifierVertexObjectPtr() const {
+        return VertexObj.get();
+    }
 
     void Render() const;
 

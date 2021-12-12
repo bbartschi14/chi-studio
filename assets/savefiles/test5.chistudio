@@ -1,0 +1,62 @@
+Scene: D:\GraphicsProjects\ChiStudio\assets\savefiles\test5.chistudio
+? - Node: Cube.2
+    Transform:
+      Position: [0, -0.1499474, 0]
+      Rotation: [0, 28.11675, 0]
+      Scale: [0.9999997, 1, 0.9999997]
+    LightComponent:
+      DiffuseColor: [0.8, 0.8, 0.8]
+      SpecularColor: [1, 1, 1]
+      Intensity: 1
+      Enabled: true
+    RenderingComponent:
+      Smooth: 0
+    MaterialComponent:
+      MaterialName: Default
+    ? - Node: Plane.4
+        Transform:
+          Position: [0, -1.18312, 0]
+          Rotation: [0, -0, 0]
+          Scale: [3.25, 3.25, 3.25]
+        LightComponent:
+          DiffuseColor: [0.8, 0.8, 0.8]
+          SpecularColor: [1, 1, 1]
+          Intensity: 1
+          Enabled: true
+        RenderingComponent:
+          Smooth: 0
+        MaterialComponent:
+          MaterialName: Default
+  - Node: Camera.3
+    Transform:
+      Position: [0, 0, 8.025562]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      FOV: 30
+      FocusDistance: 6.87
+      Aperture: 0.23
+  - Node: PointLight.5
+    Transform:
+      Position: [3.870866, 2.591798, 2.98712]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LightComponent:
+      DiffuseColor: [1, 1, 1]
+      SpecularColor: [1, 1, 1]
+      Intensity: 1
+      Enabled: true
+  - Node: TracingSphere.6
+    Transform:
+      Position: [-3.737515, 0, 0]
+      Rotation: [0, -0, 0]
+      Scale: [1, 1, 1]
+    LightComponent:
+      DiffuseColor: [0.8, 0.8, 0.8]
+      SpecularColor: [1, 1, 1]
+      Intensity: 1
+      Enabled: true
+    MaterialComponent:
+      MaterialName: Default.001
+    TracingComponent:
+      TracingType: 0

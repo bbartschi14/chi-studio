@@ -1,0 +1,48 @@
+MaterialInfo:
+  DefaultMaterialName: Shiny
+  Materials:
+    - Name: Shiny
+      Albedo: [0.5241969, 0.7904481, 0.9162791]
+      Roughness: 0.157
+      Metallic: 1
+      Emittance: 0
+      IndexOfRefraction: 1.5
+      Transparent: false
+    - Name: Glass
+      Albedo: [1, 1, 1]
+      Roughness: 0.001
+      Metallic: 0
+      Emittance: 0
+      IndexOfRefraction: 1.255
+      Transparent: true
+---
+Scene: Children
+? - Node: Cube.2
+    Transform:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LightComponent:
+      DiffuseColor: [0.8, 0.8, 0.8]
+      SpecularColor: [1, 1, 1]
+      Intensity: 1
+      Enabled: true
+    RenderingComponent:
+      Smooth: 0
+    MaterialComponent:
+      MaterialName: Shiny
+    Children:
+      - Node: Cube.3
+        Transform:
+          Position: [5.1, 0, 0]
+          Rotation: [0, 0, 0]
+          Scale: [1, 1, 1]
+        LightComponent:
+          DiffuseColor: [0.8, 0.8, 0.8]
+          SpecularColor: [1, 1, 1]
+          Intensity: 1
+          Enabled: true
+        RenderingComponent:
+          Smooth: 0
+        MaterialComponent:
+          MaterialName: Glass

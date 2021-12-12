@@ -94,15 +94,21 @@ public:
 	SceneNode* CreateTracingSphereNode();
 	SceneNode* CreateImportMeshNode(const std::string& filePath);
 
+	// Clear our scene nodes and recreate scene
+	void ResetScene();
+
+	void UpdateWindowFilename(std::string InFilename);
 protected:
 	virtual void DrawGUI() {}
-	virtual void SetupScene() = 0;
+	virtual void SetupScene(bool InIncludeDefaults) = 0;
 	std::unique_ptr<Scene> Scene_;
 	std::unique_ptr<Renderer> Renderer_;
 	std::vector<SceneNode*> SelectedNodes;
 
 	ESceneMode CurrentSceneMode;
 	EEditModeSelectionType EditModeSelectionType;
+	std::string CurrentFilename;
+
 private:
 	void InitializeGLFW();
 

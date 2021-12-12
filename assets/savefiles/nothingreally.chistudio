@@ -1,0 +1,13 @@
+MaterialInfo:
+  DefaultMaterialName: Default
+  Materials:
+    - Name: Default
+      Albedo: [0.8, 0.8, 0.8]
+      Roughness: 1
+      Metallic: 0
+      Emittance: 0
+      IndexOfRefraction: 1.5
+      Transparent: false
+Scene:
+  Children:
+    []

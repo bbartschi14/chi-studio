@@ -22,12 +22,15 @@
 #include "ChiGraphics/Collision/TracingNode.h"
 #include "external/src/ImGuizmo/ImGuizmo.h"
 #include "ChiGraphics/Collision/Hittables/MeshHittable.h"
+#include "ChiGraphics/Materials/MaterialManager.h"
 
 namespace CHISTUDIO {
 
 Application::Application(std::string InAppName, glm::ivec2 InWindowSize)
 	: AppName(InAppName), WindowSize(InWindowSize)
 {
+	CurrentFilename = "";
+
 	InitializeGLFW();
 	InitializeGUI();
 
@@ -332,7 +335,7 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaul
 	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
 	cubeNode->CreateComponent<RenderingComponent>(cubeMesh);
 	cubeNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
-	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
+	auto material = MaterialManager::GetInstance().GetDefaultMaterial();
 	auto hittableLight = std::make_shared<HittableLight>();
 	cubeNode->CreateComponent<LightComponent>(hittableLight);
 	cubeNode->CreateComponent<MaterialComponent>(material);
@@ -356,7 +359,7 @@ SceneNode* Application::CreateVertexObjectCopy(VertexObject* InVertexObjectToCop
 	node->CreateComponent<ShadingComponent>(shader);
 	node->CreateComponent<RenderingComponent>(mesh);
 	node->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
-	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
+	auto material = MaterialManager::GetInstance().GetDefaultMaterial();
 	auto hittableLight = std::make_shared<HittableLight>();
 	node->CreateComponent<LightComponent>(hittableLight);
 	node->CreateComponent<MaterialComponent>(material);
@@ -411,7 +414,7 @@ SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 	meshNode->CreateComponent<ShadingComponent>(shader);
 	meshNode->CreateComponent<RenderingComponent>(mesh);
 	meshNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
-	auto material = Material::MakeDiffuse(glm::vec3(1.0f, 0.0f, 0.0f));
+	auto material = MaterialManager::GetInstance().GetDefaultMaterial();
 	meshNode->CreateComponent<MaterialComponent>(material);
 
 	auto hittableLight = std::make_shared<HittableLight>();
@@ -421,6 +424,19 @@ SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 
 	Scene_->GetRootNode().AddChild(std::move(meshNode));
 	return ref;
+}
+
+void Application::ResetScene()
+{
+	DeselectAllNodes();
+	Scene_ = make_unique<Scene>(make_unique<SceneNode>("Root"));
+}
+
+void Application::UpdateWindowFilename(std::string InFilename)
+{
+	CurrentFilename = InFilename;
+	std::string fileDisplay = CurrentFilename.empty() ? "Untitled" : CurrentFilename;
+	glfwSetWindowTitle(WindowHandle, fmt::format("{} - {}", AppName, fileDisplay).c_str());
 }
 
 void Application::InitializeGLFW()
@@ -436,6 +452,7 @@ void Application::InitializeGLFW()
 
 	WindowHandle = glfwCreateWindow(WindowSize.x, WindowSize.y,
 		AppName.c_str(), nullptr, nullptr);
+	UpdateWindowFilename(CurrentFilename);
 
 	if (WindowHandle == nullptr) {
 		std::cerr << "Failed to create GLFW window!" << std::endl;

@@ -12,7 +12,7 @@ class ChiStudioApplication : public Application
 {
 public:
 	ChiStudioApplication(const std::string& InAppName, glm::ivec2 InWindowSize);
-	void SetupScene() override;
+	void SetupScene(bool InIncludeDefaults) override;
 	void DrawGUI() override;
 
 private:

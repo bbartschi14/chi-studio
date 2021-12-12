@@ -26,6 +26,15 @@ public:
         return Children.size();
     }
 
+    int GetHierarchyVisibleChildrenCount() const {
+        int count = 0;
+        for (size_t i = 0; i < Children.size(); i++)
+        {
+            if (Children[i]->bIsHierarchyVisible) count++;
+        }
+        return count;
+    }
+
     SceneNode& GetChild(size_t InIndex) const {
         return *Children.at(InIndex);
     }

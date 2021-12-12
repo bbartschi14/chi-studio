@@ -76,6 +76,11 @@ find_package(
 )
 list(APPEND external_libs glm::glm)
 
+#YAML
+add_subdirectory(${external_source_dir}/third-party/yaml-cpp)
+list(APPEND external_libs yaml-cpp)
+include_directories(${external_source_dir}/third-party/yaml-cpp/include)
+
 # ImGui
 set(imgui_dir ${external_source_dir}/imgui)
 list(APPEND external_srcs
@@ -141,7 +146,9 @@ include_directories(${core_dir})
 file(GLOB core_source_files
     ${core_dir}/*.cpp
     ${core_dir}/UI/*.cpp
+    ${core_dir}/Serialization/*.cpp
 )
+
 
 file(GLOB header_files
     ${graphics_dir}/*.h
@@ -165,7 +172,7 @@ foreach (source IN LISTS all_files)
 endforeach ()
 
 add_executable(ChiStudio ${graphics_srcs} ${external_srcs} ${core_source_files} ${header_files})
-
+#target_link_libraries(ChiStudio ${YAML_CPP_LIBRARIES}) # This is the "target" exposed by # yaml-cpp's CMakeLists.txt file
 target_link_libraries(ChiStudio ${external_libs})
 target_compile_options(ChiStudio PRIVATE ${cxx_warning_flags})
 

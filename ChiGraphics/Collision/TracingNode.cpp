@@ -19,7 +19,7 @@ TracingNode::TracingNode(std::string InName)
 	auto material = std::make_shared<Material>();
 	CreateComponent<MaterialComponent>(material);
 
-	auto tracingComponent = CreateComponent<TracingComponent>(std::move(sphereHittable));
+	auto tracingComponent = CreateComponent<TracingComponent>(std::move(sphereHittable), ETracingType::Sphere);
 
 	auto hittableLight = std::make_shared<HittableLight>();
 	auto lightComponent = CreateComponent<LightComponent>(hittableLight);

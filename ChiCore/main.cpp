@@ -12,7 +12,7 @@ int main()
     std::unique_ptr<ChiStudioApplication> application =
         make_unique<ChiStudioApplication>("Chi Studio", glm::ivec2(1920, 1080));
 
-    application->SetupScene();
+    application->SetupScene(true);
 
     // Setup timer controls
     using Clock = std::chrono::high_resolution_clock;
