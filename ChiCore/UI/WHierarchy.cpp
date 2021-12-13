@@ -1,6 +1,7 @@
 #include "D:\GraphicsProjects\ChiStudio\ChiCore\UI\WHierarchy.h"
 #include "ChiGraphics/Application.h"
 #include "ChiGraphics/Scene.h"
+#include "ChiCore/UI/UILibrary.h"
 
 namespace CHISTUDIO {
 	WHierarchy::WHierarchy()
@@ -79,6 +80,14 @@ namespace CHISTUDIO {
         {
             InApplication.CreateTracingSphereNode();
         }
+        if (ImGui::Selectable("Add Imported Mesh"))
+        {
+            std::string filename = UILibrary::PickFileName("Supported files (*.obj)\0*.obj\0");
+            if (!filename.empty())
+            {
+                InApplication.CreateImportMeshNode(filename);
+            }
+        }
 
         ImGui::EndPopup();
     }
@@ -139,11 +148,12 @@ namespace CHISTUDIO {
         if (!node.IsHierarchyVisible()) return;
 
         size_t childCount = node.GetChildrenCount();
+        size_t nonHiddenChildCount = node.GetHierarchyVisibleChildrenCount();
 
         // Create row for this node
         ImGui::TableNextRow();
         ImGui::TableNextColumn();
-        const bool isFolderNode = (childCount > 0);
+        const bool isFolderNode = (nonHiddenChildCount > 0);
 
         ImGuiTreeNodeFlags folderFlags = ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
         ImGuiTreeNodeFlags leafFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth;
@@ -194,7 +204,7 @@ namespace CHISTUDIO {
         }
 
         ImGui::TableNextColumn();
-        ImGui::TextUnformatted("Type");
+        ImGui::TextUnformatted(node.GetNodeType().c_str());
 
         if (isFolderNode && open)
         {

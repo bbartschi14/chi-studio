@@ -98,7 +98,9 @@ include_directories(${imgui_dir} ${imgui_dir}/backends)
 #ImGuizmo
 set(imguizmo_dir ${external_source_dir}/ImGuizmo)
 list(APPEND external_srcs
-    ${imguizmo_dir}/ImGuizmo.cpp)
+    ${imguizmo_dir}/ImGuizmo.cpp
+    ${imguizmo_dir}/ImSequencer.cpp
+    ${imguizmo_dir}/ImCurveEdit.cpp)
 
 #fmt
 set(fmt_dir ${external_source_dir}/fmt)

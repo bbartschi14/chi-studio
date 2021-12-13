@@ -7,11 +7,11 @@ namespace CHISTUDIO {
     RenderingComponent::RenderingComponent(std::shared_ptr<VertexObject> InVertexObj)
         : VertexObj(std::move(InVertexObj)), bIsDebugRender(false)
 {
-    if (!VertexObj->HasIndices() && !VertexObj->HasPositions()) {
-        throw std::runtime_error(
-            "Cannot initialize a "
-            "RenderingComponent with a VertexObject without positions!");
-    }
+    //if (!VertexObj->HasIndices() && !VertexObj->HasPositions()) {
+    //    throw std::runtime_error(
+    //        "Cannot initialize a "
+    //        "RenderingComponent with a VertexObject without positions!");
+    //}
 
     // We use -1 to indicate the entire range of indices/positions.
     StartIndex = -1;
@@ -75,10 +75,10 @@ void RenderingComponent::Render() const
     GetVertexObjectPtr()->Render();
 }
 
-void RenderingComponent::AddModifier(std::unique_ptr<IModifier> InModifier)
+void RenderingComponent::AddModifier(std::unique_ptr<IModifier> InModifier, bool ShouldRecalculate)
 {
     Modifiers.push_back(std::move(InModifier));
-    RecalculateModifiers();
+    if (ShouldRecalculate) RecalculateModifiers();
 }
 
 void RenderingComponent::RemoveModifier(int InIndex)

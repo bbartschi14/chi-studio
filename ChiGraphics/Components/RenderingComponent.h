@@ -48,7 +48,7 @@ public:
     bool bDisplayUnmodified;
 
     // Add a modifier to the list of modifiers on this rendering componenet. Immediately recalculates the post-modifier VO
-    void AddModifier(std::unique_ptr<IModifier> InModifier);
+    void AddModifier(std::unique_ptr<IModifier> InModifier, bool ShouldRecalculate = true);
 
     // Remove at an index
     void RemoveModifier(int InIndex);

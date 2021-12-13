@@ -5,6 +5,7 @@
 #include "UI/WObjectProperties.h"
 #include "UI/WEditMode.h"
 #include "UI/WRendering.h"
+#include "UI/WTimeline.h"
 
 namespace CHISTUDIO {
 
@@ -20,6 +21,7 @@ private:
 	std::unique_ptr<WObjectProperties> ObjectPropertiesWidget;
 	std::unique_ptr<WEditMode> EditModeWidget;
 	std::unique_ptr<WRendering> RenderingWidget;
+	std::unique_ptr<WTimeline> TimelineWidget;
 
 };
 

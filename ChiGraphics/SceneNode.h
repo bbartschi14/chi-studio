@@ -116,6 +116,15 @@ public:
     {
         NodeName = InName;
     }
+    
+    const std::string& GetNodeType() const {
+        return NodeType;
+    }
+
+    void SetNodeType(const std::string& InType)
+    {
+        NodeType = InType;
+    }
 
     void SetSelected(bool InIsSelected) {
         bIsSelected = InIsSelected;
@@ -146,6 +155,7 @@ private:
     SceneNode* Parent;
     bool Active;
     std::string NodeName;
+    std::string NodeType;
     bool bIsSelected;
     bool bIsHierarchyVisible;
 

@@ -3,6 +3,11 @@
 #include <fstream>
 #include "ChiGraphics/Materials/MaterialManager.h"
 #include "ChiGraphics/Components/TracingComponent.h"
+#include "ChiGraphics/Modifiers/SubdivisionSurfaceModifier.h"
+#include "ChiGraphics/Modifiers/MirrorModifier.h"
+#include "ChiGraphics/Modifiers/TransformModifier.h"
+#include "ChiGraphics/Modifiers/ScrewModifier.h"
+#include "ChiGraphics/Cameras/TracingCameraNode.h"
 
 // Struct serialization helpers
 namespace YAML {
@@ -82,6 +87,37 @@ FileSerializer::FileSerializer(class Application& InApp) : AppRef(InApp)
 
 }
 
+void SerializeModifier(YAML::Emitter& OutData, IModifier* InModifier)
+{
+	OutData << YAML::BeginMap;
+	OutData << YAML::Key << "Name" << YAML::Value << InModifier->GetName();
+
+	if (SubdivisionSurfaceModifier* subsurfMod = dynamic_cast<SubdivisionSurfaceModifier*>(InModifier))
+	{
+		OutData << YAML::Key << "Iterations" << YAML::Value << subsurfMod->NumberOfIterations;
+	}
+	else if (MirrorModifier* mirrorMod = dynamic_cast<MirrorModifier*>(InModifier))
+	{
+		OutData << YAML::Key << "X?" << YAML::Value << mirrorMod->MirrorX;
+		OutData << YAML::Key << "Y?" << YAML::Value << mirrorMod->MirrorY;
+		OutData << YAML::Key << "Z?" << YAML::Value << mirrorMod->MirrorZ;
+	}
+	else if (ScrewModifier* screwMod = dynamic_cast<ScrewModifier*>(InModifier))
+	{
+		OutData << YAML::Key << "AngleInDegrees" << YAML::Value << screwMod->AngleInDegrees;
+		OutData << YAML::Key << "Height" << YAML::Value << screwMod->Height;
+		OutData << YAML::Key << "Steps" << YAML::Value << screwMod->Steps;
+		OutData << YAML::Key << "ScrewAxis" << YAML::Value << (int)screwMod->ScrewAxis;
+		OutData << YAML::Key << "MergeEndWithStart" << YAML::Value << screwMod->MergeEndWithStart;
+	}
+	else if (TransformModifier* transformMod = dynamic_cast<TransformModifier*>(InModifier))
+	{
+		OutData << YAML::Key << "Translation" << YAML::Value << transformMod->Translation;
+	}
+
+	OutData << YAML::EndMap;
+}
+
 void SerializeNode(YAML::Emitter& OutData, SceneNode* InNode)
 {
 	OutData << YAML::BeginMap;
@@ -123,8 +159,50 @@ void SerializeNode(YAML::Emitter& OutData, SceneNode* InNode)
 		OutData << YAML::BeginMap;
 		OutData << YAML::Key << "Smooth" << YAML::Value << (int)render->GetShadingType();
 		OutData << YAML::Key << "DebugRender" << YAML::Value << render->bIsDebugRender;
-		// TODO: Mesh Data
-		// TODO: Modifiers
+
+		// Begin Mesh Data
+		OutData << YAML::Key << "MeshData";
+		OutData << YAML::BeginMap;
+		OutData << YAML::Key << "Vertices" << YAML::Value << YAML::BeginSeq;
+		auto& vertsRef = render->GetPreModifierVertexObjectPtr()->GetVertices();
+		std::unordered_map<int, int> vertIndexIdToArrayIndex;
+		for (size_t i = 0; i < vertsRef.size(); i++)
+		{
+			OutData << YAML::BeginMap;
+			OutData << YAML::Key << "Position" << YAML::Value << vertsRef[i]->GetPosition();
+			OutData << YAML::EndMap;
+			vertIndexIdToArrayIndex.insert({vertsRef[i]->GetIndexId(), i});
+		}
+		OutData << YAML::EndSeq;
+
+		OutData << YAML::Key << "Faces" << YAML::Value << YAML::BeginSeq;
+		auto& facesRef = render->GetPreModifierVertexObjectPtr()->GetFaces();
+		for (size_t i = 0; i < facesRef.size(); i++)
+		{
+			std::vector<int> vertSerializedArrayIndices;
+			std::vector<FVertex*> vertsOnFace = facesRef[i]->GetVerticesOnFace();
+			for (FVertex* vert : vertsOnFace)
+			{
+				vertSerializedArrayIndices.push_back(vertIndexIdToArrayIndex.find(vert->GetIndexId())->second);
+			}
+			OutData << YAML::BeginMap;
+			OutData << YAML::Key << "Vertices" << YAML::Value << YAML::Flow << vertSerializedArrayIndices;
+			OutData << YAML::EndMap;
+		}
+		OutData << YAML::EndSeq;
+		OutData << YAML::EndMap;
+		// ~ End Mesh Data
+		
+		// Begin Modifiers
+		OutData << YAML::Key << "Modifiers" << YAML::Value << YAML::BeginSeq;
+		auto& mods = render->GetModifiers();
+		for (size_t i = 0; i < mods.size(); i++)
+		{
+			SerializeModifier(OutData, mods[i].get());
+		}
+		OutData << YAML::EndSeq;
+
+		// ~ Endd Modifiers
 		OutData << YAML::EndMap;
 	}
 	if (MaterialComponent* material = InNode->GetComponentPtr<MaterialComponent>())
@@ -214,6 +292,41 @@ void FileSerializer::Serialize(const std::string& InFilepath)
 	fout << dataOut.c_str();
 }
 
+void DeserializeModifier(YAML::Node& InData, RenderingComponent* InRenderingComp)
+{
+	std::string name = InData["Name"].as<std::string>();
+
+	if (name == "Subdivision Surface")
+	{
+		auto subdivMod = make_unique<SubdivisionSurfaceModifier>(InData["Iterations"].as<int>());
+		InRenderingComp->AddModifier(std::move(subdivMod), false);
+	}
+	else if (name == "Mirror")
+	{
+		auto mirrorMod = make_unique<MirrorModifier>();
+		mirrorMod->MirrorX = InData["X?"].as<bool>();
+		mirrorMod->MirrorY = InData["Y?"].as<bool>();
+		mirrorMod->MirrorZ = InData["Z?"].as<bool>();
+		InRenderingComp->AddModifier(std::move(mirrorMod), false);
+	}
+	else if (name == "Transform")
+	{
+		auto transformMod = make_unique<TransformModifier>();
+		transformMod->Translation = InData["Translation"].as<glm::vec3>();
+		InRenderingComp->AddModifier(std::move(transformMod), false);
+	}
+	else if (name == "Screw")
+	{
+		auto screwMod = make_unique<ScrewModifier>();
+		screwMod->AngleInDegrees = InData["AngleInDegrees"].as<float>();
+		screwMod->Height = InData["Height"].as<float>();
+		screwMod->Steps = InData["Steps"].as<int>();
+		screwMod->ScrewAxis = (EScrewAxis)InData["ScrewAxis"].as<int>();
+		screwMod->MergeEndWithStart = InData["MergeEndWithStart"].as<bool>();
+		InRenderingComp->AddModifier(std::move(screwMod), false);
+	}
+}
+
 void FileSerializer::DeserializeNode(YAML::Node& InData, SceneNode* InParentNode)
 {
 	//std::cout << "Deserializing " << InData["Node"].as<std::string>() << std::endl;
@@ -230,14 +343,88 @@ void FileSerializer::DeserializeNode(YAML::Node& InData, SceneNode* InParentNode
 	if (renderingComp && !renderingComp["DebugRender"].as<bool>())
 	{
 		FDefaultObjectParams params;
-		newNode = AppRef.CreatePrimitiveNode(EDefaultObject::Cube, params);
+		newNode = AppRef.CreatePrimitiveNode(EDefaultObject::CustomMesh, params);
 
 		auto rendering = newNode->GetComponentPtr<RenderingComponent>();
 
 		// Load half edge data
+		auto meshData = renderingComp["MeshData"];
+		auto vertexNodes = meshData["Vertices"];
+		VertexObject* vertObj = rendering->GetPreModifierVertexObjectPtr();
+
+		// Create saved vertices
+		std::vector<FVertex*> createdVerts;
+		for (auto vertNode : vertexNodes)
+		{
+			createdVerts.push_back(vertObj->CreateVertex(vertNode["Position"].as<glm::vec3>(), nullptr));
+		}
+
+		auto faceNodes = meshData["Faces"];
+
+		// Create saved faces and half edges on the face. When a half edge is created, we check the
+		// cache to see if it's symmetrical half exists. By the end of a single iteration over
+		// all faces, all data should be setup except for boundary half edges (i.e. half edges
+		// with no owning face). In order to setup boundary edges, we iterate a second time
+		// and then link boundaries
+
+		std::unordered_map<std::string, FHalfEdge*> createdHalfEdges;
+		std::vector<FFace*> createdFaces;
+		for (auto faceNode : faceNodes)
+		{
+			std::vector<int> vertsOnFace = faceNode["Vertices"].as<std::vector<int>>();
+			FFace* newFace = vertObj->CreateFace(nullptr);
+			size_t numVerts = vertsOnFace.size();
+			std::vector<FHalfEdge*> halfEdgesOnFace;
+			for (size_t i = 0; i < numVerts; i++)
+			{
+				FHalfEdge* newHalfEdge = vertObj->CreateHalfEdge(nullptr, nullptr, newFace, nullptr, createdVerts[vertsOnFace[(i+1) % numVerts]]);
+				createdVerts[vertsOnFace[(i + 1) % numVerts]]->SetParentHalfEdge(newHalfEdge);
+				createdHalfEdges.insert({ fmt::format("{},{}", vertsOnFace[i], vertsOnFace[(i + 1) % numVerts]), newHalfEdge });
+				
+				auto symmPair = createdHalfEdges.find(fmt::format("{},{}", vertsOnFace[(i + 1) % numVerts], vertsOnFace[i]));
+				if (symmPair != createdHalfEdges.end())
+				{
+					newHalfEdge->SetSymmetricalHalfEdge(symmPair->second);
+					symmPair->second->SetSymmetricalHalfEdge(newHalfEdge);
+					FEdge* newEdge = vertObj->CreateEdge(newHalfEdge, symmPair->second);
+				}
+				halfEdgesOnFace.push_back(newHalfEdge);
+				if (i == 0) newFace->SetHalfEdgeOnFace(newHalfEdge);
+			}
+
+			for (size_t i = 0; i < halfEdgesOnFace.size(); i++)
+			{
+				halfEdgesOnFace[i]->SetNextHalfEdge(halfEdgesOnFace[(i + 1) % halfEdgesOnFace.size()]);
+			}
+			createdFaces.push_back(newFace);
+		}
+
+		std::unordered_map<int, FHalfEdge*> boundaryHalfEdgesFromPreviousVertIndex;
+		for (auto halfEdgePair : createdHalfEdges) // Handle boundary edges
+		{
+			if (halfEdgePair.second->GetSymmetricalHalfEdge() == nullptr) // If it is a boundary edge
+			{
+				FHalfEdge* newBoundaryHalfEdge = vertObj->CreateHalfEdge(nullptr, halfEdgePair.second, nullptr, nullptr, halfEdgePair.second->GetPreviousHalfEdge()->GetNextVertex());
+				halfEdgePair.second->SetSymmetricalHalfEdge(newBoundaryHalfEdge);
+				FEdge* newEdge = vertObj->CreateEdge(newBoundaryHalfEdge, halfEdgePair.second);
+				boundaryHalfEdgesFromPreviousVertIndex.insert({ halfEdgePair.second->GetNextVertex()->GetIndexId(), newBoundaryHalfEdge });
+			}
+		}
+
+		// Link boundary loops
+		for (auto halfEdgePair : boundaryHalfEdgesFromPreviousVertIndex)
+		{
+			FHalfEdge* nextHalfEdge = boundaryHalfEdgesFromPreviousVertIndex.find(halfEdgePair.second->GetNextVertex()->GetIndexId())->second;
+			halfEdgePair.second->SetNextHalfEdge(nextHalfEdge);
+		}
 
 		// Load modifiers
-
+		auto modNodeBase = renderingComp["Modifiers"];
+		for (auto modNode : modNodeBase)
+		{
+			DeserializeModifier(modNode, rendering);
+		}
+		rendering->RecalculateModifiers();
 		rendering->SetShadingType((EShadingType)renderingComp["Smooth"].as<int>());
 	}
 	else if (cameraComp)
@@ -247,6 +434,10 @@ void FileSerializer::DeserializeNode(YAML::Node& InData, SceneNode* InParentNode
 		camera->SetFOV(cameraComp["FOV"].as<float>());
 		camera->FocusDistance = (cameraComp["FocusDistance"].as<float>());
 		camera->Aperture = (cameraComp["Aperture"].as<float>());
+		if (TracingCameraNode* tracingCameraNode = dynamic_cast<TracingCameraNode*>(newNode))
+		{
+			tracingCameraNode->RefreshDebugVisual();
+		}
 	}
 	else if (tracingComp)
 	{

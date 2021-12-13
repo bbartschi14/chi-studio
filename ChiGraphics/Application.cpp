@@ -78,7 +78,8 @@ void Application::SelectNode(SceneNode* nodeToSelect, bool addToSelection)
 {
 	if (!addToSelection || nodeToSelect == nullptr)
 	{
-		SetSceneMode(ESceneMode::Object);
+		if (CurrentSceneMode == ESceneMode::Edit)
+			SetSceneMode(ESceneMode::Object);
 
 		DeselectAllNodes();
 	}
@@ -311,6 +312,24 @@ void Application::HandleEditModeHotkeys()
 			}
 		}
 	}
+	if (ImGui::IsKeyPressed(GLFW_KEY_N))
+	{
+		if (CurrentSceneMode == ESceneMode::Edit)
+		{
+			VertexObject* obj = SelectedNodes[0]->GetComponentPtr<RenderingComponent>()->GetVertexObjectPtr();
+			if (obj->GetSelectedEdges().size() > 0)
+			{
+				if (ImGui::IsKeyDown(GLFW_KEY_LEFT_SHIFT))
+				{
+					obj->SelectEdge(obj->GetSelectedEdgesPtrs()[0]->GetSecondHalfEdge()->GetNextHalfEdge()->GetOwningEdge()->GetIndexId(), false);
+				}
+				else
+				{
+					obj->SelectEdge(obj->GetSelectedEdgesPtrs()[0]->GetFirstHalfEdge()->GetNextHalfEdge()->GetOwningEdge()->GetIndexId(), false);
+				}
+			}
+		}
+	}
 }
 
 SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams)
@@ -330,6 +349,8 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaul
 	case (EDefaultObject::Cylinder):
 		name = "Cylinder";
 		break;
+	default:
+		break;
 	}
 	auto cubeNode = make_unique<SceneNode>(fmt::format("{}.{}", name, Scene_->GetRootNode().GetChildrenCount()));
 	cubeNode->CreateComponent<ShadingComponent>(cubeShader);
@@ -340,6 +361,7 @@ SceneNode* Application::CreatePrimitiveNode(EDefaultObject InObjectType, FDefaul
 	cubeNode->CreateComponent<LightComponent>(hittableLight);
 	cubeNode->CreateComponent<MaterialComponent>(material);
 	SceneNode* ref = cubeNode.get();
+	cubeNode->SetNodeType("Mesh");
 
 	Scene_->GetRootNode().AddChild(std::move(cubeNode));
 	return ref;
@@ -364,7 +386,7 @@ SceneNode* Application::CreateVertexObjectCopy(VertexObject* InVertexObjectToCop
 	node->CreateComponent<LightComponent>(hittableLight);
 	node->CreateComponent<MaterialComponent>(material);
 	SceneNode* ref = node.get();
-
+	node->SetNodeType("Mesh");
 	Scene_->GetRootNode().AddChild(std::move(node));
 	return ref;
 }
@@ -373,6 +395,8 @@ SceneNode* Application::CreateCamera()
 {
 	auto cameraNode = make_unique<TracingCameraNode>(fmt::format("Camera.{}", Scene_->GetRootNode().GetChildrenCount()));
 	SceneNode* ref = cameraNode.get();
+	cameraNode->SetNodeType("Camera");
+
 	Scene_->GetRootNode().AddChild(std::move(cameraNode));
 	return ref;
 }
@@ -380,7 +404,8 @@ SceneNode* Application::CreateCamera()
 SceneNode* Application::CreatePointLight()
 {
 	auto lightNode = make_unique<LightNode>(fmt::format("PointLight.{}", Scene_->GetRootNode().GetChildrenCount()));
-	SceneNode* ref = lightNode.get();
+	SceneNode* ref = lightNode.get();	
+	lightNode->SetNodeType("Light");
 
 	Scene_->GetRootNode().AddChild(std::move(lightNode));
 	return ref;
@@ -390,6 +415,7 @@ SceneNode* Application::CreateAmbientLight()
 {
 	auto lightNode = make_unique<AmbientLightNode>(fmt::format("AmbientLight.{}", Scene_->GetRootNode().GetChildrenCount()));
 	SceneNode* ref = lightNode.get();
+	lightNode->SetNodeType("Light");
 
 	Scene_->GetRootNode().AddChild(std::move(lightNode));
 	return ref;
@@ -400,6 +426,8 @@ SceneNode* Application::CreateTracingSphereNode()
 	auto tracingNode = make_unique<TracingNode>(fmt::format("TracingSphere.{}", Scene_->GetRootNode().GetChildrenCount()));
 	SceneNode* ref = tracingNode.get();
 
+	tracingNode->SetNodeType("Tracing");
+
 	Scene_->GetRootNode().AddChild(std::move(tracingNode));
 	return ref;
 }
@@ -407,8 +435,7 @@ SceneNode* Application::CreateTracingSphereNode()
 SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 {
 	std::shared_ptr<PhongShader> shader = std::make_shared<PhongShader>();
-	MeshData data = MeshLoader::Import(filePath);
-	std::shared_ptr<VertexObject> mesh = std::move(data.VertexObj);
+	std::shared_ptr<VertexObject> mesh = std::move(MeshLoader::ImportObj(filePath));
 
 	auto meshNode = make_unique<SceneNode>(fmt::format("Mesh.{}", Scene_->GetRootNode().GetChildrenCount()));
 	meshNode->CreateComponent<ShadingComponent>(shader);
@@ -421,7 +448,7 @@ SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 	meshNode->CreateComponent<LightComponent>(hittableLight);
 
 	SceneNode* ref = meshNode.get();
-
+	meshNode->SetNodeType("Mesh");
 	Scene_->GetRootNode().AddChild(std::move(meshNode));
 	return ref;
 }
@@ -429,6 +456,7 @@ SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 void Application::ResetScene()
 {
 	DeselectAllNodes();
+	SetSceneMode(ESceneMode::Object);
 	Scene_ = make_unique<Scene>(make_unique<SceneNode>("Root"));
 }
 

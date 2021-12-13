@@ -25,6 +25,7 @@ ChiStudioApplication::ChiStudioApplication(const std::string& InAppName, glm::iv
 	ObjectPropertiesWidget = make_unique<WObjectProperties>();
 	EditModeWidget = make_unique<WEditMode>();
 	RenderingWidget = make_unique<WRendering>();
+	TimelineWidget = make_unique<WTimeline>();
 }
 
 void ChiStudioApplication::SetupScene(bool InIncludeDefaults)
@@ -60,7 +61,7 @@ void ChiStudioApplication::SetupScene(bool InIncludeDefaults)
 	//plane->GetComponentPtr<MaterialComponent>()->GetMaterial().SetAlbedo(glm::vec3(.1f));
 
 	//SceneNode* teapot = CreateImportMeshNode("teapot.obj");
-	//SceneNode* pegasus = CreateImportMeshNode("pegasus.obj");
+	//SceneNode* pegasus = CreateImportMeshNode("D:/GraphicsProjects/ChiStudio/assets/pegasus.obj");
 	//pegasus->GetTransform().SetScale(glm::vec3(3.0f));
 }
 
@@ -143,6 +144,7 @@ void ChiStudioApplication::DrawGUI()
 	HierarchyWidget->Render(*this);
 	ObjectPropertiesWidget->Render(*this);
 	EditModeWidget->Render(*this);
+	TimelineWidget->Render(*this);
 }
 
 }

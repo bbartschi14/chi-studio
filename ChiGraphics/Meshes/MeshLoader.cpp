@@ -1,5 +1,9 @@
 #include "MeshLoader.h"
 #include <iostream>
+#include "ChiGraphics/Utilities.h"
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 namespace CHISTUDIO {
 
@@ -38,6 +42,158 @@ MeshData MeshLoader::Import(const std::string& filename) {
     mesh_data.Groups = std::move(parsed_data.Groups);
 
     return mesh_data;
+}
+
+std::shared_ptr<VertexObject> MeshLoader::ImportObj(const std::string& filename)
+{
+    std::fstream fs(filename);
+    if (!fs) {
+        std::cerr << "ERROR: Unable to open OBJ file " + filename + "!"
+            << std::endl;
+        return {};
+    }
+
+    FDefaultObjectParams params;
+    std::shared_ptr<VertexObject> vertexObject = make_unique<VertexObject>(EDefaultObject::CustomMesh, params);
+    std::vector<FVertex*> createdVerts;
+    std::unordered_map<std::string, FHalfEdge*> createdHalfEdges;
+    std::vector<std::vector<int>> vertsOnFacesVector;
+
+    std::string base_path = GetBasePath(filename);
+
+    std::string line;
+    while (std::getline(fs, line)) {
+        std::stringstream ss(line);
+        std::string command;
+        ss >> command;
+        if (command == "#" || command == "") 
+        {
+            continue;
+        }
+        else if (command == "v") 
+        {
+            glm::vec3 vertexPosition;
+            ss >> vertexPosition.x >> vertexPosition.y >> vertexPosition.z;
+            createdVerts.push_back(vertexObject->CreateVertex(vertexPosition, nullptr));
+        }
+        else if (command == "vn") 
+        {
+            glm::vec3 vertexNormal;
+            ss >> vertexNormal.x >> vertexNormal.y >> vertexNormal.z;
+            // Skip normals for now
+        }
+        else if (command == "vt") 
+        {
+            glm::vec2 uvCoordinate;
+            ss >> uvCoordinate.s >> uvCoordinate.t;
+            // Skip uvs for now
+        }
+        else if (command == "f") 
+        {
+            // Read all vertices on face
+            std::vector<int> vertsOnFace;
+            while (ss.rdbuf()->in_avail() > 0) {
+                std::string str;
+                ss >> str;
+                unsigned int idx;
+                if (str.find('/') == std::string::npos) 
+                {
+                    idx = std::stoul(str);
+                }
+                else 
+                {
+                    idx = std::stoul(Split(str, '/')[0]);
+                }
+                // OBJ indices start with 1.
+                vertsOnFace.push_back(idx - 1);
+            }
+            std::reverse(vertsOnFace.begin(), vertsOnFace.end()); // Flip winding to get correct normals. This might have to be an import flag depending on the model
+            vertsOnFacesVector.push_back(vertsOnFace);
+        }
+        else if (command == "g") 
+        {
+            //if (current_group.Name != "") {
+            //    current_group.NumIndices =
+            //        data.Indices->size() - current_group.StartFaceIndex;
+            //    data.Groups.push_back(std::move(current_group));
+            //}
+            std::string groupName;
+            ss >> groupName;
+            //if (data.Indices == nullptr)
+            //    current_group.StartFaceIndex = 0;
+            //else
+            //    current_group.StartFaceIndex = data.Indices->size();
+        }
+        else if (command == "usemtl") 
+        {
+            std::string materialName;
+            ss >> materialName;
+        }
+        else if (command == "mtllib") 
+        {
+            std::string mtl_file;
+            ss >> mtl_file;
+            //material_dict = ParseMTL(base_path + mtl_file);
+        }
+        else if (command == "o" || command == "s") 
+        {
+            std::cout << "Skipped command: " << command << std::endl;
+        }
+        else 
+        {
+            std::cerr << "Unknown obj command: " << command << std::endl;
+            continue;
+        }
+    }
+    
+    for (auto vertsOnFace : vertsOnFacesVector)
+    {
+        FFace* newFace = vertexObject->CreateFace(nullptr);
+        size_t numVerts = vertsOnFace.size();
+        std::vector<FHalfEdge*> halfEdgesOnFace;
+        for (size_t i = 0; i < numVerts; i++)
+        {
+            FHalfEdge* newHalfEdge = vertexObject->CreateHalfEdge(nullptr, nullptr, newFace, nullptr, createdVerts[vertsOnFace[(i + 1) % numVerts]]);
+            createdVerts[vertsOnFace[(i + 1) % numVerts]]->SetParentHalfEdge(newHalfEdge);
+            createdHalfEdges.insert({ fmt::format("{},{}", vertsOnFace[i], vertsOnFace[(i + 1) % numVerts]), newHalfEdge });
+
+            auto symmPair = createdHalfEdges.find(fmt::format("{},{}", vertsOnFace[(i + 1) % numVerts], vertsOnFace[i]));
+            if (symmPair != createdHalfEdges.end())
+            {
+                newHalfEdge->SetSymmetricalHalfEdge(symmPair->second);
+                symmPair->second->SetSymmetricalHalfEdge(newHalfEdge);
+                FEdge* newEdge = vertexObject->CreateEdge(newHalfEdge, symmPair->second);
+            }
+            halfEdgesOnFace.push_back(newHalfEdge);
+            if (i == 0) newFace->SetHalfEdgeOnFace(newHalfEdge);
+        }
+
+        for (size_t i = 0; i < halfEdgesOnFace.size(); i++)
+        {
+            halfEdgesOnFace[i]->SetNextHalfEdge(halfEdgesOnFace[(i + 1) % halfEdgesOnFace.size()]);
+        }
+    }
+
+    std::unordered_map<int, FHalfEdge*> boundaryHalfEdgesFromPreviousVertIndex;
+    for (auto halfEdgePair : createdHalfEdges) // Handle boundary edges
+    {
+        if (halfEdgePair.second->GetSymmetricalHalfEdge() == nullptr) // If it is a boundary edge
+        {
+            FHalfEdge* newBoundaryHalfEdge = vertexObject->CreateHalfEdge(nullptr, halfEdgePair.second, nullptr, nullptr, halfEdgePair.second->GetPreviousHalfEdge()->GetNextVertex());
+            halfEdgePair.second->SetSymmetricalHalfEdge(newBoundaryHalfEdge);
+            FEdge* newEdge = vertexObject->CreateEdge(newBoundaryHalfEdge, halfEdgePair.second);
+            boundaryHalfEdgesFromPreviousVertIndex.insert({ halfEdgePair.second->GetNextVertex()->GetIndexId(), newBoundaryHalfEdge });
+        }
+    }
+
+    // Link boundary loops
+    for (auto halfEdgePair : boundaryHalfEdgesFromPreviousVertIndex)
+    {
+        FHalfEdge* nextHalfEdge = boundaryHalfEdgesFromPreviousVertIndex.find(halfEdgePair.second->GetNextVertex()->GetIndexId())->second;
+        halfEdgePair.second->SetNextHalfEdge(nextHalfEdge);
+    }
+    vertexObject->MarkDirty();
+    return std::move(vertexObject);
 }
 
 }
