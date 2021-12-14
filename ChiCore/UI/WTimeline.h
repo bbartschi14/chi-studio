@@ -18,68 +18,58 @@ namespace CHISTUDIO {
 // ImSequencer interface
 //
 //
-static const char* SequencerItemTypeNames[] = { "Camera","Music", "ScreenEffect", "FadeIn", "Animation" };
 
-struct MySequence : public ImSequencer::SequenceInterface
+struct FSequence : public ImSequencer::SequenceInterface
 {
     // interface with sequencer
 
     virtual int GetFrameMin() const {
-        return mFrameMin;
+        return FrameMin;
     }
     virtual int GetFrameMax() const {
-        return mFrameMax;
+        return FrameMax;
     }
-    virtual int GetItemCount() const { return (int)myItems.size(); }
+    virtual int GetItemCount() const { return (int)Items.size(); }
 
-    virtual int GetItemTypeCount() const { return sizeof(SequencerItemTypeNames) / sizeof(char*); }
-    virtual const char* GetItemTypeName(int typeIndex) const { return SequencerItemTypeNames[typeIndex]; }
+    virtual int GetItemTypeCount() const { return 0; }
+    virtual const char* GetItemTypeName(int typeIndex) const { return ""; }
     virtual const char* GetItemLabel(int index) const
     {
         static char tmps[512];
-        snprintf(tmps, 512, "[%02d] %s", index, SequencerItemTypeNames[myItems[index].mType]);
+        snprintf(tmps, 512, "[%02d] %s", index, "");
         return tmps;
     }
 
     virtual void Get(int index, int** start, int** end, int* type, unsigned int* color)
     {
-        MySequenceItem& item = myItems[index];
+        FKeyframeItem& item = Items[index];
         if (color)
             *color = 0xFFAA8080; // same color for everyone, return color based on type
         if (start)
-            *start = &item.mFrameStart;
+            *start = &item.Frame; 
         if (end)
-            *end = &item.mFrameEnd;
+            *end = &item.Frame;
         if (type)
-            *type = item.mType;
+            *type = item.Type;
     }
-    virtual void Add(int type) { myItems.push_back(MySequenceItem{ type, 0, 10 }); };
-    virtual void Del(int index) { myItems.erase(myItems.begin() + index); }
-    virtual void Duplicate(int index) { myItems.push_back(myItems[index]); }
+    //virtual void Add(int type) { Items.push_back(FKeyframeItem{ type, 0 }); };
+    //virtual void Del(int index) { Items.erase(Items.begin() + index); }
+    //virtual void Duplicate(int index) { Items.push_back(Items[index]); }
 
     //virtual size_t GetCustomHeight(int index) { return myItems[index].mExpanded ? 300 : 0; }
     virtual size_t GetCustomHeight(int index) { return 0; }
 
-    // my datas
-    MySequence() : mFrameMin(0), mFrameMax(0) {}
-    int mFrameMin, mFrameMax;
-    struct MySequenceItem
+    FSequence() : FrameMin(0), FrameMax(0) {}
+    int FrameMin, FrameMax;
+    struct FKeyframeItem
     {
-        int mType;
-        int mFrameStart, mFrameEnd;
-        //bool mExpanded;
+        int Type;
+        int Frame;
     };
-    std::vector<MySequenceItem> myItems;
+    std::vector<FKeyframeItem> Items;
 
     virtual void DoubleClick(int index) {
-        //if (myItems[index].mExpanded)
-        //{
-        //    myItems[index].mExpanded = false;
-        //    return;
-        //}
-        //for (auto& item : myItems)
-        //    item.mExpanded = false;
-        //myItems[index].mExpanded = !myItems[index].mExpanded;
+       
     }
 
     virtual void CustomDraw(int index, ImDrawList* draw_list, const ImRect& rc, const ImRect& legendRect, const ImRect& clippingRect, const ImRect& legendClippingRect)
@@ -101,7 +91,7 @@ public:
 	void Render(Application& InApplication) override;
 
 private:
-    MySequence sequence;
+    FSequence sequence;
 };
 
 }

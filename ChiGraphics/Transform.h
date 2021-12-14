@@ -2,15 +2,19 @@
 
 #include "glm/glm.hpp"
 #include "glm/gtc/quaternion.hpp"
+#include "ChiGraphics/Keyframing/Keyframeable.h"
+#include "ChiGraphics/Keyframing/Keyframe.h"
+#include "ChiGraphics/Keyframing/KeyframeTrack.h"
 
 namespace CHISTUDIO {
 
 class SceneNode;
 
-class Transform
+class Transform : public IKeyframeable
 {
 public:
     Transform(SceneNode& InNode);
+    ~Transform();
     void SetPosition(const glm::vec3& InPosition);
     void SetRotation(const glm::quat& InRotation);
     void SetRotation(const glm::vec3& InAxis, float InAngle);
@@ -48,6 +52,13 @@ public:
     static glm::vec3 GetWorldRight();
     static glm::vec3 GetWorldForward();
 
+    // Begin Keyframeable
+    void ApplyKeyframeData(int InFrame) override;
+    std::vector<std::string> GetKeyframeTrackNames() const override;
+    void CreateKeyframeOnTrack(std::string InTrackName, int InFrame) override;
+    virtual std::vector<IKeyframeBase*> GetKeyframesOnTrack(std::string InTrackName);
+    // ~ End Keyframeable
+
 private:
     void UpdateLocalTransformMatrix();
 
@@ -56,6 +67,10 @@ private:
     glm::vec3 Scale;
 
     glm::mat4 LocalTransformMatrix;
+
+    FKeyframeTrack<glm::vec3> PositionKeyframeTrack;
+    FKeyframeTrack<glm::vec3> RotationKeyframeTrack;
+    FKeyframeTrack<glm::vec3> ScaleKeyframeTrack;
 
     SceneNode& Node;
 };

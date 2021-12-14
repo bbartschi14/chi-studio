@@ -20,7 +20,7 @@ std::unique_ptr<SceneNode> SceneNode::RemoveChild(SceneNode* InChildToRemove)
 	{
 		if (Children[i].get() == InChildToRemove)
 		{
-			indexToRemove = i;
+			indexToRemove = (int)i;
 			break;
 		}
 	}

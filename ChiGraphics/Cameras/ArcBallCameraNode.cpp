@@ -67,7 +67,7 @@ void ArcBallCameraNode::Update(double delta_time) {
     auto scroll = input_manager.FetchAndResetMouseScroll();
     if (scroll != 0.0) {
       DistanceZoom(-float(scroll) * 0.1f);
-      GetComponentPtr<CameraComponent>()->orthoWidth -= (scroll * 1.0f);
+      GetComponentPtr<CameraComponent>()->orthoWidth -= ((float)scroll * 1.0f);
     }
     prev_released = true;
     start_position_ = GetTransform().GetPosition();

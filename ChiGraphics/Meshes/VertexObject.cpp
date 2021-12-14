@@ -483,7 +483,7 @@ namespace CHISTUDIO {
 			for (size_t vertexIndex = 0; vertexIndex < Vertices.size(); vertexIndex++)
 			{
 				FVertex* currentVertex = Vertices[vertexIndex].get();
-				currentVertex->SetPositionIndex(vertexIndex);
+				currentVertex->SetPositionIndex((int)vertexIndex);
 				newPositions->push_back(currentVertex->GetPosition());
 			}
 
@@ -1406,11 +1406,11 @@ namespace CHISTUDIO {
 						{
 							if (merges[mergeIndex].find(firstVertIndex) != merges[mergeIndex].end())
 							{
-								firstMergeIndex = mergeIndex;
+								firstMergeIndex = (int)mergeIndex;
 							}
 							if (merges[mergeIndex].find(secondVertIndex) != merges[mergeIndex].end())
 							{
-								secondMergeIndex = mergeIndex;
+								secondMergeIndex = (int)mergeIndex;
 							}
 						}
 

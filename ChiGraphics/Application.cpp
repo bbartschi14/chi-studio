@@ -246,7 +246,7 @@ void Application::OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2
 				if (bWasHitRecorded) 
 				{
 					objectHit = true;
-					indexHit = i;
+					indexHit = (int)i;
 				}
 			}
 		}
@@ -465,6 +465,23 @@ void Application::UpdateWindowFilename(std::string InFilename)
 	CurrentFilename = InFilename;
 	std::string fileDisplay = CurrentFilename.empty() ? "Untitled" : CurrentFilename;
 	glfwSetWindowTitle(WindowHandle, fmt::format("{} - {}", AppName, fileDisplay).c_str());
+}
+
+void Application::RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode)
+{
+	InSceneNode->GetTransform().ApplyKeyframeData(InFrame);
+
+	size_t childCount = InSceneNode->GetChildrenCount();
+	for (size_t i = 0; i < childCount; i++)
+	{
+		RecursiveUpdateToTimelineFrame(InFrame, &InSceneNode->GetChild(i));
+	}
+}
+
+void Application::UpdateToTimelineFrame(int InFrame)
+{
+	std::cout << "Updating to: " << InFrame << std::endl;
+	RecursiveUpdateToTimelineFrame(InFrame, Scene_->GetRootNodePtr());
 }
 
 void Application::InitializeGLFW()

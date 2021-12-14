@@ -98,6 +98,9 @@ public:
 	void ResetScene();
 
 	void UpdateWindowFilename(std::string InFilename);
+
+	void RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode);
+	void UpdateToTimelineFrame(int InFrame);
 protected:
 	virtual void DrawGUI() {}
 	virtual void SetupScene(bool InIncludeDefaults) = 0;

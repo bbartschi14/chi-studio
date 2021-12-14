@@ -45,7 +45,7 @@ void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, F
 			FRay cameraToSceneRay = InTracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
 			pixelColor += TraceRay(cameraToSceneRay, 0, *InLights);
 		}
-		float superSamplingScale = 1.0 / Settings.SamplesPerPixel;
+		float superSamplingScale = 1.0f / Settings.SamplesPerPixel;
 		pixelColor *= superSamplingScale;
 		glm::vec3 gammaCorrectedPixelColor = glm::vec3(sqrt(pixelColor.x), sqrt(pixelColor.y), sqrt(pixelColor.z));
 		InOutputImage->SetPixel(x, InY, gammaCorrectedPixelColor);
@@ -346,8 +346,8 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 
 		glm::vec3 displacement = (glm::dvec3)outPosition - hitPos;
 		distanceToLight = glm::length(displacement);
-		float cosine = glm::max(glm::dot(-displacement, outNormal), 0.0f) / distanceToLight;
-		float surfaceArea = glm::max(cosine, 0.0f) / (distanceToLight * distanceToLight);
+		float cosine = glm::max(glm::dot(-displacement, outNormal), 0.0f) / (float)distanceToLight;
+		float surfaceArea = glm::max(cosine, 0.0f) / (float)(distanceToLight * distanceToLight);
 
 		intensity = (glm::vec3)hittableLightPtr->GetHittable()->Material_.GetAlbedo() * hittableLightPtr->GetHittable()->Material_.GetEmittance() * surfaceArea / outProbability;
 		directionToLight = displacement / (float)distanceToLight;

@@ -270,7 +270,7 @@ namespace CHISTUDIO {
 			int indexToRemove = -1;
 			for (size_t i = 0; i < modifiers.size(); i++)
 			{
-				wasModified |= UILibrary::RenderModifier(modifiers[i].get(), i, indexToRemove);
+				wasModified |= UILibrary::RenderModifier(modifiers[i].get(), (int)i, indexToRemove);
 			}
 			if (indexToRemove > -1)
 			{

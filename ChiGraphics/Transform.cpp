@@ -5,6 +5,7 @@
 #include <glm/gtx/matrix_decompose.hpp>
 #include "ChiGraphics/Utilities.h"
 #include "ChiGraphics/SceneNode.h"
+#include <glm/gtx/string_cast.hpp>
 
 namespace CHISTUDIO {
 
@@ -13,6 +14,12 @@ Transform::Transform(SceneNode& InNode)
 {
 	UNUSED(Node);
 	UpdateLocalTransformMatrix();
+
+
+}
+
+Transform::~Transform()
+{
 }
 
 void Transform::SetPosition(const glm::vec3& InPosition)
@@ -129,6 +136,59 @@ glm::vec3 Transform::GetWorldRight()
 glm::vec3 Transform::GetWorldForward()
 {
 	return glm::vec3(0.f, 0.f, -1.f);
+}
+
+void Transform::ApplyKeyframeData(int InFrame)
+{
+	if (PositionKeyframeTrack.HasKeyframes())
+	{
+		glm::vec3 pos = PositionKeyframeTrack.GetValueAtFrame(InFrame);
+		SetPosition(pos);
+	}
+	if (RotationKeyframeTrack.HasKeyframes()) 
+		SetRotation(RotationKeyframeTrack.GetValueAtFrame(InFrame));
+	if (ScaleKeyframeTrack.HasKeyframes()) 
+		SetScale(ScaleKeyframeTrack.GetValueAtFrame(InFrame));
+}
+
+std::vector<std::string> Transform::GetKeyframeTrackNames() const
+{
+	std::vector<std::string> names = {"Position", "Rotation", "Scale"};
+	return names;
+}
+
+void Transform::CreateKeyframeOnTrack(std::string InTrackName, int InFrame)
+{
+	if (InTrackName == "Position")
+	{
+		PositionKeyframeTrack.AddKeyframe(InFrame, GetPosition());
+	}
+	else if (InTrackName == "Rotation")
+	{
+		RotationKeyframeTrack.AddKeyframe(InFrame, GetEulerRotation());
+	}
+	else if (InTrackName == "Scale")
+	{
+		ScaleKeyframeTrack.AddKeyframe(InFrame, GetScale());
+	}
+}
+
+std::vector<IKeyframeBase*> Transform::GetKeyframesOnTrack(std::string InTrackName)
+{
+	if (InTrackName == "Position")
+	{
+		return PositionKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Rotation")
+	{
+		return RotationKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Scale")
+	{
+		return ScaleKeyframeTrack.GetKeyframes();
+	}
+
+	return std::vector<IKeyframeBase*>();
 }
 
 void Transform::UpdateLocalTransformMatrix()

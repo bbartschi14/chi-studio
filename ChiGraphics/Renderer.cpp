@@ -95,7 +95,7 @@ namespace CHISTUDIO {
 				glm::mat4 localToWorld = (selectedNode->GetTransform().GetLocalToWorldMatrix());
 				glm::mat4 parentToWorld = (selectedNode->GetParentPtr()->GetTransform().GetLocalToWorldMatrix());
 				glm::vec3 editModePosition;
-				glm::vec3 originalWorldPoint;
+				//glm::vec3 originalWorldPoint;
 
 				if (bIsObjectModeGizmoActive)
 				{
@@ -189,7 +189,7 @@ namespace CHISTUDIO {
 		ImGui::BeginChild("ViewportArea");
 		ImGui::SetCursorPos({ 6,6 });
 
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{ 0.1, 0.1, 0.1, 1 });
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f });
 		ImGui::BeginChild("TopLeft");
 
 		// Draw mode dropdown
