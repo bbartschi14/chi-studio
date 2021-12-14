@@ -15,7 +15,7 @@ namespace CHISTUDIO {
 	WObjectProperties::WObjectProperties()
 	{
 	}
-	void WObjectProperties::Render(Application& InApplication)
+	void WObjectProperties::Render(Application& InApplication, float InDeltaTime)
 	{
 		std::vector<SceneNode*> selectedNodes = InApplication.GetSelectedNodes();
 

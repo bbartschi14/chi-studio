@@ -65,7 +65,7 @@ void ChiStudioApplication::SetupScene(bool InIncludeDefaults)
 	//pegasus->GetTransform().SetScale(glm::vec3(3.0f));
 }
 
-void ChiStudioApplication::DrawGUI()
+void ChiStudioApplication::DrawGUI(float InDeltaTime)
 {
 	ImGui::ShowDemoWindow();
 
@@ -138,13 +138,13 @@ void ChiStudioApplication::DrawGUI()
 	ImGui::End();
 
 	// Rendering scene and GUI.
-	RenderingWidget->Render(*this);
+	RenderingWidget->Render(*this, InDeltaTime);
 	Renderer_->Render(*Scene_);
 
-	HierarchyWidget->Render(*this);
-	ObjectPropertiesWidget->Render(*this);
-	EditModeWidget->Render(*this);
-	TimelineWidget->Render(*this);
+	HierarchyWidget->Render(*this, InDeltaTime);
+	ObjectPropertiesWidget->Render(*this, InDeltaTime);
+	EditModeWidget->Render(*this, InDeltaTime);
+	TimelineWidget->Render(*this, InDeltaTime);
 }
 
 }

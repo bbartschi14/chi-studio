@@ -86,12 +86,22 @@ struct FSequence : public ImSequencer::SequenceInterface
 class WTimeline : public IWidget
 {
 public:
-	WTimeline();
+    WTimeline() : bIsPlayingPreview(false), PreviewStart(0), PreviewEnd(100), PreviewFPS(24), TimeSinceLastUpdate(0.0f)
+    {
+        sequence.FrameMin = 0;
+        sequence.FrameMax = 200;
+    };
 
-	void Render(Application& InApplication) override;
+	void Render(Application& InApplication, float InDeltaTime) override;
 
 private:
     FSequence sequence;
+    bool bIsPlayingPreview;
+    int PreviewStart;
+    int PreviewEnd;
+    int PreviewFPS;
+
+    float TimeSinceLastUpdate;
 };
 
 }

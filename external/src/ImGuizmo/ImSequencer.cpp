@@ -352,7 +352,7 @@ namespace ImSequencer
          static bool pointsMoved = false;
          static ImVec2 mousePosOrigin;
          static int startingFrame;
-         if (overSelectedPoint && io.MouseDown[0])
+         if (overSelectedPoint && io.MouseDown[0] && !MovingCurrentFrame)
          {
             if ((fabsf(io.MouseDelta.x) > 0.f || fabsf(io.MouseDelta.y) > 0.f) && *selectedEntry > -1)
             {

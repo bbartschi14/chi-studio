@@ -93,8 +93,8 @@ std::unique_ptr<FTracingCamera> TracingCameraNode::GetTracingCamera(glm::ivec2 I
 {
 	FCameraSpec cameraSpec;
 	cameraSpec.Center = GetTransform().GetWorldPosition();
-	cameraSpec.Direction = GetTransform().GetForwardDirection();
-	cameraSpec.Up = GetTransform().GetUpDirection();
+	cameraSpec.Direction = glm::vec3(GetTransform().GetLocalToWorldMatrix() * glm::vec4(GetTransform().GetWorldForward(), 0.0f));
+	cameraSpec.Up = glm::vec3(GetTransform().GetLocalToWorldMatrix() * glm::vec4(GetTransform().GetWorldUp(), 0.0f));
 	cameraSpec.FOV_Degrees = GetComponentPtr<CameraComponent>()->GetFOV();
 	cameraSpec.AspectRatio = (float)InRenderSize.y / (float)InRenderSize.x;
 	cameraSpec.FocusDistance = GetComponentPtr<CameraComponent>()->FocusDistance;

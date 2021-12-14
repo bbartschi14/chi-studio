@@ -14,7 +14,7 @@ class ChiStudioApplication : public Application
 public:
 	ChiStudioApplication(const std::string& InAppName, glm::ivec2 InWindowSize);
 	void SetupScene(bool InIncludeDefaults) override;
-	void DrawGUI() override;
+	void DrawGUI(float InDeltaTime) override;
 
 private:
 	std::unique_ptr<WHierarchy> HierarchyWidget;

@@ -129,6 +129,7 @@ void FRayTracer::BuildHittableData(const Scene& InScene, std::vector<LightCompon
 		if (!renderingComp->bIsDebugRender)
 		{
 			VertexObject* vertexObject = renderingComp->GetVertexObjectPtr();
+			if (vertexObject->GetPositions().size() == 0) continue;
 			std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices());
 
 			hittable->ModelMatrix = renderingComp->GetNodePtr()->GetTransform().GetLocalToWorldMatrix();

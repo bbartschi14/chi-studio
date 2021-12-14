@@ -9,7 +9,7 @@ namespace CHISTUDIO {
 	public:
 		virtual ~IWidget() {
 		}
-		virtual void Render(Application& InApplication) = 0;
+		virtual void Render(Application& InApplication, float InDeltaTime) = 0;
 	};
 
 }

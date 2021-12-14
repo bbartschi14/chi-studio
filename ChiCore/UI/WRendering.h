@@ -14,7 +14,7 @@ class WRendering : public IWidget
 public:
 	WRendering();
 
-	void Render(Application& InApplication);
+	void Render(Application& InApplication, float InDeltaTime);
 
 private:
 	std::unique_ptr<class FTexture> DisplayTexture;

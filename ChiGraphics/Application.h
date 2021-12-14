@@ -102,7 +102,7 @@ public:
 	void RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode);
 	void UpdateToTimelineFrame(int InFrame);
 protected:
-	virtual void DrawGUI() {}
+	virtual void DrawGUI(float InDeltaTime) {}
 	virtual void SetupScene(bool InIncludeDefaults) = 0;
 	std::unique_ptr<Scene> Scene_;
 	std::unique_ptr<Renderer> Renderer_;
@@ -117,7 +117,7 @@ private:
 
 	// GUI Handlers
 	void InitializeGUI();
-	void UpdateGUI();
+	void UpdateGUI(float InDeltaTime);
 	void RenderGUI();
 	void DestroyGUI();
 

@@ -10,7 +10,7 @@ class WHierarchy : public IWidget
 public:
 	WHierarchy();
 
-	void Render(Application& InApplication) override;
+	void Render(Application& InApplication, float InDeltaTime) override;
 
 private:
 	void LoadRowsRecursively(class SceneNode& node, Application& app);

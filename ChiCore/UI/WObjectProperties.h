@@ -15,7 +15,7 @@ namespace CHISTUDIO {
 	public:
 		WObjectProperties();
 
-		void Render(Application& InApplication) override;
+		void Render(Application& InApplication, float InDeltaTime) override;
 
 	private:
 		void RenderTransformPanel(std::vector<SceneNode*> selectedNodes);

@@ -58,7 +58,7 @@ void Application::Tick(double InDeltaTime, double InCurrentTime)
 {
 	// Process window events.
 	glfwPollEvents();
-	UpdateGUI();
+	UpdateGUI(InDeltaTime);
 
 	// Logic update before rendering.
 	Scene_->Update(InDeltaTime);
@@ -480,7 +480,7 @@ void Application::RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InScene
 
 void Application::UpdateToTimelineFrame(int InFrame)
 {
-	std::cout << "Updating to: " << InFrame << std::endl;
+	//std::cout << "Updating to: " << InFrame << std::endl;
 	RecursiveUpdateToTimelineFrame(InFrame, Scene_->GetRootNodePtr());
 }
 
@@ -579,7 +579,7 @@ void Application::InitializeGUI()
 	ImGui_ImplOpenGL3_Init("#version 330");
 }
 
-void Application::UpdateGUI()
+void Application::UpdateGUI(float InDeltaTime)
 {
 	// ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
@@ -587,7 +587,7 @@ void Application::UpdateGUI()
 	ImGui::NewFrame();
 	ImGuizmo::BeginFrame();
 
-	DrawGUI();
+	DrawGUI(InDeltaTime);
 }
 
 void Application::RenderGUI()

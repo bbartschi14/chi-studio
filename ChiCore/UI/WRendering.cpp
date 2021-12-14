@@ -20,7 +20,7 @@ WRendering::WRendering()
     ResultZoomScale = 1.0f;
 }
 
-void WRendering::Render(Application& InApplication)
+void WRendering::Render(Application& InApplication, float InDeltaTime)
 {
     ImGui::Begin("Rendering");
 

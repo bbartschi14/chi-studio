@@ -14,7 +14,7 @@ namespace CHISTUDIO {
 		ScaleOperationValue = glm::vec3(1.0f);
 	}
 
-	void WEditMode::Render(Application& InApplication)
+	void WEditMode::Render(Application& InApplication, float InDeltaTime)
 	{
 		std::vector<SceneNode*> selectedNodes = InApplication.GetSelectedNodes();
 
@@ -60,7 +60,7 @@ namespace CHISTUDIO {
 
 		if (InApplication.AreEditModeVerticesSelectable())
 		{
-			if (ImGui::CollapsingHeader("Vertices", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Vertices"))
 			{
 				if (ImGui::BeginTable("VerticesTable", 1, tableFlags))
 				{
@@ -120,7 +120,7 @@ namespace CHISTUDIO {
 
 		if (InApplication.AreEditModeEdgesSelectable())
 		{
-			if (ImGui::CollapsingHeader("Edges", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Edges"))
 			{
 				if (ImGui::BeginTable("EdgesTable", 1, tableFlags))
 				{
@@ -180,7 +180,7 @@ namespace CHISTUDIO {
 
 		if (InApplication.AreEditModeFacesSelectable())
 		{
-			if (ImGui::CollapsingHeader("Faces", ImGuiTreeNodeFlags_DefaultOpen))
+			if (ImGui::CollapsingHeader("Faces"))
 			{
 				if (ImGui::BeginTable("FacesTable", 1, tableFlags))
 				{

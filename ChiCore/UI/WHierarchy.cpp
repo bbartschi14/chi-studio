@@ -8,7 +8,7 @@ namespace CHISTUDIO {
 	{
 	}
 
-	void WHierarchy::Render(Application& InApplication)
+	void WHierarchy::Render(Application& InApplication, float InDeltaTime)
 {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 
