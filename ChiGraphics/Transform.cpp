@@ -10,7 +10,7 @@
 namespace CHISTUDIO {
 
 Transform::Transform(SceneNode& InNode)
-	: Position(0.f), EulerRotation(glm::vec3(0.f, 0.f, 0.f)), Scale(glm::vec3(1.f)), Node(InNode)
+	: IKeyframeable("Transform"), Position(0.f), EulerRotation(glm::vec3(0.f, 0.f, 0.f)), Scale(glm::vec3(1.f)), Node(InNode)
 {
 	UNUSED(Node);
 	UpdateLocalTransformMatrix();
@@ -140,52 +140,196 @@ glm::vec3 Transform::GetWorldForward()
 
 void Transform::ApplyKeyframeData(int InFrame)
 {
-	if (PositionKeyframeTrack.HasKeyframes())
+	glm::vec3 originalPos = GetPosition();
+	bool bPosModified = false;
+	if (PositionXKeyframeTrack.HasKeyframes())
 	{
-		glm::vec3 pos = PositionKeyframeTrack.GetValueAtFrame(InFrame);
-		SetPosition(pos);
+		bPosModified = true;
+		originalPos.x = PositionXKeyframeTrack.GetValueAtFrame(InFrame);
 	}
-	if (RotationKeyframeTrack.HasKeyframes()) 
-		SetRotation(RotationKeyframeTrack.GetValueAtFrame(InFrame));
-	if (ScaleKeyframeTrack.HasKeyframes()) 
-		SetScale(ScaleKeyframeTrack.GetValueAtFrame(InFrame));
+	if (PositionYKeyframeTrack.HasKeyframes())
+	{
+		bPosModified = true;
+		originalPos.y = PositionYKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (PositionZKeyframeTrack.HasKeyframes())
+	{
+		bPosModified = true;
+		originalPos.z = PositionZKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (bPosModified)
+	{
+		SetPosition(originalPos);
+	}
+
+	glm::vec3 originalRot = GetEulerRotation();
+	bool bRotModified = false;
+	if (RotationXKeyframeTrack.HasKeyframes())
+	{
+		bRotModified = true;
+		originalPos.x = RotationXKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (RotationYKeyframeTrack.HasKeyframes())
+	{
+		bRotModified = true;
+		originalPos.y = RotationYKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (RotationZKeyframeTrack.HasKeyframes())
+	{
+		bRotModified = true;
+		originalPos.z = RotationZKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (bRotModified)
+	{
+		SetRotation(originalRot);
+	}
+
+	glm::vec3 originalScale = GetScale();
+	bool bScaleModified = false;
+	if (ScaleXKeyframeTrack.HasKeyframes())
+	{
+		bScaleModified = true;
+		originalScale.x = ScaleXKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (ScaleYKeyframeTrack.HasKeyframes())
+	{
+		bScaleModified = true;
+		originalScale.y = ScaleYKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (ScaleZKeyframeTrack.HasKeyframes())
+	{
+		bScaleModified = true;
+		originalScale.z = ScaleZKeyframeTrack.GetValueAtFrame(InFrame);
+	}
+	if (bScaleModified)
+	{
+		SetScale(originalScale);
+	}
 }
 
 std::vector<std::string> Transform::GetKeyframeTrackNames() const
 {
-	std::vector<std::string> names = {"Position", "Rotation", "Scale"};
+	std::vector<std::string> names = {"Position X", "Position Y", "Position Z", "Rotation X", "Rotation Y", "Rotation Z", "Scale X", "Scale Y", "Scale Z"};
 	return names;
 }
 
 void Transform::CreateKeyframeOnTrack(std::string InTrackName, int InFrame)
 {
-	if (InTrackName == "Position")
+	if (InTrackName == "Position X")
 	{
-		PositionKeyframeTrack.AddKeyframe(InFrame, GetPosition());
+		PositionXKeyframeTrack.AddKeyframe(InFrame, GetPosition().x);
 	}
-	else if (InTrackName == "Rotation")
+	else if (InTrackName == "Position Y")
 	{
-		RotationKeyframeTrack.AddKeyframe(InFrame, GetEulerRotation());
+		PositionYKeyframeTrack.AddKeyframe(InFrame, GetPosition().y);
 	}
-	else if (InTrackName == "Scale")
+	else if (InTrackName == "Position Z")
 	{
-		ScaleKeyframeTrack.AddKeyframe(InFrame, GetScale());
+		PositionZKeyframeTrack.AddKeyframe(InFrame, GetPosition().z);
+	}
+	else if (InTrackName == "Rotation X")
+	{
+		RotationXKeyframeTrack.AddKeyframe(InFrame, GetEulerRotation().x);
+	}
+	else if (InTrackName == "Rotation Y")
+	{
+		RotationYKeyframeTrack.AddKeyframe(InFrame, GetEulerRotation().y);
+	}
+	else if (InTrackName == "Rotation Z")
+	{
+		RotationZKeyframeTrack.AddKeyframe(InFrame, GetEulerRotation().z);
+	}
+	else if (InTrackName == "Scale X")
+	{
+		ScaleXKeyframeTrack.AddKeyframe(InFrame, GetScale().x);
+	}
+	else if (InTrackName == "Scale Y")
+	{
+		ScaleYKeyframeTrack.AddKeyframe(InFrame, GetScale().y);
+	}
+	else if (InTrackName == "Scale Z")
+	{
+		ScaleZKeyframeTrack.AddKeyframe(InFrame, GetScale().z);
+	}
+}
+
+void Transform::DeleteKeyframeOnTrack(std::string InTrackName, int InIndex)
+{
+	if (InTrackName == "Position X")
+	{
+		PositionXKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Position Y")
+	{
+		PositionYKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Position Z")
+	{
+		PositionZKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Rotation X")
+	{
+		RotationXKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Rotation Y")
+	{
+		RotationYKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Rotation Z")
+	{
+		RotationZKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Scale X")
+	{
+		ScaleXKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Scale Y")
+	{
+		ScaleYKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Scale Z")
+	{
+		ScaleZKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
 	}
 }
 
 std::vector<IKeyframeBase*> Transform::GetKeyframesOnTrack(std::string InTrackName)
 {
-	if (InTrackName == "Position")
+	if (InTrackName == "Position X")
 	{
-		return PositionKeyframeTrack.GetKeyframes();
+		return PositionXKeyframeTrack.GetKeyframes();
 	}
-	else if (InTrackName == "Rotation")
+	else if (InTrackName == "Position Y")
 	{
-		return RotationKeyframeTrack.GetKeyframes();
+		return PositionYKeyframeTrack.GetKeyframes();
 	}
-	else if (InTrackName == "Scale")
+	else if (InTrackName == "Position Z")
 	{
-		return ScaleKeyframeTrack.GetKeyframes();
+		return PositionZKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Rotation X")
+	{
+		return RotationXKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Rotation Y")
+	{
+		return RotationYKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Rotation Z")
+	{
+		return RotationZKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Scale X")
+	{
+		return ScaleXKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Scale Y")
+	{
+		return ScaleYKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Scale Z")
+	{
+		return ScaleZKeyframeTrack.GetKeyframes();
 	}
 
 	return std::vector<IKeyframeBase*>();

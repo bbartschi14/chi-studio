@@ -56,7 +56,8 @@ public:
     void ApplyKeyframeData(int InFrame) override;
     std::vector<std::string> GetKeyframeTrackNames() const override;
     void CreateKeyframeOnTrack(std::string InTrackName, int InFrame) override;
-    virtual std::vector<IKeyframeBase*> GetKeyframesOnTrack(std::string InTrackName);
+    void DeleteKeyframeOnTrack(std::string InTrackName, int InIndex) override;
+    std::vector<IKeyframeBase*> GetKeyframesOnTrack(std::string InTrackName) override;
     // ~ End Keyframeable
 
 private:
@@ -68,9 +69,15 @@ private:
 
     glm::mat4 LocalTransformMatrix;
 
-    FKeyframeTrack<glm::vec3> PositionKeyframeTrack;
-    FKeyframeTrack<glm::vec3> RotationKeyframeTrack;
-    FKeyframeTrack<glm::vec3> ScaleKeyframeTrack;
+    FKeyframeTrack<float> PositionXKeyframeTrack;
+    FKeyframeTrack<float> PositionYKeyframeTrack;
+    FKeyframeTrack<float> PositionZKeyframeTrack;
+    FKeyframeTrack<float> RotationXKeyframeTrack;
+    FKeyframeTrack<float> RotationYKeyframeTrack;
+    FKeyframeTrack<float> RotationZKeyframeTrack;
+    FKeyframeTrack<float> ScaleXKeyframeTrack;
+    FKeyframeTrack<float> ScaleYKeyframeTrack;
+    FKeyframeTrack<float> ScaleZKeyframeTrack;
 
     SceneNode& Node;
 };

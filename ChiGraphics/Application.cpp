@@ -23,6 +23,7 @@
 #include "external/src/ImGuizmo/ImGuizmo.h"
 #include "ChiGraphics/Collision/Hittables/MeshHittable.h"
 #include "ChiGraphics/Materials/MaterialManager.h"
+#include "ChiGraphics/Keyframing/KeyframeManager.h"
 
 namespace CHISTUDIO {
 
@@ -38,6 +39,8 @@ Application::Application(std::string InAppName, glm::ivec2 InWindowSize)
 	EditModeSelectionType = EEditModeSelectionType::Vertex;
 	Scene_ = make_unique<Scene>(make_unique<SceneNode>("Root"));
 	Renderer_ = make_unique<Renderer>(*this);
+
+	KeyframeManager::GetInstance().SetAppRef(this);
 }
 
 Application::~Application()
@@ -427,6 +430,10 @@ SceneNode* Application::CreateTracingSphereNode()
 	SceneNode* ref = tracingNode.get();
 
 	tracingNode->SetNodeType("Tracing");
+	if (MaterialComponent* mat = tracingNode->GetComponentPtr<MaterialComponent>())
+	{
+		mat->SetMaterial(MaterialManager::GetInstance().GetDefaultMaterial());
+	}
 
 	Scene_->GetRootNode().AddChild(std::move(tracingNode));
 	return ref;
@@ -469,7 +476,11 @@ void Application::UpdateWindowFilename(std::string InFilename)
 
 void Application::RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode)
 {
-	InSceneNode->GetTransform().ApplyKeyframeData(InFrame);
+	std::vector<IKeyframeable*> keyframeables = InSceneNode->GetKeyframeables();
+	for (auto kf : keyframeables)
+	{
+		kf->ApplyKeyframeData(InFrame);
+	}
 
 	size_t childCount = InSceneNode->GetChildrenCount();
 	for (size_t i = 0; i < childCount; i++)

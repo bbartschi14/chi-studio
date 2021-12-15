@@ -5,6 +5,7 @@
 #include "ChiGraphics/Keyframing/KeyframeTrack.h"
 #include "ChiGraphics/Keyframing/Keyframe.h"
 #include "ChiGraphics/Keyframing/Keyframeable.h"
+#include "ChiGraphics/Keyframing/KeyframeManager.h"
 #include <iostream>
 
 namespace CHISTUDIO {
@@ -24,12 +25,16 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
     static int selectedEntry = -1;
     static int firstFrame = 0;
     static bool expanded = true;
-    static int currentFrame = 10;
 
     ImGui::PushItemWidth(130);
     ImGui::DragIntRange2("Timeline Range", &sequence.FrameMin, &sequence.FrameMax, 1, 0, 0, "Start: %d", "End: %d");
     ImGui::SameLine();
-    ImGui::DragInt("Frame ", &currentFrame);
+    
+    int currentFrame = KeyframeManager::GetInstance().GetCurrentFrame();
+    if (ImGui::DragInt("Frame ", &currentFrame))
+    {
+        KeyframeManager::GetInstance().SetCurrentFrame(currentFrame);
+    }
     ImGui::PopItemWidth();
 
     ImGui::SameLine();
@@ -43,7 +48,7 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
             if (currentFrame < PreviewStart)
             {
                 currentFrame = PreviewStart;
-                InApplication.UpdateToTimelineFrame(currentFrame);
+                KeyframeManager::GetInstance().SetCurrentFrame(currentFrame);
             }
         }
     }
@@ -59,7 +64,7 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
             {
                 currentFrame = PreviewStart;
             }
-            InApplication.UpdateToTimelineFrame(currentFrame);
+            KeyframeManager::GetInstance().SetCurrentFrame(currentFrame);
         }
 
         if (ImGui::Button("Pause"))
@@ -81,30 +86,55 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
     // Currently only work with single select
     if (selectedNodes.size() == 1)
     {
-        Transform& keyframeable = selectedNodes[0]->GetTransform();
-        trackNames = keyframeable.GetKeyframeTrackNames();
+        SceneNode* keyframeable = selectedNodes[0];
+        std::vector<IKeyframeable*> keyframeables = keyframeable->GetKeyframeables();
+
+        // Check indices
+        if (keyframeable->SelectedKeyframeableIndex > keyframeables.size())
+        {
+            keyframeable->SelectedKeyframeableIndex = 0;
+            selectedEntry = -1;
+        }
+
+        IKeyframeable* selectedKeyframeable = keyframeables[keyframeable->SelectedKeyframeableIndex];
+        trackNames = selectedKeyframeable->GetKeyframeTrackNames();
+
+        if (selectedKeyframeable->SelectedTrackIndex > trackNames.size())
+        {
+            selectedKeyframeable->SelectedTrackIndex = 0;
+            selectedEntry = -1;
+        }
 
         
-        const char* currentTrackModeString = trackNames[keyframeable.SelectedTrackIndex].c_str();
+        const char* currentTrackModeString = trackNames[selectedKeyframeable->SelectedTrackIndex].c_str();
         ImGui::SameLine();
         ImGui::SetNextItemWidth(200);
         if (ImGui::BeginCombo("##Mode", currentTrackModeString))
         {
-            for (int i = 0; i < trackNames.size(); i++)
+            for (size_t keyframeableIndex = 0; keyframeableIndex < keyframeables.size(); keyframeableIndex++)
             {
-                bool isSelected = keyframeable.SelectedTrackIndex == i;
-                if (ImGui::Selectable(trackNames[i].c_str(), isSelected))
+                IKeyframeable* kf = keyframeables[keyframeableIndex];
+                ImGui::Text(kf->Name.c_str());
+                ImGui::Separator();
+                std::vector<std::string> kfTrackNames = kf->GetKeyframeTrackNames();
+                for (int i = 0; i < kfTrackNames.size(); i++)
                 {
-                    bCanSequencerChangeFrame = false;
-                    keyframeable.SelectedTrackIndex = i;
-                }
-                if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
-                {
-                    bCanSequencerChangeFrame = false;
-                }
+                    bool isSelected = selectedKeyframeable->SelectedTrackIndex == i && kf == selectedKeyframeable;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 10.0f);
+                    if (ImGui::Selectable(kfTrackNames[i].c_str(), isSelected))
+                    {
+                        bCanSequencerChangeFrame = false;
+                        kf->SelectedTrackIndex = i;
+                        keyframeable->SelectedKeyframeableIndex = keyframeableIndex;
+                    }
+                    if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
+                    {
+                        bCanSequencerChangeFrame = false;
+                    }
 
-                if (isSelected)
-                    ImGui::SetItemDefaultFocus();
+                    if (isSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
             }
 
             ImGui::EndCombo();
@@ -112,13 +142,24 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
         ImGui::SameLine();
         ImGui::Text("Track");
 
+        trackNames = selectedKeyframeable->GetKeyframeTrackNames();
         ImGui::SameLine();
         if (ImGui::Button("Add Key"))
         {
-            keyframeable.CreateKeyframeOnTrack(trackNames[keyframeable.SelectedTrackIndex], currentFrame);
+            selectedKeyframeable->CreateKeyframeOnTrack(trackNames[selectedKeyframeable->SelectedTrackIndex], currentFrame);
+        }
+
+        if (selectedEntry > -1)
+        {
+            ImGui::SameLine();
+            if (ImGui::Button("Delete Key"))
+            {
+                selectedKeyframeable->DeleteKeyframeOnTrack(trackNames[selectedKeyframeable->SelectedTrackIndex], selectedEntry);
+                selectedEntry = -1;
+            }
         }
         
-        keyframes = keyframeable.GetKeyframesOnTrack(trackNames[keyframeable.SelectedTrackIndex]);
+        keyframes = selectedKeyframeable->GetKeyframesOnTrack(trackNames[selectedKeyframeable->SelectedTrackIndex]);
     }
 
     for (auto keyframe : keyframes)
@@ -149,7 +190,7 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
         }
         if (currentFrame != previousCurrentFrame)
         {
-            InApplication.UpdateToTimelineFrame(currentFrame);
+            KeyframeManager::GetInstance().SetCurrentFrame(currentFrame);
         }
     }
 
@@ -157,7 +198,7 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
     {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 8, 8 });
         ImGui::Begin("Selected Key");
-        if (keyframes[selectedEntry]->RenderUI())
+        if (keyframes[selectedEntry]->RenderBaseUI())
         {
             InApplication.UpdateToTimelineFrame(currentFrame);
         }

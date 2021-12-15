@@ -4,9 +4,10 @@
 #include <glm/glm.hpp>
 #include "ChiGraphics/SceneNode.h"
 #include "glm/gtc/quaternion.hpp"
+
 namespace CHISTUDIO {
 
-class CameraComponent : public ComponentBase
+class CameraComponent : public ComponentBase, public IKeyframeable
 {
 public:
     CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar, float InFocusDistance = 5.0f, float InAperture = 0.0f);
@@ -55,11 +56,24 @@ public:
         return AspectRatio;
     }
 
+    void SetFocusDistance(float InFocusDistance);
+
     float FocusDistance;
     float Aperture;
     bool bIsPerspective;
     float orthoWidth = 15.0f;
 
+    // Begin Keyframeable
+    void ApplyKeyframeData(int InFrame) override;
+    std::vector<std::string> GetKeyframeTrackNames() const override;
+    void CreateKeyframeOnTrack(std::string InTrackName, int InFrame) override;
+    void DeleteKeyframeOnTrack(std::string InTrackName, int InIndex) override;
+    std::vector<IKeyframeBase*> GetKeyframesOnTrack(std::string InTrackName) override;
+    // ~ End Keyframeable
+    
+    FKeyframeTrack<float> FOVKeyframeTrack;
+    FKeyframeTrack<float> FocusDistanceKeyframeTrack;
+    FKeyframeTrack<float> ApertureKeyframeTrack;
 private:
     glm::vec2 GetNormalizedDeviceCoords(glm::vec2 InMousePosition, glm::vec2 InViewportSize);
     glm::vec4 GetEyeCoords(glm::vec4 InClipCoords);

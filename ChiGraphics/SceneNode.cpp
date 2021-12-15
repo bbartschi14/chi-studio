@@ -1,6 +1,7 @@
 #include "SceneNode.h"
 #include <glm/gtx/string_cast.hpp>
-
+#include "Components/CameraComponent.h"
+#include "Components/MaterialComponent.h"
 namespace CHISTUDIO {
 
 SceneNode::SceneNode(std::string InNodeName) : Transform_(*this), Parent(nullptr), Active(true), NodeName(InNodeName), bIsSelected(false), bIsHierarchyVisible(true)
@@ -64,6 +65,23 @@ void SceneNode::GatherComponentPtrsRecursivelyByType(EComponentType InType, std:
 			child.GatherComponentPtrsRecursivelyByType(InType, result);
 		}
 	}
+}
+
+std::vector<IKeyframeable*> SceneNode::GetKeyframeables()
+{
+	std::vector<IKeyframeable*> keyframeables;
+	keyframeables.push_back(&Transform_);
+
+	if (CameraComponent* camera = GetComponentPtr<CameraComponent>())
+	{
+		keyframeables.push_back(camera);
+	}
+	if (MaterialComponent* materialComp = GetComponentPtr<MaterialComponent>())
+	{
+		keyframeables.push_back(materialComp->GetMaterialPtr());
+	}
+
+	return keyframeables;
 }
 
 }

@@ -5,15 +5,18 @@
 #include "ChiGraphics/Utilities.h"
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/norm.hpp>
+#include "../Keyframing/Keyframeable.h"
+#include "../Keyframing/KeyframeTrack.h"
 
 #include  <iostream>
 namespace CHISTUDIO {
     
-class Material 
+class Material : public IKeyframeable
 {
 public:
     Material()
-        : Albedo(glm::dvec3(1.0, 0., 0.)),
+        : IKeyframeable("Material"),
+        Albedo(glm::dvec3(1.0, 0., 0.)),
         Roughness(1.0f),
         Metallic(0.0f),
         Emittance(0.0f),
@@ -29,7 +32,8 @@ public:
              const float& InEmittance, 
              const float& InIndexOfRefraction, 
              const bool& InIsTransparent)
-        : Albedo(InAlbedo),
+        : IKeyframeable("Material"), 
+        Albedo(InAlbedo),
         Roughness(InRoughness),
         Metallic(InMetallic),
         Emittance(InEmittance),
@@ -372,6 +376,137 @@ public:
         return (glm::dmat3(ns.x, ns.y, ns.z, nss.x, nss.y, nss.z, InNormal.x, InNormal.y, InNormal.z));
     }
 
+    // Begin Keyframeable
+    void ApplyKeyframeData(int InFrame) override
+    {
+        if (AlbedoRKeyframeTrack.HasKeyframes())
+            Albedo.r = (AlbedoRKeyframeTrack.GetValueAtFrame(InFrame));
+
+        if (AlbedoGKeyframeTrack.HasKeyframes())
+            Albedo.g = (AlbedoGKeyframeTrack.GetValueAtFrame(InFrame));
+
+        if (AlbedoBKeyframeTrack.HasKeyframes())
+            Albedo.b = (AlbedoBKeyframeTrack.GetValueAtFrame(InFrame));
+
+        if (RoughnessKeyframeTrack.HasKeyframes())        
+            Roughness = (RoughnessKeyframeTrack.GetValueAtFrame(InFrame));
+
+        if (MetallicKeyframeTrack.HasKeyframes())
+            Metallic = (MetallicKeyframeTrack.GetValueAtFrame(InFrame));
+    
+        if (EmittanceKeyframeTrack.HasKeyframes())
+            Emittance = (EmittanceKeyframeTrack.GetValueAtFrame(InFrame));
+
+        if (IORKeyframeTrack.HasKeyframes())
+            IndexOfRefraction = (IORKeyframeTrack.GetValueAtFrame(InFrame));
+    }
+    std::vector<std::string> GetKeyframeTrackNames() const override
+    {
+        std::vector<std::string> names = { "Albedo R", "Albedo G", "Albedo B", "Roughness", "Metallic", "Emittance", "IOR" };
+        return names;
+    }
+    void CreateKeyframeOnTrack(std::string InTrackName, int InFrame) override
+    {
+        if (InTrackName == "Albedo R")
+        {
+            AlbedoRKeyframeTrack.AddKeyframe(InFrame, Albedo.r);
+        }
+        else if (InTrackName == "Albedo G")
+        {
+            AlbedoGKeyframeTrack.AddKeyframe(InFrame, Albedo.g);
+        }
+        else if (InTrackName == "Albedo B")
+        {
+            AlbedoBKeyframeTrack.AddKeyframe(InFrame, Albedo.b);
+        }
+        else if (InTrackName == "Roughness")
+        {
+            RoughnessKeyframeTrack.AddKeyframe(InFrame, Roughness);
+        }
+        else if (InTrackName == "Metallic")
+        {
+            MetallicKeyframeTrack.AddKeyframe(InFrame, Metallic);
+        }
+        else if (InTrackName == "Emittance")
+        {
+            EmittanceKeyframeTrack.AddKeyframe(InFrame, Emittance);
+        }
+        else if (InTrackName == "Albedo B")
+        {
+            IORKeyframeTrack.AddKeyframe(InFrame, IndexOfRefraction);
+        }
+    }
+    void DeleteKeyframeOnTrack(std::string InTrackName, int InIndex) override
+    {
+        if (InTrackName == "Albedo R")
+        {
+            AlbedoRKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+        else if (InTrackName == "Albedo G")
+        {
+            AlbedoGKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+        else if (InTrackName == "Albedo B")
+        {
+            AlbedoBKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+        else if (InTrackName == "Roughness")
+        {
+            RoughnessKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+        else if (InTrackName == "Metallic")
+        {
+            MetallicKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+        else if (InTrackName == "Emittance")
+        {
+            EmittanceKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+        else if (InTrackName == "Albedo B")
+        {
+            IORKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+        }
+    }
+    std::vector<IKeyframeBase*> GetKeyframesOnTrack(std::string InTrackName) override
+    {
+        if (InTrackName == "Albedo R")
+        {
+            return AlbedoRKeyframeTrack.GetKeyframes();
+        }
+        else if (InTrackName == "Albedo G")
+        {
+            return AlbedoGKeyframeTrack.GetKeyframes();
+        }
+        else if (InTrackName == "Albedo B")
+        {
+            return AlbedoBKeyframeTrack.GetKeyframes();
+        }
+        else if (InTrackName == "Roughness")
+        {
+            return RoughnessKeyframeTrack.GetKeyframes();
+        }
+        else if (InTrackName == "Metallic")
+        {
+            return MetallicKeyframeTrack.GetKeyframes();
+        }
+        else if (InTrackName == "Emittance")
+        {
+            return EmittanceKeyframeTrack.GetKeyframes();
+        }
+        else if (InTrackName == "Albedo B")
+        {
+            return IORKeyframeTrack.GetKeyframes();
+        }
+    }
+    // ~ End Keyframeable
+
+    FKeyframeTrack<float> AlbedoRKeyframeTrack;
+    FKeyframeTrack<float> AlbedoGKeyframeTrack;
+    FKeyframeTrack<float> AlbedoBKeyframeTrack;
+    FKeyframeTrack<float> RoughnessKeyframeTrack;
+    FKeyframeTrack<float> MetallicKeyframeTrack;
+    FKeyframeTrack<float> EmittanceKeyframeTrack;
+    FKeyframeTrack<float> IORKeyframeTrack;
 private:
     // Base color
     glm::dvec3 Albedo;

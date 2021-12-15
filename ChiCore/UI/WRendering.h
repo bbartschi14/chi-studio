@@ -29,6 +29,8 @@ private:
 	bool bUseHDRI;
 	glm::vec3 BackgroundColor;
 	float ResultZoomScale;
+	int AnimationStartFrame;
+	int AnimationEndFrame;
 };
 
 }

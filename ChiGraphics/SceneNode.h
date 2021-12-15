@@ -12,10 +12,11 @@
 #include "Components/ComponentBase.h"
 #include "Components/ComponentType.h"
 #include "Transform.h"
+#include "ChiGraphics/Keyframing/Keyframeable.h"
 
 namespace CHISTUDIO {
 
-class SceneNode
+class SceneNode : public IKeyframeable
 {
 public:
     SceneNode(std::string InNodeName);
@@ -142,12 +143,14 @@ public:
         return bIsHierarchyVisible;
     }
 
+    std::vector<IKeyframeable*> GetKeyframeables() override;
 private:
     ComponentBase* GetComponentPtrByType(EComponentType InType) const;
 
     std::vector<ComponentBase*> GetComponentsPtrInChildrenByType(EComponentType InType) const;
 
     void GatherComponentPtrsRecursivelyByType(EComponentType InType, std::vector<ComponentBase*>& result) const;
+
 
     Transform Transform_;
     std::unordered_map<EComponentType, std::unique_ptr<ComponentBase>, EnumClassHash> ComponentDictionary;

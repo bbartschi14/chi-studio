@@ -52,7 +52,7 @@ void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, F
 	}
 	RowsCompleteMutex.lock();
 	RowsComplete++;
-	std::cout << "Rendered: " << (float)RowsComplete / Settings.ImageSize.y * 100 << " %" << std::endl;
+	std::cout << fmt::format("\rRendered: {:.2f}%", (float)RowsComplete / Settings.ImageSize.y * 100);// << std::endl;
 	RowsCompleteMutex.unlock();
 }
 
@@ -88,7 +88,8 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	std::chrono::steady_clock::time_point endTime = std::chrono::steady_clock::now();
 
-	std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - beginTime).count() << "[ms], " 
+	std::cout << std::endl;
+	std::cout << "Render Time = " << std::chrono::duration_cast<std::chrono::milliseconds>(endTime - beginTime).count() << "[ms], " 
 		<< std::chrono::duration_cast<std::chrono::seconds>(endTime - beginTime).count() << "[s]" << std::endl;
 
 	if (InOutputFile.size())

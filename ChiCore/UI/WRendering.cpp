@@ -5,6 +5,7 @@
 #include "ChiGraphics/RayTracing/RayTracer.h"
 #include "UILibrary.h"
 #include <glm/gtc/type_ptr.hpp>
+#include "ChiGraphics/Keyframing/KeyframeManager.h"
 
 namespace CHISTUDIO {
 
@@ -18,6 +19,8 @@ WRendering::WRendering()
     bUseHDRI = false;
     BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
     ResultZoomScale = 1.0f;
+    AnimationStartFrame = 0;
+    AnimationEndFrame = 20;
 }
 
 void WRendering::Render(Application& InApplication, float InDeltaTime)
@@ -38,15 +41,25 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
         ImGui::EndMenuBar();
     }
 
+
+    if (ImGui::Button("Set Output File", ImVec2{200, 0}))
+    {
+        std::string filename = UILibrary::SaveFileName("Image File");
+        if (!filename.empty())
+        {
+            FileName = filename;
+        }
+    }
+    ImGui::PushMultiItemsWidths(7, 1200);
+
     char buffer[256];
     memset(buffer, 0, sizeof(buffer));
     std::strncpy(buffer, FileName.c_str(), sizeof(buffer));
-    ImGui::PushMultiItemsWidths(5, 1200);
-
     if (ImGui::InputText("File Name", buffer, sizeof(buffer)))
     {
         FileName = std::string(buffer);
     }
+    ImGui::PopItemWidth();
 
     ImGui::SliderInt("Size X", &RenderWidth, 0, 4096);
     ImGui::PopItemWidth();
@@ -55,6 +68,8 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
     ImGui::SliderInt("Max Bounces", &MaxBounces, 0, 10);
     ImGui::PopItemWidth();
     ImGui::SliderInt("Samples Per Pixel", &SamplesPerPixel, 1, 1000);
+    ImGui::PopItemWidth();
+    ImGui::DragIntRange2("Animation Range", &AnimationStartFrame, &AnimationEndFrame, 1, 0, 2000, "Start: %d", "End: %d");
     ImGui::PopItemWidth();
     ImGui::EndChild();
 
@@ -107,7 +122,7 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
     ImGui::EndChild();
 
 
-    if (ImGui::Button("Render Scene", ImVec2{ 400,0 }))
+    if (ImGui::Button("Render Image", ImVec2{ 190,0 }))
     {
         FRayTraceSettings settings;
         settings.BackgroundColor = BackgroundColor;
@@ -123,6 +138,30 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
         DisplayTexture = rayTracer.Render(scene, fmt::format("{}.png", FileName));
     }
     ImGui::SameLine();
+    if (ImGui::Button("Render Animation", ImVec2{ 190,0 }))
+    {
+        FRayTraceSettings settings;
+        settings.BackgroundColor = BackgroundColor;
+        //settings.BackgroundColor = glm::vec3(0.0f);
+        settings.bShadowsEnabled = false;
+        settings.ImageSize = glm::ivec2(RenderWidth, RenderHeight);
+        settings.MaxBounces = MaxBounces;
+        settings.SamplesPerPixel = SamplesPerPixel;
+        settings.HDRI = HDRI.get();
+        settings.UseHDRI = bUseHDRI;
+        FRayTracer rayTracer(settings);
+
+        int numFrames = AnimationEndFrame - AnimationStartFrame + 1;
+        for (int i = 0; i < numFrames; i++)
+        {
+            int frameNumber = AnimationStartFrame + i;
+            KeyframeManager::GetInstance().SetCurrentFrame(frameNumber);
+            DisplayTexture = rayTracer.Render(scene, fmt::format("{}_{}.png", FileName, frameNumber));
+            std::cout << fmt::format("Frame {} of {} finished.", i+1, numFrames) << std::endl;
+        }
+    }
+    ImGui::SameLine();
+
     ImGui::SliderFloat("Image Zoom", &ResultZoomScale, 0.1f, 10.0f);
 
     ImGui::BeginChild("RenderResult", ImGui::GetContentRegionAvail(), true, window_flags | ImGuiWindowFlags_HorizontalScrollbar);

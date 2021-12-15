@@ -7,11 +7,12 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 #include "ChiGraphics/Cameras/ArcBallCameraNode.h"
+#include "ChiGraphics/Cameras/TracingCameraNode.h"
 
 namespace CHISTUDIO {
 
 CameraComponent::CameraComponent(float InFOV, float InAspectRatio, float InZNear, float InZFar, float InFocusDistance, float InAperture)
-	: FOV(InFOV), AspectRatio(InAspectRatio), ZNear(InZNear), ZFar(InZFar), ViewMatrix(nullptr), FocusDistance(InFocusDistance), Aperture(InAperture), bIsPerspective(true)
+	: IKeyframeable("Camera Component"), FOV(InFOV), AspectRatio(InAspectRatio), ZNear(InZNear), ZFar(InZFar), ViewMatrix(nullptr), FocusDistance(InFocusDistance), Aperture(InAperture), bIsPerspective(true)
 {
 }
 
@@ -38,6 +39,90 @@ glm::mat4 CameraComponent::GetViewMatrix() const
 	else {
 		return *ViewMatrix;
 	}
+}
+
+void CameraComponent::SetFocusDistance(float InFocusDistance)
+{
+	FocusDistance = InFocusDistance;
+	TracingCameraNode* tracingCameraNode = dynamic_cast<TracingCameraNode*>(GetNodePtr());
+	if (tracingCameraNode)
+	{
+		tracingCameraNode->RefreshDebugVisual();
+	}
+}
+
+void CameraComponent::ApplyKeyframeData(int InFrame)
+{
+	if (FOVKeyframeTrack.HasKeyframes())
+	{
+		SetFOV(FOVKeyframeTrack.GetValueAtFrame(InFrame));
+	}
+
+	if (FocusDistanceKeyframeTrack.HasKeyframes())
+	{
+		SetFocusDistance(FocusDistanceKeyframeTrack.GetValueAtFrame(InFrame));
+	}
+
+	if (ApertureKeyframeTrack.HasKeyframes())
+	{
+		Aperture = (ApertureKeyframeTrack.GetValueAtFrame(InFrame));
+	}
+}
+
+std::vector<std::string> CameraComponent::GetKeyframeTrackNames() const
+{
+	std::vector<std::string> names = { "FOV", "Focus Distance", "Aperture"};
+	return names;
+}
+
+void CameraComponent::CreateKeyframeOnTrack(std::string InTrackName, int InFrame)
+{
+	if (InTrackName == "FOV")
+	{
+		FOVKeyframeTrack.AddKeyframe(InFrame, FOV);
+	}
+	else if (InTrackName == "Focus Distance")
+	{
+		FocusDistanceKeyframeTrack.AddKeyframe(InFrame, FocusDistance);
+	}
+	else if (InTrackName == "Aperture")
+	{
+		ApertureKeyframeTrack.AddKeyframe(InFrame, Aperture);
+	}
+}
+
+void CameraComponent::DeleteKeyframeOnTrack(std::string InTrackName, int InIndex)
+{
+	if (InTrackName == "FOV")
+	{
+		FOVKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Focus Distance")
+	{
+		FocusDistanceKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+	else if (InTrackName == "Aperture")
+	{
+		ApertureKeyframeTrack.DeleteKeyframeAtIndex(InIndex);
+	}
+}
+
+std::vector<IKeyframeBase*> CameraComponent::GetKeyframesOnTrack(std::string InTrackName)
+{
+	if (InTrackName == "FOV")
+	{
+		return FOVKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Focus Distance")
+	{
+		return FocusDistanceKeyframeTrack.GetKeyframes();
+	}
+	else if (InTrackName == "Aperture")
+	{
+		return ApertureKeyframeTrack.GetKeyframes();
+	}
+
+	return std::vector<IKeyframeBase*>();
 }
 
 glm::vec2 CameraComponent::GetNormalizedDeviceCoords(glm::vec2 InMousePosition, glm::vec2 InViewportSize)
