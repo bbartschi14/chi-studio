@@ -7,6 +7,7 @@
 #include "Hittables/SphereHittable.h"
 #include "ChiGraphics/Components/ShadingComponent.h"
 #include "ChiGraphics/Shaders/SimpleShader.h"
+#include "ChiGraphics/Shaders/PhongShader.h"
 #include "ChiGraphics/Components/MaterialComponent.h"
 
 namespace CHISTUDIO {
@@ -25,7 +26,7 @@ TracingNode::TracingNode(std::string InName)
 	auto lightComponent = CreateComponent<LightComponent>(hittableLight);
 
 	// Construct debug visuals
-	std::shared_ptr<SimpleShader> shader = std::make_shared<SimpleShader>();
+	std::shared_ptr<PhongShader> shader = std::make_shared<PhongShader>();
 	std::unique_ptr<VertexObject> mesh = PrimitiveFactory::CreateSphere(radius, 12, 12);
 
 	std::unique_ptr<SceneNode> debugVisualNode = make_unique<SceneNode>("DebugVisualSphere");
@@ -37,11 +38,13 @@ TracingNode::TracingNode(std::string InName)
 	debugVisualNode->CreateComponent<ShadingComponent>(shader);
 	debugVisualNode->CreateComponent<MaterialComponent>(material);
 	debugVisualNode->SetHierarchyVisible(false);
+	DebugSphereNode = debugVisualNode.get();
 	AddChild(std::move(debugVisualNode));
 }
 
 void TracingNode::RefreshDebugVisual()
 {
+	//DebugSphereNode->GetComponentPtr<MaterialComponent>()->SetMaterial(GetComponentPtr<MaterialComponent>()->GetMaterialShared());
 }
 
 }

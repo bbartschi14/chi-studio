@@ -98,7 +98,6 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 	// Send pixel data to output texture for viewing
 	OutputTexture->UpdateImage(outputImage);
 
-
 	return OutputTexture;
 }
 

@@ -460,6 +460,40 @@ SceneNode* Application::CreateImportMeshNode(const std::string& filePath)
 	return ref;
 }
 
+SceneNode* Application::CreateEmptyNode()
+{
+	std::shared_ptr<SimpleShader> shader = std::make_shared<SimpleShader>();
+	FDefaultObjectParams params;
+	std::shared_ptr<VertexObject> mesh = std::make_shared<VertexObject>(EDefaultObject::Debug, params);
+
+	auto vertexPositions = make_unique<FPositionArray>();
+	float range = 1.0f;
+
+	vertexPositions->push_back(glm::vec3(-range, 0.0f, 0.0f));
+	vertexPositions->push_back(glm::vec3(range, 0.0f, 0.0f));
+	vertexPositions->push_back(glm::vec3(0.0f, -range, 0.0f));
+	vertexPositions->push_back(glm::vec3(0.0f, range,   0.0f));
+	vertexPositions->push_back(glm::vec3(0.0f, 0.0f , - range ));
+	vertexPositions->push_back(glm::vec3(0.0f, 0.0f, range  ));
+	mesh->UpdatePositions(std::move(vertexPositions));
+
+	auto emptyNode = make_unique<SceneNode>(fmt::format("Empty.{}", Scene_->GetRootNode().GetChildrenCount()));
+	auto& xAxisRendering = emptyNode->CreateComponent<RenderingComponent>(mesh);
+	xAxisRendering.SetDrawMode(EDrawMode::Lines);
+	xAxisRendering.bRenderSolid = false;
+	xAxisRendering.bIsDebugRender = true;
+	emptyNode->GetTransform().SetRotation(glm::vec3(0.0f, 0.0f, 0.0f));
+	auto blackMaterial = std::make_shared<Material>();
+	blackMaterial->SetAlbedo(glm::vec3(0.0f));
+	emptyNode->CreateComponent<ShadingComponent>(shader);
+	auto matComp = emptyNode->CreateComponent<MaterialComponent>(blackMaterial, true);
+
+	SceneNode* ref = emptyNode.get();
+	emptyNode->SetNodeType("Empty");
+	Scene_->GetRootNode().AddChild(std::move(emptyNode));
+	return ref;
+}
+
 void Application::ResetScene()
 {
 	DeselectAllNodes();

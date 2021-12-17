@@ -7,7 +7,8 @@ namespace CHISTUDIO {
 
 class MaterialComponent : public ComponentBase {
 public:
-    MaterialComponent(std::shared_ptr<Material> InMaterial) {
+    MaterialComponent(std::shared_ptr<Material> InMaterial, bool IsDebugMaterial = false) : bIsDebugMaterial(IsDebugMaterial)
+    {
         SetMaterial(std::move(InMaterial));
     }
 
@@ -19,10 +20,16 @@ public:
         return *Material_;
     }
 
+    std::shared_ptr<Material> GetMaterialShared()
+    {
+        return Material_;
+    }
+
     Material* GetMaterialPtr() {
         return Material_.get();
     }
 
+    bool bIsDebugMaterial;
 private:
     std::shared_ptr<Material> Material_;
 };

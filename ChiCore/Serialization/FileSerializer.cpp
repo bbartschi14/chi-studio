@@ -122,7 +122,8 @@ void SerializeNode(YAML::Emitter& OutData, SceneNode* InNode)
 {
 	OutData << YAML::BeginMap;
 	OutData << YAML::Key << "Node" << YAML::Value << InNode->GetNodeName();
-	
+	OutData << YAML::Key << "Type" << YAML::Value << InNode->GetNodeType();
+
 	// Serialize transform
 	Transform transform = InNode->GetTransform();
 	OutData << YAML::Key << "Transform";
@@ -207,10 +208,13 @@ void SerializeNode(YAML::Emitter& OutData, SceneNode* InNode)
 	}
 	if (MaterialComponent* material = InNode->GetComponentPtr<MaterialComponent>())
 	{
-		OutData << YAML::Key << "MaterialComponent";
-		OutData << YAML::BeginMap;
-		OutData << YAML::Key << "MaterialName" << YAML::Value << MaterialManager::GetInstance().GetNameOfMaterial(material->GetMaterialPtr());
-		OutData << YAML::EndMap;
+		if (!material->bIsDebugMaterial)
+		{
+			OutData << YAML::Key << "MaterialComponent";
+			OutData << YAML::BeginMap;
+			OutData << YAML::Key << "MaterialName" << YAML::Value << MaterialManager::GetInstance().GetNameOfMaterial(material->GetMaterialPtr());
+			OutData << YAML::EndMap;
+		}
 	}
 	if (TracingComponent* tracing = InNode->GetComponentPtr<TracingComponent>())
 	{
@@ -339,6 +343,7 @@ void FileSerializer::DeserializeNode(YAML::Node& InData, SceneNode* InParentNode
 	auto materialComp = InData["MaterialComponent"];
 	auto renderingComp = InData["RenderingComponent"];
 	auto tracingComp = InData["TracingComponent"];
+	std::string nodeType = (InData["Type"].as<std::string>());
 
 	if (renderingComp && !renderingComp["DebugRender"].as<bool>())
 	{
@@ -426,6 +431,10 @@ void FileSerializer::DeserializeNode(YAML::Node& InData, SceneNode* InParentNode
 		}
 		rendering->RecalculateModifiers();
 		rendering->SetShadingType((EShadingType)renderingComp["Smooth"].as<int>());
+	}
+	else if (nodeType == "Empty")
+	{
+		newNode = AppRef.CreateEmptyNode();
 	}
 	else if (cameraComp)
 	{

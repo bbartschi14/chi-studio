@@ -12,6 +12,8 @@ private:
 
 	/** Call to update the vertex object for debug visuals */
 	void RefreshDebugVisual();
+
+	SceneNode* DebugSphereNode;
 };
 
 }

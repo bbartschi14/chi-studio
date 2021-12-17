@@ -93,6 +93,7 @@ public:
 	SceneNode* CreateAmbientLight();
 	SceneNode* CreateTracingSphereNode();
 	SceneNode* CreateImportMeshNode(const std::string& filePath);
+	SceneNode* CreateEmptyNode();
 
 	// Clear our scene nodes and recreate scene
 	void ResetScene();

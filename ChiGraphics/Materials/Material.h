@@ -497,6 +497,7 @@ public:
         {
             return IORKeyframeTrack.GetKeyframes();
         }
+        return std::vector<IKeyframeBase*>();
     }
     // ~ End Keyframeable
 

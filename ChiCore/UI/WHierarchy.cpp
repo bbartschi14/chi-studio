@@ -50,6 +50,10 @@ namespace CHISTUDIO {
     {
         ImGui::Text("Options");
         ImGui::Separator();
+        if (ImGui::Selectable("Add Empty"))
+        {
+            InApplication.CreateEmptyNode();
+        }
         if (ImGui::Selectable("Add Cube"))
         {
             FDefaultObjectParams params;

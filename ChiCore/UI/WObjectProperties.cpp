@@ -129,7 +129,10 @@ namespace CHISTUDIO {
 			}
 			if (MaterialComponent* material = selectedNodes[0]->GetComponentPtr<MaterialComponent>())
 			{
-				RenderMaterialComponent(selectedNodes, material);
+				if (!material->bIsDebugMaterial)
+				{
+					RenderMaterialComponent(selectedNodes, material);
+				}
 			}
 			
 		}

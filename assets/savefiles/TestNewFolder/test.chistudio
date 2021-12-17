@@ -1,0 +1,47 @@
+MaterialInfo:
+  DefaultMaterialName: Default
+  Materials:
+    - Name: Default
+      Albedo: [0.8, 0.8, 0.8]
+      Roughness: 1
+      Metallic: 0
+      Emittance: 0
+      IndexOfRefraction: 1.5
+      Transparent: false
+Scene:
+  Children:
+    - Node: Cube.2
+      Transform:
+        Position: [0, 0, 0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      LightComponent:
+        LightType: 3
+        DiffuseColor: [0.8, 0.8, 0.8]
+        SpecularColor: [1, 1, 1]
+        Intensity: 1
+        Enabled: true
+      RenderingComponent:
+        Smooth: 0
+        DebugRender: false
+        MeshData:
+          Vertices:
+            - Position: [1, 1, -1]
+            - Position: [-1, 1, -1]
+            - Position: [-1, -1, -1]
+            - Position: [1, -1, -1]
+            - Position: [-1, 1, 1]
+            - Position: [1, 1, 1]
+            - Position: [1, -1, 1]
+            - Position: [-1, -1, 1]
+          Faces:
+            - Vertices: [0, 1, 2, 3]
+            - Vertices: [3, 6, 5, 0]
+            - Vertices: [0, 5, 4, 1]
+            - Vertices: [1, 4, 7, 2]
+            - Vertices: [2, 7, 6, 3]
+            - Vertices: [4, 5, 6, 7]
+        Modifiers:
+          []
+      MaterialComponent:
+        MaterialName: Default

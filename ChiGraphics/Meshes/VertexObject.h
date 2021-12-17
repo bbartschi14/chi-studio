@@ -23,7 +23,7 @@ enum class EDefaultObject
     CustomMesh,
     Debug,
     Plane,
-    Cylinder
+    Cylinder,
 };
 
 struct FDefaultObjectParams
