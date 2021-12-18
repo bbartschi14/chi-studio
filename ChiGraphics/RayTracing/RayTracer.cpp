@@ -15,6 +15,7 @@
 #include "ChiGraphics/Lights/HittableLight.h"
 #include "core.h"
 #include <chrono>
+#include "ChiGraphics/Textures/ImageManager.h"
 
 namespace CHISTUDIO {
 
@@ -71,13 +72,13 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	auto lightComponents = GetLightComponents(InScene);
 	BuildHittableData(InScene, lightComponents);
-	FImage outputImage(Settings.ImageSize.x, Settings.ImageSize.y);
+	auto outputImage = make_unique<FImage>(Settings.ImageSize.x, Settings.ImageSize.y);
 
 	std::chrono::steady_clock::time_point beginTime = std::chrono::steady_clock::now();
 
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) 
 	{
-		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), &outputImage));
+		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), outputImage.get()));
 		//RenderRow(y, &lightComponents, tracingCamera.get(), &outputImage);
 		//std::cout << "Rendered: " << (float)y / Settings.ImageSize.y * 100 << " %" << std::endl;
 	}
@@ -93,10 +94,11 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 		<< std::chrono::duration_cast<std::chrono::seconds>(endTime - beginTime).count() << "[s]" << std::endl;
 
 	if (InOutputFile.size())
-		outputImage.SavePNG(InOutputFile);
+		outputImage->SavePNG(InOutputFile);
 
 	// Send pixel data to output texture for viewing
-	OutputTexture->UpdateImage(outputImage);
+	OutputTexture->UpdateImage(*outputImage);
+	ImageManager::GetInstance().SetRenderResult(std::move(outputImage));
 
 	return OutputTexture;
 }
