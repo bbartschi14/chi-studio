@@ -167,17 +167,17 @@ void Transform::ApplyKeyframeData(int InFrame)
 	if (RotationXKeyframeTrack.HasKeyframes())
 	{
 		bRotModified = true;
-		originalPos.x = RotationXKeyframeTrack.GetValueAtFrame(InFrame);
+		originalRot.x = RotationXKeyframeTrack.GetValueAtFrame(InFrame);
 	}
 	if (RotationYKeyframeTrack.HasKeyframes())
 	{
 		bRotModified = true;
-		originalPos.y = RotationYKeyframeTrack.GetValueAtFrame(InFrame);
+		originalRot.y = RotationYKeyframeTrack.GetValueAtFrame(InFrame);
 	}
 	if (RotationZKeyframeTrack.HasKeyframes())
 	{
 		bRotModified = true;
-		originalPos.z = RotationZKeyframeTrack.GetValueAtFrame(InFrame);
+		originalRot.z = RotationZKeyframeTrack.GetValueAtFrame(InFrame);
 	}
 	if (bRotModified)
 	{

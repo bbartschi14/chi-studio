@@ -1,1 +1,1 @@
-#include "D:\GraphicsProjects\ChiStudio\ChiGraphics\Lights\HittableLight.h"
+#include "HittableLight.h"

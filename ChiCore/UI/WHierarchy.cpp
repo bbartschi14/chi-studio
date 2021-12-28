@@ -1,4 +1,4 @@
-#include "D:\GraphicsProjects\ChiStudio\ChiCore\UI\WHierarchy.h"
+#include "WHierarchy.h"
 #include "ChiGraphics/Application.h"
 #include "ChiGraphics/Scene.h"
 #include "ChiCore/UI/UILibrary.h"

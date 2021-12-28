@@ -1,4 +1,4 @@
-#include "D:\GraphicsProjects\ChiStudio\ChiCore\UI\WEditMode.h"
+#include "WEditMode.h"
 #include "ChiGraphics/Application.h"
 #include "UILibrary.h"
 #include <glm/gtc/type_ptr.hpp>
