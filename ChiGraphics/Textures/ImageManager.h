@@ -1,5 +1,7 @@
 #pragma once
 #include <memory>
+#include "ChiGraphics/Textures/FImage.h"
+#include <glm/glm.hpp>
 
 namespace CHISTUDIO
 {
@@ -17,13 +19,13 @@ public:
 	ImageManager(const ImageManager&) = delete;
 	void operator=(const ImageManager&) = delete;
 
-	class FImage* GetRenderResult() const { return RenderResult.get(); }
-	void SetRenderResult(std::unique_ptr<class FImage> InImage);
+	FImage* GetRenderResult() const { return RenderResult.get(); }
+	void SetRenderResult(std::unique_ptr<FImage> InImage);
 private:
 	ImageManager() {}
 	~ImageManager() {}
 
-	std::unique_ptr<class FImage> RenderResult;
+	std::unique_ptr<FImage> RenderResult;
 };
 
 }

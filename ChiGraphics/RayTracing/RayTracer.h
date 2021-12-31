@@ -20,6 +20,8 @@ public:
     int SamplesPerPixel;
     class FImage* HDRI;
     bool UseHDRI;
+    float HDRIStrength;
+    bool UseCompositingNodes;
 };
 
 /** Allows for rendering the scene via ray tracing */

@@ -52,12 +52,17 @@ public:
         return ActiveCameraPtr;
     }
 
+    SceneNode* GetTracingCameraNode() const;
+
     void Update(double InDeltaTime);
     void AddDebugRay(FRay InRay);
 
+    void SetAppRef(class Application* InAppRef) { AppRef = InAppRef; }
+    class Application* GetAppRef() const { return AppRef; }
 private:
     void RecursiveUpdate(SceneNode& InNode, double InDeltaTime);
 
+    class Application* AppRef;
     std::unique_ptr<SceneNode> RootNode;
     CameraComponent* ActiveCameraPtr;
     std::unique_ptr<FPositionArray> RayPositions;

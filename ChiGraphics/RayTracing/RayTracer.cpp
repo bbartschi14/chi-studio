@@ -16,6 +16,7 @@
 #include "core.h"
 #include <chrono>
 #include "ChiGraphics/Textures/ImageManager.h"
+#include "ChiCore/ChiStudioApplication.h"
 
 namespace CHISTUDIO {
 
@@ -48,8 +49,11 @@ void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, F
 		}
 		float superSamplingScale = 1.0f / Settings.SamplesPerPixel;
 		pixelColor *= superSamplingScale;
-		glm::vec3 gammaCorrectedPixelColor = glm::vec3(sqrt(pixelColor.x), sqrt(pixelColor.y), sqrt(pixelColor.z));
-		InOutputImage->SetPixel(x, InY, gammaCorrectedPixelColor);
+
+		// As of 12/29/2021, gamma correction is moved to the tonemapping node in the image compositor
+		//pixelColor = glm::vec3(sqrt(pixelColor.x), sqrt(pixelColor.y), sqrt(pixelColor.z)); // Gamma correct
+
+		InOutputImage->SetPixel(x, InY, pixelColor);
 	}
 	RowsCompleteMutex.lock();
 	RowsComplete++;
@@ -94,7 +98,20 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 		<< std::chrono::duration_cast<std::chrono::seconds>(endTime - beginTime).count() << "[s]" << std::endl;
 
 	if (InOutputFile.size())
-		outputImage->SavePNG(InOutputFile);
+	{
+		if (Settings.UseCompositingNodes)
+		{
+			auto modifiedImagePtr = FImage::MakeImageCopy(outputImage.get());
+			ChiStudioApplication* chiStudioApp = static_cast<ChiStudioApplication*>(InScene.GetAppRef());
+			WImageCompositor* imageCompositingWidget = chiStudioApp->GetImageCompositingWidgetPtr();
+			imageCompositingWidget->ApplyModifiersToImage(modifiedImagePtr.get());
+			modifiedImagePtr->SavePNG(InOutputFile);
+		}
+		else
+		{
+			outputImage->SavePNG(InOutputFile);
+		}
+	}
 
 	// Send pixel data to output texture for viewing
 	OutputTexture->UpdateImage(*outputImage);
@@ -314,7 +331,7 @@ glm::vec3 FRayTracer::GetBackgroundColor(const glm::vec3& InDirection) const
 {
 	if (Settings.HDRI != nullptr && Settings.UseHDRI)
 	{
-		return Settings.HDRI->SampleHDRI(InDirection);
+		return Settings.HDRI->SampleHDRI(InDirection) * Settings.HDRIStrength;
 	}
 	return Settings.BackgroundColor;
 }

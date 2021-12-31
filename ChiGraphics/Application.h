@@ -102,6 +102,9 @@ public:
 
 	void RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode);
 	void UpdateToTimelineFrame(int InFrame);
+
+	bool GetIsPreviewingRenderCamera() const { return bIsPreviewingRenderCamera; }
+	void SetIsPreviewingRenderCamera(bool InIsPreviewing);
 protected:
 	virtual void DrawGUI(float InDeltaTime) {}
 	virtual void SetupScene(bool InIncludeDefaults) = 0;
@@ -113,6 +116,7 @@ protected:
 	EEditModeSelectionType EditModeSelectionType;
 	std::string CurrentFilename;
 
+	bool bIsPreviewingRenderCamera;
 private:
 	void InitializeGLFW();
 

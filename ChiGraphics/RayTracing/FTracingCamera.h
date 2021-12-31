@@ -32,7 +32,7 @@ public:
 
     FRay GenerateRay(const glm::vec2& point) {
         float d = 1.0f / tanf(FOV_Radian / 2.0f);
-        glm::vec3 newDirection = d * Direction + point[0] * Horizontal  + point[1] * Up * AspectRatio;
+        glm::vec3 newDirection = d * Direction + point[0] * Horizontal / AspectRatio + point[1] * Up;
         newDirection = glm::normalize(newDirection);
         glm::vec3 origin = Center;
 

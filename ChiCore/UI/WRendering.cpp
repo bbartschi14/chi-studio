@@ -17,10 +17,12 @@ WRendering::WRendering()
     MaxBounces = 1;
     FileName = "Output";
     bUseHDRI = false;
+    HDRIStrength = 1.0f;
     BackgroundColor = glm::vec3(.5f, .7f, 1.0f);
     ResultZoomScale = 1.0f;
     AnimationStartFrame = 0;
     AnimationEndFrame = 20;
+    bUseCompositingNodes = true;
 }
 
 void WRendering::Render(Application& InApplication, float InDeltaTime)
@@ -71,6 +73,7 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
     ImGui::PopItemWidth();
     ImGui::DragIntRange2("Animation Range", &AnimationStartFrame, &AnimationEndFrame, 1, 0, 2000, "Start: %d", "End: %d");
     ImGui::PopItemWidth();
+    ImGui::Checkbox("Use Compositing Nodes", &bUseCompositingNodes);
     ImGui::EndChild();
 
     ImGui::SameLine();
@@ -110,6 +113,7 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
 
         if (HDRITexture)
         {
+            ImGui::SliderFloat("HDRI Strength", &HDRIStrength, 0.0f, 10.0f);
             uint64_t textureID = HDRITexture->GetHandle();
             float scaleFactor = environmentPanelWidth / (float)HDRITexture->Width;
             ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ HDRITexture->Width * scaleFactor, HDRITexture->Height * scaleFactor }, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
@@ -122,17 +126,18 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
     ImGui::EndChild();
 
 
-    if (ImGui::Button("Render Image", ImVec2{ 190,0 }))
+    if (ImGui::Button("Render Image", ImVec2{ 190, 0 }))
     {
         FRayTraceSettings settings;
         settings.BackgroundColor = BackgroundColor;
-        //settings.BackgroundColor = glm::vec3(0.0f);
         settings.bShadowsEnabled = false;
         settings.ImageSize = glm::ivec2(RenderWidth, RenderHeight);
         settings.MaxBounces = MaxBounces;
         settings.SamplesPerPixel = SamplesPerPixel;
         settings.HDRI = HDRI.get();
         settings.UseHDRI = bUseHDRI;
+        settings.HDRIStrength = HDRIStrength;
+        settings.UseCompositingNodes = bUseCompositingNodes;
         FRayTracer rayTracer(settings);
 
         DisplayTexture = rayTracer.Render(scene, fmt::format("{}.png", FileName));
@@ -149,6 +154,8 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
         settings.SamplesPerPixel = SamplesPerPixel;
         settings.HDRI = HDRI.get();
         settings.UseHDRI = bUseHDRI;
+        settings.HDRIStrength = HDRIStrength;
+        settings.UseCompositingNodes = bUseCompositingNodes;
         FRayTracer rayTracer(settings);
 
         int numFrames = AnimationEndFrame - AnimationStartFrame + 1;

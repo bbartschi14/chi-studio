@@ -26,6 +26,10 @@ public:
         ViewMatrix = std::move(InViewMatrix);
     }
 
+    void SetViewMatrix(glm::mat4 InViewMatrix) {
+        *ViewMatrix = InViewMatrix;
+    }
+
     glm::vec3 GetAbsoluteCameraPosition() const {
         if (ViewMatrix)
         {

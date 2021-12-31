@@ -14,7 +14,7 @@
 namespace CHISTUDIO {
 
 ArcBallCameraNode::ArcBallCameraNode(float fov, float aspect, float distance)
-    : SceneNode("Camera"), fov_(fov), distance_(distance) {
+    : SceneNode("Camera"), bCanUpdate(true), fov_(fov), distance_(distance) {
   auto camera = make_unique<CameraComponent>(fov, aspect, 0.01f, 1000.0f);
   AddComponent(std::move(camera));
 
@@ -30,6 +30,8 @@ void ArcBallCameraNode::Calibrate() {
 
 void ArcBallCameraNode::Update(double delta_time) {
   UpdateViewport();
+
+  if (!bCanUpdate) return;
 
   auto& input_manager = InputManager::GetInstance();
 

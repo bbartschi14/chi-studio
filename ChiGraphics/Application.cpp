@@ -28,7 +28,7 @@
 namespace CHISTUDIO {
 
 Application::Application(std::string InAppName, glm::ivec2 InWindowSize)
-	: AppName(InAppName), WindowSize(InWindowSize)
+	: AppName(InAppName), WindowSize(InWindowSize), bIsPreviewingRenderCamera(false)
 {
 	CurrentFilename = "";
 
@@ -38,6 +38,7 @@ Application::Application(std::string InAppName, glm::ivec2 InWindowSize)
 	CurrentSceneMode = ESceneMode::Object;
 	EditModeSelectionType = EEditModeSelectionType::Vertex;
 	Scene_ = make_unique<Scene>(make_unique<SceneNode>("Root"));
+	Scene_->SetAppRef(this);
 	Renderer_ = make_unique<Renderer>(*this);
 
 	KeyframeManager::GetInstance().SetAppRef(this);
@@ -64,6 +65,20 @@ void Application::Tick(double InDeltaTime, double InCurrentTime)
 	UpdateGUI(InDeltaTime);
 
 	// Logic update before rendering.
+	if (bIsPreviewingRenderCamera)
+	{
+		SceneNode* firstTracingCamera = Scene_->GetTracingCameraNode();
+		if (firstTracingCamera)
+		{
+			// Copy params
+			CameraComponent* viewCamera = Scene_->GetActiveCameraPtr();
+			CameraComponent* renderCamera = firstTracingCamera->GetComponentPtr<CameraComponent>();
+
+			viewCamera->GetNodePtr()->GetTransform().SetMatrix4x4(renderCamera->GetNodePtr()->GetTransform().GetLocalToWorldMatrix());
+			viewCamera->SetViewMatrix(glm::inverse(renderCamera->GetNodePtr()->GetTransform().GetLocalToWorldMatrix()));
+			viewCamera->SetFOV(renderCamera->GetFOV());
+		}
+	}
 	Scene_->Update(InDeltaTime);
 
 	RenderGUI();
@@ -527,6 +542,18 @@ void Application::UpdateToTimelineFrame(int InFrame)
 {
 	//std::cout << "Updating to: " << InFrame << std::endl;
 	RecursiveUpdateToTimelineFrame(InFrame, Scene_->GetRootNodePtr());
+}
+
+void Application::SetIsPreviewingRenderCamera(bool InIsPreviewing)
+{
+	bIsPreviewingRenderCamera = InIsPreviewing;
+	static_cast<ArcBallCameraNode*>(Scene_->GetActiveCameraPtr()->GetNodePtr())->bCanUpdate = !bIsPreviewingRenderCamera;
+	if (!bIsPreviewingRenderCamera)
+	{
+		// Reset defaults
+		CameraComponent* mainCam = Scene_->GetActiveCameraPtr()->GetNodePtr()->GetComponentPtr<CameraComponent>();
+		mainCam->SetFOV(45.0f);
+	}
 }
 
 void Application::InitializeGLFW()

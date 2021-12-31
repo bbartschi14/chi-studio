@@ -7,8 +7,6 @@ namespace CHISTUDIO {
 	 */
 	class IWidget {
 	public:
-		virtual ~IWidget() {
-		}
 		virtual void Render(Application& InApplication, float InDeltaTime) = 0;
 	};
 

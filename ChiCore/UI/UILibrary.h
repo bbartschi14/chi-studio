@@ -6,6 +6,7 @@
 #include <functional>
 #include <windows.h>
 #include "ChiGraphics/Modifiers/Modifier.h"
+#include "ChiGraphics/Textures/ImageModifier.h"
 #include <core.h>
 
 namespace CHISTUDIO {
@@ -247,6 +248,33 @@ namespace CHISTUDIO {
 				ImGui::PopStyleVar();
 				
 				return wasModified;
+		}
+
+		// Returns true if the modifier had any properties changed
+		static bool RenderImageModifier(IImageModifier* InModifier, int count, int& indexToRemove)
+		{
+			ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar;
+			ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.0f);
+			ImGui::BeginChild(fmt::format("Modifier{}", count).c_str(), ImVec2(0, 20 + InModifier->GetUIHeight()), true, window_flags);
+
+			bool wasModified = false;
+
+			if (ImGui::BeginMenuBar())
+			{
+				if (ImGui::BeginMenu(InModifier->GetName().c_str()))
+				{
+					if (ImGui::MenuItem("Delete")) { wasModified = true; indexToRemove = count; }
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenuBar();
+			}
+
+			wasModified |= InModifier->RenderUI();
+
+			ImGui::EndChild();
+			ImGui::PopStyleVar();
+
+			return wasModified;
 		}
 	};
 

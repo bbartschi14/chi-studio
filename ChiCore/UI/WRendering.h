@@ -16,6 +16,7 @@ public:
 
 	void Render(Application& InApplication, float InDeltaTime);
 
+	glm::ivec2 GetImageSize() const { return glm::ivec2(RenderWidth, RenderHeight); }
 private:
 	std::unique_ptr<class FTexture> DisplayTexture;
 	std::unique_ptr<class FTexture> HDRITexture;
@@ -27,10 +28,12 @@ private:
 	int SamplesPerPixel; // Corresponds to super sampling anti aliasing
 	std::shared_ptr<class FImage> HDRI;
 	bool bUseHDRI;
+	float HDRIStrength;
 	glm::vec3 BackgroundColor;
 	float ResultZoomScale;
 	int AnimationStartFrame;
 	int AnimationEndFrame;
+	bool bUseCompositingNodes;
 };
 
 }

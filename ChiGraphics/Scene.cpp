@@ -2,7 +2,24 @@
 
 namespace CHISTUDIO {
 
-void Scene::Update(double InDeltaTime)
+    SceneNode* Scene::GetTracingCameraNode() const
+    {
+		auto& root = GetRootNode();
+		std::vector<CameraComponent*> cameraComps = root.GetComponentPtrsInChildren<CameraComponent>();
+
+		for (CameraComponent* cameraComp : cameraComps)
+		{
+			SceneNode* node = cameraComp->GetNodePtr();
+			if (node->GetNodeType() == "Camera")
+			{
+				return node;
+			}
+		}
+
+		return nullptr;
+    }
+
+    void Scene::Update(double InDeltaTime)
 {
 	RecursiveUpdate(*RootNode, InDeltaTime);
 }

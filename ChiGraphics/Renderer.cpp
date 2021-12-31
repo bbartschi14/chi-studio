@@ -1,4 +1,6 @@
 #include "Application.h"
+#include "ChiCore/ChiStudioApplication.h"
+#include "ChiCore/UI/WRendering.h"
 #include "Scene.h"
 #include "ChiGraphics/Shaders/ShaderProgram.h"
 #include "ChiGraphics/Shaders/OutlineShader.h"
@@ -187,6 +189,27 @@ namespace CHISTUDIO {
 		ImGui::EndChild();
 
 		ImGui::BeginChild("ViewportArea");
+
+		if (Application_.GetIsPreviewingRenderCamera())
+		{
+			ChiStudioApplication& chiStudioApp = static_cast<ChiStudioApplication&>(Application_);
+			WRendering* renderingWidget = chiStudioApp.GetRenderingWidgetPtr();
+			glm::ivec2 imageSize = renderingWidget->GetImageSize();
+			float renderAspectRatio = (float)imageSize.x / imageSize.y;
+			CameraComponent* activeCamera = InScene.GetActiveCameraPtr();
+			ImDrawList* draw_list = ImGui::GetWindowDrawList();
+			float xSize = viewportPanelSize.y * renderAspectRatio;
+			float xOffset = (viewportPanelSize.x - xSize) / 2.0f;
+			float yOffset = 1.0f;//viewportPanelSize.y / 4.0f;
+			ImVec2 windowTopLeft = ImGui::GetWindowPos();
+			ImVec2 borderTopLeft = ImVec2(windowTopLeft.x + xOffset, windowTopLeft.y + yOffset);
+		
+			ImVec2 bottomRight = ImVec2(borderTopLeft.x + viewportPanelSize.x - xOffset * 2.0f, borderTopLeft.y + viewportPanelSize.y - yOffset * 2.0f);
+			draw_list->AddRect(borderTopLeft, bottomRight, IM_COL32(255, 255, 255, 255), 0.0f, 0, 2.0f);
+			draw_list->AddRectFilled(windowTopLeft, ImVec2(windowTopLeft.x + xOffset, windowTopLeft.y + viewportPanelSize.y), IM_COL32(0, 0, 0, 100));
+			draw_list->AddRectFilled(ImVec2(bottomRight.x, windowTopLeft.y), ImVec2(windowTopLeft.x + viewportPanelSize.x, windowTopLeft.y + viewportPanelSize.y), IM_COL32(0, 0, 0, 100));
+		}
+
 		ImGui::SetCursorPos({ 6,6 });
 
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4{ 0.1f, 0.1f, 0.1f, 1.0f });
@@ -294,6 +317,13 @@ namespace CHISTUDIO {
 		{
 			Application_.GetScene().GetActiveCameraPtr()->bIsPerspective = isPerspective;
 		}*/
+
+		bool isPreviewing = Application_.GetIsPreviewingRenderCamera();
+		if (ImGui::Checkbox("View Render Camera", &isPreviewing))
+		{
+			Application_.SetIsPreviewingRenderCamera(isPreviewing);
+		}
+		
 
 		InputManager::GetInstance().SetInputBlocked(!ImGui::IsWindowHovered());
 

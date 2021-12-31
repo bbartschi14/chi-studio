@@ -14,6 +14,7 @@ class ArcBallCameraNode : public SceneNode {
   
   void Calibrate();
 
+  bool bCanUpdate;
  private:
   void UpdateViewport();
   void ArcBallRotation(glm::dvec2 pos);

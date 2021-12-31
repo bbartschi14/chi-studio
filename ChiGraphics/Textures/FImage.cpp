@@ -6,6 +6,7 @@
 #include "stb_image_write.h"
 #include "ChiGraphics/Utilities.h"
 #include <glm/gtx/compatibility.hpp>
+#include <iostream>
 
 namespace CHISTUDIO {
 
@@ -17,6 +18,11 @@ static uint8_t ClampColor(float c) {
         tmp = 255;
 
     return static_cast<uint8_t>(tmp);
+}
+
+void FImage::SetData(const std::vector<glm::vec3>& InData)
+{
+    Data = InData;
 }
 
 std::unique_ptr<FImage> FImage::LoadPNG(const std::string& filename, bool y_reversed)
@@ -43,6 +49,15 @@ std::unique_ptr<FImage> FImage::LoadPNG(const std::string& filename, bool y_reve
     }
     stbi_image_free(buffer);
     image->ImportedFileName = filename;
+    return image;
+}
+
+std::unique_ptr<FImage> FImage::MakeImageCopy(FImage* InImageToCopy)
+{
+    auto image = make_unique<FImage>(InImageToCopy->GetWidth(), InImageToCopy->GetHeight());
+
+    image->SetData(InImageToCopy->GetData());
+
     return image;
 }
 
@@ -100,6 +115,87 @@ glm::vec3 FImage::BilinearSample(float InX, float InY)
     float ay = InY - y0;
 
     return glm::lerp(glm::lerp(GetPixel(x0, y0), GetPixel(x0 + 1, y0), ax), glm::lerp(GetPixel(x0, y0 + 1), GetPixel(x0 + 1, y0 + 1), ax), ay);
+}
+
+void FImage::ApplyGaussianBlur(int InNumIterations)
+{
+    float weight[5] = { 0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216 };
+
+    bool horizontal = true;
+
+    for (int iteration = 0; iteration < InNumIterations * 2; iteration++)
+    {
+        std::vector<glm::vec3> NewData;
+        //if (horizontal)
+        //{
+        //    std::cout << "Horizontal" << std::endl;
+        //}
+        //else
+        //{
+        //    std::cout << "Vertical" << std::endl;
+        //}
+
+        for (int y = 0; y < GetHeight(); y++)
+        {
+            for (int x = 0; x < GetWidth(); x++)
+            {
+                glm::vec3 result = GetPixel(x, y) * weight[0];
+                
+                if (horizontal)
+                {
+                    for (int i = 1; i < 5; ++i)
+                    {
+                        result += GetPixel(x + i, y) * weight[i];
+                        result += GetPixel(x - i, y) * weight[i];
+                    }
+                }
+                else
+                {
+                    for (int i = 1; i < 5; ++i)
+                    {
+                        result += GetPixel(x, y + i) * weight[i];
+                        result += GetPixel(x, y - i) * weight[i];
+                    }
+                }
+                
+                NewData.push_back(result);
+            }
+        }
+        horizontal = !horizontal;
+        Data = NewData;
+    }
+    
+}
+
+void FImage::MaskPixels(std::function<bool(glm::vec3)> InFunction)
+{
+    for (int y = 0; y < GetHeight(); y++)
+    {
+        for (int x = 0; x < GetWidth(); x++)
+        {
+            bool result = InFunction(GetPixel(x, y));
+            if (!result)
+            {
+                SetPixel(x, y, glm::vec3(0.0f));
+            }
+        }
+    }
+}
+
+void FImage::AdditiveBlend(FImage* InImageToBlend)
+{
+    const float exposure = 1.0f;
+    for (int y = 0; y < GetHeight(); y++)
+    {
+        for (int x = 0; x < GetWidth(); x++)
+        {
+            glm::vec3 result = glm::min(GetPixel(x, y), 1.0f) + InImageToBlend->GetPixel(x, y);
+            //result = glm::vec3(1.0f) - glm::exp(-result * exposure); // tone mapping
+            //result = glm::pow(result, glm::vec3(1.0f / 2.2f));
+
+            SetPixel(x, y, result);
+        }
+    }
 }
 
 }

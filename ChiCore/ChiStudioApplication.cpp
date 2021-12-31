@@ -26,11 +26,13 @@ ChiStudioApplication::ChiStudioApplication(const std::string& InAppName, glm::iv
 	EditModeWidget = make_unique<WEditMode>();
 	RenderingWidget = make_unique<WRendering>();
 	TimelineWidget = make_unique<WTimeline>();
+	ImageCompositorWidget = make_unique<WImageCompositor>();
 }
 
 void ChiStudioApplication::SetupScene(bool InIncludeDefaults)
 {
 	SceneNode& root = Scene_->GetRootNode();
+	Scene_->SetAppRef(this);
 
 	// Grid
 	std::unique_ptr<XYZGridNode> gridNode = make_unique<XYZGridNode>();
@@ -145,6 +147,7 @@ void ChiStudioApplication::DrawGUI(float InDeltaTime)
 	ObjectPropertiesWidget->Render(*this, InDeltaTime);
 	EditModeWidget->Render(*this, InDeltaTime);
 	TimelineWidget->Render(*this, InDeltaTime);
+	ImageCompositorWidget->Render(*this, InDeltaTime);
 }
 
 }
