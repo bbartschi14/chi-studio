@@ -76,6 +76,23 @@ find_package(
 )
 list(APPEND external_libs glm::glm)
 
+#OIDN
+set(oidn_dir ${external_source_dir}/oidn/include/OpenImageDenoise)
+include_directories(${CMAKE_SOURCE_DIR}/oidn/lib)
+list(APPEND external_srcs
+    ${oidn_dir}/oidn.h
+    ${oidn_dir}/oidn.hpp
+    ${oidn_dir}/config.h
+)
+
+find_library(TBB_LIBRARY tbb ${external_source_dir}/oidn/lib/)
+message(${TBB_LIBRARY})
+list(APPEND external_libs ${TBB_LIBRARY})
+
+find_library(OIDN_LIBRARY OpenImageDenoise ${external_source_dir}/oidn/lib/)
+message(${OIDN_LIBRARY})
+list(APPEND external_libs ${OIDN_LIBRARY}) # NOTE: Needed to copy in dll to out path where .exe is located.
+
 #YAML
 add_subdirectory(${external_source_dir}/third-party/yaml-cpp)
 list(APPEND external_libs yaml-cpp)

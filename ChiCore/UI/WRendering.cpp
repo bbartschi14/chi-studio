@@ -52,7 +52,7 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
             FileName = filename;
         }
     }
-    ImGui::PushMultiItemsWidths(7, 1200);
+    ImGui::PushMultiItemsWidths(8, 1200);
 
     char buffer[256];
     memset(buffer, 0, sizeof(buffer));
@@ -74,6 +74,8 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
     ImGui::DragIntRange2("Animation Range", &AnimationStartFrame, &AnimationEndFrame, 1, 0, 2000, "Start: %d", "End: %d");
     ImGui::PopItemWidth();
     ImGui::Checkbox("Use Compositing Nodes", &bUseCompositingNodes);
+    ImGui::PopItemWidth();
+    ImGui::Checkbox("Use Intel Denoise", &bUseIntelDenoise);
     ImGui::EndChild();
 
     ImGui::SameLine();
@@ -138,9 +140,10 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
         settings.UseHDRI = bUseHDRI;
         settings.HDRIStrength = HDRIStrength;
         settings.UseCompositingNodes = bUseCompositingNodes;
+        settings.UseIntelDenoise = bUseIntelDenoise;
         FRayTracer rayTracer(settings);
 
-        DisplayTexture = rayTracer.Render(scene, fmt::format("{}.png", FileName));
+        DisplayTexture = rayTracer.Render(scene, FileName);
     }
     ImGui::SameLine();
     if (ImGui::Button("Render Animation", ImVec2{ 190,0 }))
@@ -156,6 +159,7 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
         settings.UseHDRI = bUseHDRI;
         settings.HDRIStrength = HDRIStrength;
         settings.UseCompositingNodes = bUseCompositingNodes;
+        settings.UseIntelDenoise = bUseIntelDenoise;
         FRayTracer rayTracer(settings);
 
         int numFrames = AnimationEndFrame - AnimationStartFrame + 1;

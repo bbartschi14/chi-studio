@@ -97,6 +97,26 @@ std::vector<float> FImage::ToFloatData() const
     return buffer;
 }
 
+void FImage::SetFloatData(const std::vector<float>& InData, bool InInvert)
+{
+    for (size_t i = 0; i < InData.size(); i += 3)
+    {
+        size_t index = i / 3;
+        size_t x = index % Width;
+        size_t y = Height - 1 - index / Width;
+        Data[y * Width + x] = glm::vec3(InData[i], InData[i+1], InData[i+2]);
+    }
+}
+
+void FImage::RemapNormalData()
+{
+    for (size_t i = 0; i < Data.size(); i++)
+    {
+        glm::vec3 remappedValue = (Data[i] + 1.0f) * .5f;
+        Data[i] = remappedValue;
+    }
+}
+
 glm::vec3 FImage::SampleHDRI(const glm::vec3& InDirection)
 {
     glm::vec3 direction = glm::normalize(InDirection);

@@ -17,6 +17,7 @@
 #include <chrono>
 #include "ChiGraphics/Textures/ImageManager.h"
 #include "ChiCore/ChiStudioApplication.h"
+#include "external/src/oidn/include/OpenImageDenoise/oidn.hpp"
 
 namespace CHISTUDIO {
 
@@ -29,11 +30,12 @@ FRayTracer::FRayTracer(FRayTraceSettings InSettings)
 
 static std::mutex RowsCompleteMutex;
 
-void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, FTracingCamera* InTracingCamera, FImage* InOutputImage)
+void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, FTracingCamera* InTracingCamera, FImage* InOutputImage, FImage* InAlbedoImage, FImage* InNormalImage)
 {
 	for (size_t x = 0; x < Settings.ImageSize.x; x++) {
 		glm::vec3 pixelColor(0.f);
-
+		glm::vec3 albedo(0.f);
+		glm::vec3 normal(0.f);
 		for (size_t sampleNumber = 0; sampleNumber < Settings.SamplesPerPixel; sampleNumber++)
 		{
 			double jitterX = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
@@ -45,15 +47,23 @@ void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, F
 
 			// Use camera coords to generate a ray into the scene
 			FRay cameraToSceneRay = InTracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
-			pixelColor += TraceRay(cameraToSceneRay, 0, *InLights);
+			glm::vec3 outAlbedo(-1.0f);
+			glm::vec3 outNormal(0.0f);
+			pixelColor += TraceRay(cameraToSceneRay, 0, *InLights, outAlbedo, outNormal);
+			albedo += outAlbedo;
+			normal += outNormal;
 		}
 		float superSamplingScale = 1.0f / Settings.SamplesPerPixel;
 		pixelColor *= superSamplingScale;
-
-		// As of 12/29/2021, gamma correction is moved to the tonemapping node in the image compositor
-		//pixelColor = glm::vec3(sqrt(pixelColor.x), sqrt(pixelColor.y), sqrt(pixelColor.z)); // Gamma correct
+		albedo *= superSamplingScale;
+		if (glm::length(normal) > 0.0000f)
+		{
+			normal = glm::normalize(normal);
+		}
 
 		InOutputImage->SetPixel(x, InY, pixelColor);
+		InAlbedoImage->SetPixel(x, InY, albedo);
+		InNormalImage->SetPixel(x, InY, normal);
 	}
 	RowsCompleteMutex.lock();
 	RowsComplete++;
@@ -77,14 +87,14 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 	auto lightComponents = GetLightComponents(InScene);
 	BuildHittableData(InScene, lightComponents);
 	auto outputImage = make_unique<FImage>(Settings.ImageSize.x, Settings.ImageSize.y);
+	auto albedoImage = make_unique<FImage>(Settings.ImageSize.x, Settings.ImageSize.y);
+	auto normalImage = make_unique<FImage>(Settings.ImageSize.x, Settings.ImageSize.y);
 
 	std::chrono::steady_clock::time_point beginTime = std::chrono::steady_clock::now();
 
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) 
 	{
-		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), outputImage.get()));
-		//RenderRow(y, &lightComponents, tracingCamera.get(), &outputImage);
-		//std::cout << "Rendered: " << (float)y / Settings.ImageSize.y * 100 << " %" << std::endl;
+		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), outputImage.get(), albedoImage.get(), normalImage.get()));
 	}
 
 	for (auto& future : Futures) {
@@ -99,17 +109,51 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	if (InOutputFile.size())
 	{
+		albedoImage->SavePNG(fmt::format("{}_albedo.png", InOutputFile));
+
+		// Remap [-1, 1] normals in place to [0, 1]
+		normalImage->RemapNormalData();
+		normalImage->SavePNG(fmt::format("{}_normal.png", InOutputFile));
+
+		if (Settings.UseIntelDenoise)
+		{
+			std::cout << "Denoising" << std::endl;
+			oidn::DeviceRef device = oidn::newDevice();
+			device.commit();
+			// Create a filter for denoising a beauty (color) image using optional auxiliary images too
+			oidn::FilterRef filter = device.newFilter("RT"); // generic ray tracing filter
+			std::vector<float> dataBuffer = outputImage->ToFloatData();
+			std::vector<float> albedoBuffer = albedoImage->ToFloatData();
+			std::vector<float> normalBuffer = normalImage->ToFloatData();
+			filter.setImage("color", dataBuffer.data(), oidn::Format::Float3, Settings.ImageSize.x, Settings.ImageSize.y); // beauty
+			filter.setImage("albedo", albedoBuffer.data(), oidn::Format::Float3, Settings.ImageSize.x, Settings.ImageSize.y); // auxiliary - albedo map
+			filter.setImage("normal", normalBuffer.data(), oidn::Format::Float3, Settings.ImageSize.x, Settings.ImageSize.y); // auxiliary - normal map
+			filter.setImage("output", dataBuffer.data(), oidn::Format::Float3, Settings.ImageSize.x, Settings.ImageSize.y); // In-place on the beauty image
+			filter.set("hdr", true); // beauty image is HDR
+			filter.commit();
+
+			// Filter the image
+			filter.execute();
+
+			// Check for errors
+			const char* errorMessage;
+			if (device.getError(errorMessage) != oidn::Error::None)
+				std::cout << "Error: " << errorMessage << std::endl;
+
+			outputImage->SetFloatData(dataBuffer, true);
+		}
+
 		if (Settings.UseCompositingNodes)
 		{
 			auto modifiedImagePtr = FImage::MakeImageCopy(outputImage.get());
 			ChiStudioApplication* chiStudioApp = static_cast<ChiStudioApplication*>(InScene.GetAppRef());
 			WImageCompositor* imageCompositingWidget = chiStudioApp->GetImageCompositingWidgetPtr();
 			imageCompositingWidget->ApplyModifiersToImage(modifiedImagePtr.get());
-			modifiedImagePtr->SavePNG(InOutputFile);
+			modifiedImagePtr->SavePNG(fmt::format("{}.png", InOutputFile));
 		}
 		else
 		{
-			outputImage->SavePNG(InOutputFile);
+			outputImage->SavePNG(fmt::format("{}.png", InOutputFile));
 		}
 	}
 
@@ -235,13 +279,25 @@ std::unique_ptr<FTracingCamera> FRayTracer::GetFirstTracingCamera(const Scene& I
 	return nullptr;
 }
 
-glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights)
+glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights, glm::vec3& OutAlbedo, glm::vec3& OutNormal)
 {
 	FHitRecord record;
     bool objectHit = GetClosestObjectHit(InRay, record, nullptr);
 
 	if (objectHit) 
 	{
+		// Record albedo of first hit. Initial value is set to negative
+		if (OutAlbedo.x < 0.0f)
+		{
+			OutAlbedo = record.Material_.GetAlbedo();
+		}
+
+		// Record normal of first hit. Initial value is set to length = 0.0f
+		if (glm::length(OutNormal) < 0.0000001f)
+		{
+			OutNormal = record.Normal;
+		}
+
 		// Get rays
 		glm::dvec3 hitPosition = InRay.At(record.Time);
 		glm::dvec3 eyeRay = glm::normalize(glm::dvec3(InRay.GetOrigin()) - hitPosition);
@@ -301,7 +357,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				glm::dvec3 indirect = record.Material_.EvaluateBSDF(record.Normal, eyeRay, sampledRayDirection);
 
 				FRay tracedRay = FRay(hitPosition, sampledRayDirection);
-				glm::dvec3 traceResult = TraceRay(tracedRay, InBounces + 1, InLights);
+				glm::dvec3 traceResult = TraceRay(tracedRay, InBounces + 1, InLights, OutAlbedo, OutNormal);
 				glm::dvec3 term = indirect * traceResult;
 				glm::dvec3 indirectIllumination = 1.0 / rayProbability * term * glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal)));
 
@@ -323,7 +379,13 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
     }
     else 
 	{
-        return GetBackgroundColor(InRay.GetDirection());
+		glm::vec3 backgroundColor = GetBackgroundColor(InRay.GetDirection());
+		// Record albedo of first hit
+		if (OutAlbedo.x < 0.0f)
+		{
+			OutAlbedo = backgroundColor;
+		}
+		return backgroundColor;
     }
 }
 
@@ -400,7 +462,6 @@ bool FRayTracer::GetClosestObjectHit(const FRay& InRay, FHitRecord& InRecord, st
 			}
 		}
 	}
-
 		
 	return objectHit;
 }

@@ -72,6 +72,10 @@ public:
     void SavePNG(const std::string& filename) const;
     std::vector<uint8_t> ToByteData() const;
     std::vector<float> ToFloatData() const;
+    void SetFloatData(const std::vector<float>& InData, bool InInvert = false);
+
+    // Takes normal data in [-1, 1] range and remaps it in [0, 1] for visual display
+    void RemapNormalData();
 
     glm::vec3 SampleHDRI(const glm::vec3& InDirection);
     glm::vec3 BilinearSample(float InX, float InY);

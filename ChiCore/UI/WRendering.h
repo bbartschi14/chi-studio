@@ -34,6 +34,7 @@ private:
 	int AnimationStartFrame;
 	int AnimationEndFrame;
 	bool bUseCompositingNodes;
+	bool bUseIntelDenoise;
 };
 
 }
