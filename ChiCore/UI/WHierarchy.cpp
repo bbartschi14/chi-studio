@@ -4,148 +4,172 @@
 #include "ChiCore/UI/UILibrary.h"
 
 namespace CHISTUDIO {
-	WHierarchy::WHierarchy()
-	{
-	}
-
-	void WHierarchy::Render(Application& InApplication, float InDeltaTime)
-{
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-
-	ImGui::Begin("Hierarchy");
-
-    Scene& scene = InApplication.GetScene();
-    SceneNode& root = scene.GetRootNode();
-    
-    ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
-
-    if (ImGui::BeginTable("HierarchyTable", 2, tableFlags))
+    WHierarchy::WHierarchy()
     {
-        // The first column will use the default _WidthStretch when ScrollX is Off and _WidthFixed when ScrollX is On
-        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_NoHide);
-        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 28.0f);
-        ImGui::TableHeadersRow();
-
-        // Load rows
-        size_t childCount = root.GetChildrenCount();
-        for (int i = 0; i < childCount; i++)
-        {
-            LoadRowsRecursively(root.GetChild(i), InApplication);
-        }
-
-        ImGui::EndTable();
     }
 
-    if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
+    void WHierarchy::Render(Application& InApplication, float InDeltaTime)
     {
-        InApplication.SelectNode(nullptr, false);
-    }
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
 
-    // Hierarchy context menu
-    bool openCylinderModal = false;
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 4, 4 });
-    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
-        ImGui::OpenPopup("HierarchyContext");
-    if (ImGui::BeginPopup("HierarchyContext"))
-    {
-        ImGui::Text("Options");
-        ImGui::Separator();
-        if (ImGui::Selectable("Add Empty"))
+        ImGui::Begin("Hierarchy");
+
+        Scene& scene = InApplication.GetScene();
+        SceneNode& root = scene.GetRootNode();
+
+        ImGuiTableFlags tableFlags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH | ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg | ImGuiTableFlags_NoBordersInBody;
+
+        if (ImGui::BeginTable("HierarchyTable", 2, tableFlags))
         {
-            InApplication.CreateEmptyNode();
-        }
-        if (ImGui::Selectable("Add Cube"))
-        {
-            FDefaultObjectParams params;
-            InApplication.CreatePrimitiveNode(EDefaultObject::Cube, params);
-        }
-        if (ImGui::Selectable("Add Plane"))
-        {
-            FDefaultObjectParams params;
-            InApplication.CreatePrimitiveNode(EDefaultObject::Plane, params);
-        }
-        if (ImGui::Selectable("Add Cylinder"))
-        {
-            openCylinderModal = true;
-        }
-        if (ImGui::Selectable("Add Camera"))
-        {
-            InApplication.CreateCamera();
-        }
-        if (ImGui::Selectable("Add Point Light"))
-        {
-            InApplication.CreatePointLight();
-        }
-        if (ImGui::Selectable("Add Ambient Light"))
-        {
-            InApplication.CreateAmbientLight();
-        }
-        if (ImGui::Selectable("Add Tracing Sphere"))
-        {
-            InApplication.CreateTracingSphereNode();
-        }
-        if (ImGui::Selectable("Add Imported Mesh"))
-        {
-            std::string filename = UILibrary::PickFileName("Supported files (*.obj)\0*.obj\0");
-            if (!filename.empty())
+            // The first column will use the default _WidthStretch when ScrollX is Off and _WidthFixed when ScrollX is On
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_NoHide);
+            ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, 28.0f);
+            ImGui::TableHeadersRow();
+
+            // Load rows
+            size_t childCount = root.GetChildrenCount();
+            for (int i = 0; i < childCount; i++)
             {
-                InApplication.CreateImportMeshNode(filename);
+                LoadRowsRecursively(root.GetChild(i), InApplication);
             }
+
+            ImGui::EndTable();
         }
 
-        ImGui::EndPopup();
-    }
-    ImGui::PopStyleVar();
-    // ~ END Hierarchy context menu
-
-	ImGui::End();
-    ImGui::PopStyleVar();
-
-
-    // Always center this window when appearing
-    //ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-   // ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-
-
-    if (openCylinderModal)
-    {
-        ImGui::OpenPopup("Create Cylinder");
-    }
-    if (ImGui::BeginPopupModal("Create Cylinder", NULL, ImGuiWindowFlags_AlwaysAutoResize))
-    {
-        static int cylinderSideSegments = 6;
-        ImGui::SliderInt("Side Segments", &cylinderSideSegments, 3, 100);
-        ImGui::Separator();
-
-        if (ImGui::Button("Create", ImVec2(120, 0))) 
-        { 
-            FDefaultObjectParams params;
-            params.NumberOfSides = cylinderSideSegments;
-            InApplication.CreatePrimitiveNode(EDefaultObject::Cylinder, params);
-            ImGui::CloseCurrentPopup(); 
-        }
-        ImGui::SetItemDefaultFocus();
-        ImGui::SameLine();
-        if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
-
-        ImGui::EndPopup();
-    }
-
-    bool bDeleted = false;
-    for (SceneNode* node : NodesToDelete)
-    {
-        if (node->IsSelected())
+        if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
         {
             InApplication.SelectNode(nullptr, false);
         }
-        node->GetParentPtr()->RemoveChild(node);
-        bDeleted = true;
+
+        // Hierarchy context menu
+        bool openCylinderModal = false;
+        bool openImportedMeshModal = false;
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 4, 4 });
+        if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1))
+            ImGui::OpenPopup("HierarchyContext");
+        if (ImGui::BeginPopup("HierarchyContext"))
+        {
+            ImGui::Text("Options");
+            ImGui::Separator();
+            if (ImGui::Selectable("Add Empty"))
+            {
+                InApplication.CreateEmptyNode();
+            }
+            if (ImGui::Selectable("Add Cube"))
+            {
+                FDefaultObjectParams params;
+                InApplication.CreatePrimitiveNode(EDefaultObject::Cube, params);
+            }
+            if (ImGui::Selectable("Add Plane"))
+            {
+                FDefaultObjectParams params;
+                InApplication.CreatePrimitiveNode(EDefaultObject::Plane, params);
+            }
+            if (ImGui::Selectable("Add Cylinder"))
+            {
+                openCylinderModal = true;
+            }
+            if (ImGui::Selectable("Add Camera"))
+            {
+                InApplication.CreateCamera();
+            }
+            if (ImGui::Selectable("Add Point Light"))
+            {
+                InApplication.CreatePointLight();
+            }
+            if (ImGui::Selectable("Add Ambient Light"))
+            {
+                InApplication.CreateAmbientLight();
+            }
+            if (ImGui::Selectable("Add Tracing Sphere"))
+            {
+                InApplication.CreateTracingSphereNode();
+            }
+            if (ImGui::Selectable("Add Imported Mesh"))
+            {
+                openImportedMeshModal = true;
+            }
+
+            ImGui::EndPopup();
+        }
+        ImGui::PopStyleVar();
+        // ~ END Hierarchy context menu
+
+        ImGui::End();
+        ImGui::PopStyleVar();
+
+
+        // Always center this window when appearing
+        //ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+       // ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+
+        if (openCylinderModal)
+        {
+            ImGui::OpenPopup("Create Cylinder");
+        }
+        if (ImGui::BeginPopupModal("Create Cylinder", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static int cylinderSideSegments = 6;
+            ImGui::SliderInt("Side Segments", &cylinderSideSegments, 3, 100);
+            ImGui::Separator();
+
+            if (ImGui::Button("Create", ImVec2(120, 0)))
+            {
+                FDefaultObjectParams params;
+                params.NumberOfSides = cylinderSideSegments;
+                InApplication.CreatePrimitiveNode(EDefaultObject::Cylinder, params);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+
+            ImGui::EndPopup();
+        }
+
+        if (openImportedMeshModal)
+        {
+            ImGui::OpenPopup("Import Settings");
+        }
+        if (ImGui::BeginPopupModal("Import Settings", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            static bool useImportedNormals = false;
+            ImGui::Checkbox("Use Imported Normals", &useImportedNormals);
+            ImGui::Separator();
+
+            if (ImGui::Button("Import", ImVec2(120, 0)))
+            {
+                std::string filename = UILibrary::PickFileName("Supported files (*.obj)\0*.obj\0");
+                if (!filename.empty())
+                {
+                    InApplication.CreateImportMeshNode(filename, useImportedNormals);
+                }
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) { ImGui::CloseCurrentPopup(); }
+
+            ImGui::EndPopup();
+        }
+
+        bool bDeleted = false;
+        for (SceneNode* node : NodesToDelete)
+        {
+            if (node->IsSelected())
+            {
+                InApplication.SelectNode(nullptr, false);
+            }
+            node->GetParentPtr()->RemoveChild(node);
+            bDeleted = true;
+        }
+        if (bDeleted)
+        {
+            NodesToDelete.clear();
+        }
     }
-    if (bDeleted)
-    {
-        NodesToDelete.clear();
-    }
-}
 
     void WHierarchy::LoadRowsRecursively(SceneNode& node, Application& app)
     {
@@ -162,7 +186,7 @@ namespace CHISTUDIO {
         ImGuiTreeNodeFlags folderFlags = ImGuiTreeNodeFlags_SpanFullWidth | ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_DefaultOpen;
         ImGuiTreeNodeFlags leafFlags = ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanFullWidth;
         ImGuiTreeNodeFlags finalFlag = isFolderNode ? folderFlags : leafFlags;
-        if (node.IsSelected()) 
+        if (node.IsSelected())
         {
             finalFlag = finalFlag | ImGuiTreeNodeFlags_Selected;
             ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4{ 0.08f, 0.53f, 0.85f, 1.0f });
@@ -219,7 +243,7 @@ namespace CHISTUDIO {
             }
             ImGui::TreePop();
         }
-      
+
     }
 
     void WHierarchy::TestTable()

@@ -9,128 +9,128 @@
 
 namespace CHISTUDIO {
 
-enum class ESceneMode { Object, Edit };
-enum class EEditModeSelectionType { Vertex, Edge, Face };
+	enum class ESceneMode { Object, Edit };
+	enum class EEditModeSelectionType { Vertex, Edge, Face };
 
-class Application
-{
-public: 
-	Application(std::string InAppName, glm::ivec2 InWindowSize);
-	virtual ~Application();
-
-	bool IsFinished();
-	void Tick(double InDeltaTime, double InCurrentTime);
-
-	glm::ivec2 GetWindowSize() const
+	class Application
 	{
-		return WindowSize;
-	}
+	public:
+		Application(std::string InAppName, glm::ivec2 InWindowSize);
+		virtual ~Application();
 
-	Scene& GetScene() const
-	{
-		return *Scene_;
-	}
+		bool IsFinished();
+		void Tick(double InDeltaTime, double InCurrentTime);
 
-	virtual void FramebufferSizeCallback(glm::ivec2 InWindowSize);
-
-	std::vector<SceneNode*> GetSelectedNodes() const
-	{
-		return SelectedNodes;
-	}
-	
-	// Finds all nodes in the visible hierarchy that don't have InSceneNode as an ancestor
-	void GetNonChildNodes(SceneNode* InStartingNode, SceneNode* InSceneNode, std::vector<SceneNode*>& OutNodes) const
-	{
-		size_t numChildren = InStartingNode->GetChildrenCount();
-		for (size_t i = 0; i < numChildren; i++)
+		glm::ivec2 GetWindowSize() const
 		{
-			SceneNode* child = InStartingNode->GetChildPtr(i);
-			if (child->IsHierarchyVisible() && child != InSceneNode)
-			{
-				OutNodes.emplace_back(child);
-				GetNonChildNodes(child, InSceneNode, OutNodes);
-			}
+			return WindowSize;
 		}
 
-	}
+		Scene& GetScene() const
+		{
+			return *Scene_;
+		}
 
-	/** Can either add to the selection, or replace the selection */
-	void SelectNode(SceneNode* nodeToSelect, bool addToSelection);
-	void DeselectNode(SceneNode* nodeToDeselect);
-	void DeselectAllNodes();
+		virtual void FramebufferSizeCallback(glm::ivec2 InWindowSize);
 
-	ESceneMode GetSceneMode() const {
-		return CurrentSceneMode;
-	}
+		std::vector<SceneNode*> GetSelectedNodes() const
+		{
+			return SelectedNodes;
+		}
 
-	void SetSceneMode(ESceneMode InSceneMode);
+		// Finds all nodes in the visible hierarchy that don't have InSceneNode as an ancestor
+		void GetNonChildNodes(SceneNode* InStartingNode, SceneNode* InSceneNode, std::vector<SceneNode*>& OutNodes) const
+		{
+			size_t numChildren = InStartingNode->GetChildrenCount();
+			for (size_t i = 0; i < numChildren; i++)
+			{
+				SceneNode* child = InStartingNode->GetChildPtr(i);
+				if (child->IsHierarchyVisible() && child != InSceneNode)
+				{
+					OutNodes.emplace_back(child);
+					GetNonChildNodes(child, InSceneNode, OutNodes);
+				}
+			}
 
-	EEditModeSelectionType GetEditModeSelectionType() const {
-		return EditModeSelectionType;
-	}
+		}
 
-	void SetEditModeSelectionType(EEditModeSelectionType InSelectionType);
+		/** Can either add to the selection, or replace the selection */
+		void SelectNode(SceneNode* nodeToSelect, bool addToSelection);
+		void DeselectNode(SceneNode* nodeToDeselect);
+		void DeselectAllNodes();
 
-	bool AreEditModeVerticesSelectable() const;
-	bool AreEditModeEdgesSelectable() const;
-	bool AreEditModeFacesSelectable() const;
+		ESceneMode GetSceneMode() const {
+			return CurrentSceneMode;
+		}
 
-	bool AreVerticesSelectableInGivenEditMode(EEditModeSelectionType InSelectionType) const;
-	bool AreEdgesSelectableInGivenEditMode(EEditModeSelectionType InSelectionType) const;
-	bool AreFacesSelectableInGivenEditMode(EEditModeSelectionType InSelectionType) const;
+		void SetSceneMode(ESceneMode InSceneMode);
 
-	void TryToggleEditMode();
+		EEditModeSelectionType GetEditModeSelectionType() const {
+			return EditModeSelectionType;
+		}
 
-	void OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2 SceneViewSize);
-	void SelectAllEditModePrims();
+		void SetEditModeSelectionType(EEditModeSelectionType InSelectionType);
 
-	void HandleEditModeHotkeys();
+		bool AreEditModeVerticesSelectable() const;
+		bool AreEditModeEdgesSelectable() const;
+		bool AreEditModeFacesSelectable() const;
 
-	SceneNode* CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams);
-	SceneNode* CreateVertexObjectCopy(VertexObject* InVertexObjectToCopy);
-	SceneNode* CreateCamera();
-	SceneNode* CreatePointLight();
-	SceneNode* CreateAmbientLight();
-	SceneNode* CreateTracingSphereNode();
-	SceneNode* CreateImportMeshNode(const std::string& filePath);
-	SceneNode* CreateEmptyNode();
+		bool AreVerticesSelectableInGivenEditMode(EEditModeSelectionType InSelectionType) const;
+		bool AreEdgesSelectableInGivenEditMode(EEditModeSelectionType InSelectionType) const;
+		bool AreFacesSelectableInGivenEditMode(EEditModeSelectionType InSelectionType) const;
 
-	// Clear our scene nodes and recreate scene
-	void ResetScene();
+		void TryToggleEditMode();
 
-	void UpdateWindowFilename(std::string InFilename);
+		void OnClick(int InClickIndex, glm::vec2 InMousePosition, glm::vec2 SceneViewSize);
+		void SelectAllEditModePrims();
 
-	void RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode);
-	void UpdateToTimelineFrame(int InFrame);
+		void HandleEditModeHotkeys();
 
-	bool GetIsPreviewingRenderCamera() const { return bIsPreviewingRenderCamera; }
-	void SetIsPreviewingRenderCamera(bool InIsPreviewing);
-protected:
-	virtual void DrawGUI(float InDeltaTime) {}
-	virtual void SetupScene(bool InIncludeDefaults) = 0;
-	std::unique_ptr<Scene> Scene_;
-	std::unique_ptr<Renderer> Renderer_;
-	std::vector<SceneNode*> SelectedNodes;
+		SceneNode* CreatePrimitiveNode(EDefaultObject InObjectType, FDefaultObjectParams InParams);
+		SceneNode* CreateVertexObjectCopy(VertexObject* InVertexObjectToCopy);
+		SceneNode* CreateCamera();
+		SceneNode* CreatePointLight();
+		SceneNode* CreateAmbientLight();
+		SceneNode* CreateTracingSphereNode();
+		SceneNode* CreateImportMeshNode(const std::string& filePath, bool useImportedNormals);
+		SceneNode* CreateEmptyNode();
 
-	ESceneMode CurrentSceneMode;
-	EEditModeSelectionType EditModeSelectionType;
-	std::string CurrentFilename;
+		// Clear our scene nodes and recreate scene
+		void ResetScene();
 
-	bool bIsPreviewingRenderCamera;
-private:
-	void InitializeGLFW();
+		void UpdateWindowFilename(std::string InFilename);
 
-	// GUI Handlers
-	void InitializeGUI();
-	void UpdateGUI(float InDeltaTime);
-	void RenderGUI();
-	void DestroyGUI();
+		void RecursiveUpdateToTimelineFrame(int InFrame, SceneNode* InSceneNode);
+		void UpdateToTimelineFrame(int InFrame);
 
-	GLFWwindow* WindowHandle;
-	std::string AppName;
-	glm::ivec2 WindowSize;
+		bool GetIsPreviewingRenderCamera() const { return bIsPreviewingRenderCamera; }
+		void SetIsPreviewingRenderCamera(bool InIsPreviewing);
+	protected:
+		virtual void DrawGUI(float InDeltaTime) {}
+		virtual void SetupScene(bool InIncludeDefaults) = 0;
+		std::unique_ptr<Scene> Scene_;
+		std::unique_ptr<Renderer> Renderer_;
+		std::vector<SceneNode*> SelectedNodes;
 
-};
+		ESceneMode CurrentSceneMode;
+		EEditModeSelectionType EditModeSelectionType;
+		std::string CurrentFilename;
+
+		bool bIsPreviewingRenderCamera;
+	private:
+		void InitializeGLFW();
+
+		// GUI Handlers
+		void InitializeGUI();
+		void UpdateGUI(float InDeltaTime);
+		void RenderGUI();
+		void DestroyGUI();
+
+		GLFWwindow* WindowHandle;
+		std::string AppName;
+		glm::ivec2 WindowSize;
+
+	};
 
 }
 

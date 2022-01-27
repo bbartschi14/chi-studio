@@ -103,4 +103,12 @@ namespace CHISTUDIO {
 		return average / (float)vertices.size();
 	}
 
+	void FFace::SetImportedNormals(const std::vector<glm::vec3>& InNormals)
+	{
+		ImportedNormals.clear();
+		for (glm::vec3 normal : InNormals)
+		{
+			ImportedNormals.push_back(normal);
+		}
+	}
 }

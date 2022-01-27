@@ -95,7 +95,7 @@ namespace CHISTUDIO {
 			FVertex* vertToCopy = verticesToCopy[i].get();
 			FVertex* newVert = CreateVertex(vertToCopy->GetPosition(), nullptr);
 			newVert->SetIndexId(vertToCopy->GetIndexId());
-			verticesMap.insert( {newVert->GetIndexId(), newVert} );
+			verticesMap.insert({ newVert->GetIndexId(), newVert });
 		}
 
 		const std::vector<std::unique_ptr<FHalfEdge>>& halfEdgesToCopy = InVertexObject->GetHalfEdges();
@@ -107,7 +107,7 @@ namespace CHISTUDIO {
 			newHalfEdge->SetIndexId(halfEdgeToCopy->GetIndexId());
 			halfEdgesMap.insert({ newHalfEdge->GetIndexId(), newHalfEdge });
 		}
-		
+
 		const std::vector<std::unique_ptr<FEdge>>& edgesToCopy = InVertexObject->GetEdges();
 		for (size_t i = 0; i < edgesToCopy.size(); i++)
 		{
@@ -118,7 +118,7 @@ namespace CHISTUDIO {
 			newEdge->SetIndexId(edgeToCopy->GetIndexId());
 			edgesMap.insert({ newEdge->GetIndexId(), newEdge });
 		}
-		
+
 		const std::vector<std::unique_ptr<FFace>>& facesToCopy = InVertexObject->GetFaces();
 		for (size_t i = 0; i < facesToCopy.size(); i++)
 		{
@@ -128,7 +128,7 @@ namespace CHISTUDIO {
 			newFace->SetIndexId(faceToCopy->GetIndexId());
 			facesMap.insert({ newFace->GetIndexId(), newFace });
 		}
-		
+
 		// Finish primitives with all data, now that each primitive has been created
 		for (size_t i = 0; i < verticesToCopy.size(); i++)
 		{
@@ -137,7 +137,7 @@ namespace CHISTUDIO {
 			auto parentHalfEdgePair = halfEdgesMap.find(vertToCopy->GetParentHalfEdge()->GetIndexId());
 			newVert->SetParentHalfEdge(parentHalfEdgePair->second);
 		}
-		
+
 		for (size_t i = 0; i < halfEdgesToCopy.size(); i++)
 		{
 			FHalfEdge* halfEdgeToCopy = halfEdgesToCopy[i].get();
@@ -149,11 +149,11 @@ namespace CHISTUDIO {
 				FFace* owningFace = facesMap.find(halfEdgeToCopy->GetOwningFace()->GetIndexId())->second;
 				newHalfEdge->SetOwningFace(owningFace);
 			}
-		
+
 			newHalfEdge->SetNextHalfEdge(nextHalfEdge);
 			newHalfEdge->SetSymmetricalHalfEdge(symmetricalHalfEdge);
 		}
-		
+
 		// Copy indices (must be done after constructing primitives
 		FaceIndex = InVertexObject->GetFaceIndex();
 		EdgeIndex = InVertexObject->GetEdgeIndex();
@@ -172,7 +172,7 @@ namespace CHISTUDIO {
 			for (int i = 0; i < 4; i++)
 			{
 				FHalfEdge* halfEdge = HalfEdges[halfEdgeIndices[i]].get();
-				halfEdge->SetNextHalfEdge(HalfEdges[halfEdgeIndices[(i+1)%4]].get());
+				halfEdge->SetNextHalfEdge(HalfEdges[halfEdgeIndices[(i + 1) % 4]].get());
 				halfEdge->SetNextVertex(Vertices[vertexIndices[i]].get());
 				Vertices[vertexIndices[i]].get()->SetParentHalfEdge(halfEdge);
 				halfEdge->SetSymmetricalHalfEdge(HalfEdges[symmetricalEdgeIndices[i]].get());
@@ -205,7 +205,7 @@ namespace CHISTUDIO {
 		{
 			CreateHalfEdge(nullptr, nullptr, nullptr, nullptr, nullptr);
 		}
-		
+
 		CreateVertex(glm::vec3(1.0f, 1.0f, -1.0f), nullptr);
 		CreateVertex(glm::vec3(-1.0f, 1.0f, -1.0f), nullptr);
 		CreateVertex(glm::vec3(-1.0f, -1.0f, -1.0f), nullptr);
@@ -234,32 +234,32 @@ namespace CHISTUDIO {
 		int	   vertsTop[] = { 0, 5, 4, 1 };
 		int symEdgesTop[] = { 1, 7, 21, 13 };
 		SetupFace(2, edgesTop,
-					 vertsTop,
-			      symEdgesTop);
+			vertsTop,
+			symEdgesTop);
 
 		// LEFT FACE
-		   int edgesLeft[] = { 12, 13, 14, 15 };
-		   int vertsLeft[] = { 1, 4, 7, 2 };
+		int edgesLeft[] = { 12, 13, 14, 15 };
+		int vertsLeft[] = { 1, 4, 7, 2 };
 		int symEdgesLeft[] = { 2, 11, 20, 17 };
-		SetupFace(3, edgesLeft, 
-					 vertsLeft, 
-				  symEdgesLeft);
+		SetupFace(3, edgesLeft,
+			vertsLeft,
+			symEdgesLeft);
 
 		// BOTTOM FACE
 		int	   edgesBottom[] = { 16, 17, 18, 19 };
 		int	   vertsBottom[] = { 2, 7, 6, 3 };
 		int symEdgesBottom[] = { 3, 15, 23, 5 };
 		SetupFace(4, edgesBottom,
-					 vertsBottom,
-			      symEdgesBottom);
-		
+			vertsBottom,
+			symEdgesBottom);
+
 		// BACK FACE
 		int	   edgesBack[] = { 20, 21, 22, 23 };
 		int	   vertsBack[] = { 4, 5, 6, 7 };
 		int symEdgesBack[] = { 14, 10, 6, 18 };
 		SetupFace(5, edgesBack,
-					 vertsBack,
-			      symEdgesBack);
+			vertsBack,
+			symEdgesBack);
 	}
 
 	void VertexObject::CreateHalfEdgePlane()
@@ -385,10 +385,10 @@ namespace CHISTUDIO {
 			FHalfEdge* secondHalfEdge = CreateHalfEdge(nullptr, bottomHalfEdges[i], face, nullptr, bottomVertices[i]);
 			bottomHalfEdges[i]->SetSymmetricalHalfEdge(secondHalfEdge);
 			CreateEdge(secondHalfEdge, bottomHalfEdges[i]);
-			
+
 			FHalfEdge* thirdHalfEdge = CreateHalfEdge(nullptr, nullptr, face, nullptr, topVertices[i]);
 			ringHalfEdges.push_back(thirdHalfEdge);
-			
+
 			FHalfEdge* fourthHalfEdge = CreateHalfEdge(nullptr, topHalfEdges[i], face, nullptr, topVertices[(i + InNumberOfSides - 1) % InNumberOfSides]);
 			topHalfEdges[i]->SetSymmetricalHalfEdge(fourthHalfEdge);
 			CreateEdge(fourthHalfEdge, topHalfEdges[i]);
@@ -465,20 +465,31 @@ namespace CHISTUDIO {
 				newWireframePositions->push_back(firstVertex->GetPosition());
 
 				// Add normals
-				std::vector<glm::vec3>& positionsRef = *newPositions;
-				glm::vec3 firstDirection = positionsRef[firstVertexIndex + 1] - positionsRef[firstVertexIndex];
-				glm::vec3 secondDirection = positionsRef[firstVertexIndex + 2] - positionsRef[firstVertexIndex];
-				glm::vec3 normal = glm::normalize(glm::cross(secondDirection, firstDirection));
-				for (unsigned int i = 0; i < currentVertIndex - firstVertexIndex; i++)
+				if (!bUseImportedNormals)
 				{
-					newNormals->push_back(normal);
+					std::vector<glm::vec3>& positionsRef = *newPositions;
+					glm::vec3 firstDirection = positionsRef[firstVertexIndex + 1] - positionsRef[firstVertexIndex];
+					glm::vec3 secondDirection = positionsRef[firstVertexIndex + 2] - positionsRef[firstVertexIndex];
+					glm::vec3 normal = glm::normalize(glm::cross(secondDirection, firstDirection));
+					for (unsigned int i = 0; i < currentVertIndex - firstVertexIndex; i++)
+					{
+						newNormals->push_back(normal);
+					}
 				}
+				else
+				{
+					for (auto normal : Faces[i]->GetImportedNormals())
+					{
+						newNormals->push_back(normal);
+					}
+				}
+
 			}
 		}
 		else
 		{
 			// Smooth shaded objects can share vertices across faces
-			
+
 			// Fill position array with vertex positions and give each vertex a reference to their index in the position array
 			for (size_t vertexIndex = 0; vertexIndex < Vertices.size(); vertexIndex++)
 			{
@@ -665,7 +676,7 @@ namespace CHISTUDIO {
 				{
 					RecursiveFloodFill(neighborFace, InCurrentRegion);
 				}
-				else if (!neighborFace  || (neighborFace && (usedFaceIDs.find(neighborFace->GetIndexId()) == usedFaceIDs.end())))
+				else if (!neighborFace || (neighborFace && (usedFaceIDs.find(neighborFace->GetIndexId()) == usedFaceIDs.end())))
 				{
 					// Only add edges if the face hasn't been use used and is not usable
 					InCurrentRegion->UnsortedLoopEdges.emplace_back(halfEdge);
@@ -758,7 +769,7 @@ namespace CHISTUDIO {
 					nextHalfEdgeInLoop = GetNextHalfEdgeInLoop(nextHalfEdgeInLoop);
 				} while (nextHalfEdgeInLoop && startingEdge != nextHalfEdgeInLoop);
 
-			InFaceRegion->BoundaryLoops.emplace_back(std::move(currentLoop));
+				InFaceRegion->BoundaryLoops.emplace_back(std::move(currentLoop));
 			}
 		}
 	}
@@ -815,7 +826,7 @@ namespace CHISTUDIO {
 		{
 			FEdge* currentEdge = Edges[i].get();
 
-			std::string baseEdgeMessage = fmt::format("Edge {}: ", currentEdge->GetIndexId()); 
+			std::string baseEdgeMessage = fmt::format("Edge {}: ", currentEdge->GetIndexId());
 			if (currentEdge->GetFirstHalfEdge() == nullptr)
 			{
 				std::cout << baseMessage << baseEdgeMessage << "Null first half edge" << std::endl;
@@ -907,7 +918,7 @@ namespace CHISTUDIO {
 			SelectedVertices.clear();
 		}
 
-		SelectedVertices.insert(InIndex);		
+		SelectedVertices.insert(InIndex);
 
 		OnSelectionChanged();
 	}
@@ -1340,7 +1351,7 @@ namespace CHISTUDIO {
 			}
 			nextHalfEdge = nextHalfEdge->GetNextHalfEdge();
 		} while (startingHalfEdge != nextHalfEdge);
-		
+
 	}
 
 	void VertexObject::Render()
@@ -1519,7 +1530,7 @@ namespace CHISTUDIO {
 				ExtrudeRegion(regions[i].get());
 			}
 		}
-		
+
 		MarkDirty();
 	}
 
@@ -1546,13 +1557,13 @@ namespace CHISTUDIO {
 			FHalfEdge* firstNewHalfEdgeOutside = CreateHalfEdge(boundaryHalfEdge->GetNextHalfEdge(), firstNewHalfEdgeInside, nullptr, nullptr, boundaryHalfEdge->GetNextVertex());
 			firstNewHalfEdgeInside->SetSymmetricalHalfEdge(firstNewHalfEdgeOutside);
 			FEdge* firstEdge = CreateEdge(firstNewHalfEdgeInside, firstNewHalfEdgeOutside);
-			
+
 			FHalfEdge* secondNewHalfEdgeInside = CreateHalfEdge(nullptr, nullptr, newFace, nullptr, secondNewVert);
 			secondNewVert->SetParentHalfEdge(secondNewHalfEdgeInside);
 			FHalfEdge* secondNewHalfEdgeOutside = CreateHalfEdge(firstNewHalfEdgeOutside, secondNewHalfEdgeInside, nullptr, nullptr, firstNewVert);
 			secondNewHalfEdgeInside->SetSymmetricalHalfEdge(secondNewHalfEdgeOutside);
 			FEdge* secondEdge = CreateEdge(secondNewHalfEdgeInside, secondNewHalfEdgeOutside);
-			
+
 			FHalfEdge* thirdNewHalfEdgeInside = CreateHalfEdge(boundaryHalfEdge, nullptr, newFace, nullptr, boundaryHalfEdge->GetPreviousHalfEdge()->GetNextVertex());
 			FHalfEdge* thirdNewHalfEdgeOutside = CreateHalfEdge(secondNewHalfEdgeOutside, thirdNewHalfEdgeInside, nullptr, nullptr, secondNewVert);
 			previousHalfEdgeToBoundary->SetNextHalfEdge(thirdNewHalfEdgeOutside);
@@ -1585,6 +1596,11 @@ namespace CHISTUDIO {
 		}
 
 		MarkDirty();
+	}
+
+	void VertexObject::SetImportedNormals()
+	{
+		bUseImportedNormals = true;
 	}
 
 	void VertexObject::ExtrudeRegion(FFaceRegion* InRegion)
@@ -1803,7 +1819,7 @@ namespace CHISTUDIO {
 		{
 			return hitVertex;
 		}
-		else 
+		else
 		{
 			return nullptr;
 		}
@@ -1997,8 +2013,8 @@ namespace CHISTUDIO {
 			else
 			{
 				smoothedPosition = (float)(n - 2) * originalPosition / (float)n
-								+ adjacentMidpointSum / (float)(n * n)
-								+ incidentFaceSum / (float)(n * n);
+					+ adjacentMidpointSum / (float)(n * n)
+					+ incidentFaceSum / (float)(n * n);
 			}
 
 			//std::cout << fmt::format("Smoothed Position of {}: {}", vertex->GetIndexId(), glm::to_string(smoothedPosition)) << std::endl;
@@ -2090,7 +2106,7 @@ namespace CHISTUDIO {
 		for (int i = 0; i < 4; i++)
 		{
 			FHalfEdge* newHalfEdgeToCentroid = CreateHalfEdge(nullptr, nullptr, newFaces[i], nullptr, centroidVertex);
-			FHalfEdge* newHalfEdgeFromCentroid = CreateHalfEdge(originalHalfEdges[(i + 3) % 4], nullptr, newFaces[i], nullptr, newHalfEdges[(i+3) % 4]->GetNextVertex());
+			FHalfEdge* newHalfEdgeFromCentroid = CreateHalfEdge(originalHalfEdges[(i + 3) % 4], nullptr, newFaces[i], nullptr, newHalfEdges[(i + 3) % 4]->GetNextVertex());
 			newHalfEdgeToCentroid->SetNextHalfEdge(newHalfEdgeFromCentroid);
 			newHalfEdges[i]->SetNextHalfEdge(newHalfEdgeToCentroid);
 
@@ -2103,9 +2119,9 @@ namespace CHISTUDIO {
 		std::vector<FEdge*> newInnerEdges;
 		for (int i = 0; i < 4; i++)
 		{
-			newInnerHalfEdges[i*2]->SetSymmetricalHalfEdge(newInnerHalfEdges[(i*2 + 3) % 8]);
-			newInnerHalfEdges[(i*2 + 3) % 8]->SetSymmetricalHalfEdge(newInnerHalfEdges[i*2]);
-			newInnerEdges.push_back(CreateEdge(newInnerHalfEdges[i*2], newInnerHalfEdges[(i*2 + 3) % 8]));
+			newInnerHalfEdges[i * 2]->SetSymmetricalHalfEdge(newInnerHalfEdges[(i * 2 + 3) % 8]);
+			newInnerHalfEdges[(i * 2 + 3) % 8]->SetSymmetricalHalfEdge(newInnerHalfEdges[i * 2]);
+			newInnerEdges.push_back(CreateEdge(newInnerHalfEdges[i * 2], newInnerHalfEdges[(i * 2 + 3) % 8]));
 		}
 
 		InAlreadyQuadrangledFaces.insert(InFace->GetIndexId());

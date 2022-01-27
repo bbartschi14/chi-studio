@@ -4,12 +4,12 @@
 #include "MeshData.h"
 
 namespace CHISTUDIO {
-	
-class MeshLoader 
-{
-public:
-	static MeshData Import(const std::string& filename);
-	static std::shared_ptr<VertexObject> ImportObj(const std::string& filename);
-};
+
+	class MeshLoader
+	{
+	public:
+		static MeshData Import(const std::string& filename);
+		static std::shared_ptr<VertexObject> ImportObj(const std::string& filename, bool useImportedNormals);
+	};
 
 }
