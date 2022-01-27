@@ -102,7 +102,14 @@ namespace CHISTUDIO {
                     unsigned int normalIdx;
                     if (str.find('/') == std::string::npos)
                     {
-                        idx = std::stoul(str);
+                        if (str.size() > 0)
+                        {
+                            idx = std::stoul(str);
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                     else
                     {
@@ -166,7 +173,7 @@ namespace CHISTUDIO {
             size_t numVerts = vertsOnFace.size();
             std::vector<FHalfEdge*> halfEdgesOnFace;
             for (size_t i = 0; i < numVerts; i++)
-            {
+            {                
                 FHalfEdge* newHalfEdge = vertexObject->CreateHalfEdge(nullptr, nullptr, newFace, nullptr, createdVerts[vertsOnFace[(i + 1) % numVerts]]);
                 createdVerts[vertsOnFace[(i + 1) % numVerts]]->SetParentHalfEdge(newHalfEdge);
                 createdHalfEdges.insert({ fmt::format("{},{}", vertsOnFace[i], vertsOnFace[(i + 1) % numVerts]), newHalfEdge });
@@ -212,6 +219,17 @@ namespace CHISTUDIO {
         {
             vertexObject->SetImportedNormals();
         }
+
+        // Cleanup disconnected verts
+        for (auto vert : createdVerts)
+        {
+            if (vert->GetParentHalfEdge() == nullptr)
+            {
+                vert->bMarkedForDeletion = true;
+            }
+        }
+        vertexObject->CleanupDeletedPrimitives();
+
 
         vertexObject->MarkDirty();
         return std::move(vertexObject);
