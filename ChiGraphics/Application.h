@@ -92,7 +92,7 @@ namespace CHISTUDIO {
 		SceneNode* CreatePointLight();
 		SceneNode* CreateAmbientLight();
 		SceneNode* CreateTracingSphereNode();
-		SceneNode* CreateImportMeshNode(const std::string& filePath, bool useImportedNormals);
+		void CreateImportMeshNode(const std::string& filePath, bool useImportedNormals);
 		SceneNode* CreateEmptyNode();
 
 		// Clear our scene nodes and recreate scene

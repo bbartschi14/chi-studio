@@ -454,25 +454,33 @@ namespace CHISTUDIO {
 		return ref;
 	}
 
-	SceneNode* Application::CreateImportMeshNode(const std::string& filePath, bool useImportedNormals)
+	void Application::CreateImportMeshNode(const std::string& filePath, bool useImportedNormals)
 	{
 		std::shared_ptr<PhongShader> shader = std::make_shared<PhongShader>();
-		std::shared_ptr<VertexObject> mesh = std::move(MeshLoader::ImportObj(filePath, useImportedNormals));
+		std::vector<std::shared_ptr<VertexObject>> meshes = std::move(MeshLoader::ImportObj(filePath, useImportedNormals));
 
-		auto meshNode = make_unique<SceneNode>(fmt::format("Mesh.{}", Scene_->GetRootNode().GetChildrenCount()));
-		meshNode->CreateComponent<ShadingComponent>(shader);
-		meshNode->CreateComponent<RenderingComponent>(mesh);
-		meshNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
-		auto material = MaterialManager::GetInstance().GetDefaultMaterial();
-		meshNode->CreateComponent<MaterialComponent>(material);
+		for (size_t i = 0; i < meshes.size(); i++)
+		{
+			auto meshNode = make_unique<SceneNode>(meshes[i]->ObjectName == "" ? fmt::format("Mesh.{}", Scene_->GetRootNode().GetChildrenCount()) : meshes[i]->ObjectName);
+			meshNode->CreateComponent<ShadingComponent>(shader);
+			meshNode->CreateComponent<RenderingComponent>(meshes[i]);
+			meshNode->GetTransform().SetPosition(glm::vec3(0.f, 0.f, 0.f));
+			auto material = MaterialManager::GetInstance().GetDefaultMaterial();
+			if (meshes[i]->ImportedMaterialName != "")
+			{
+				auto importMaterial = MaterialManager::GetInstance().GetMaterial(meshes[i]->ImportedMaterialName);
+				if (importMaterial)
+					material = std::move(importMaterial);
+			}
+			meshNode->CreateComponent<MaterialComponent>(std::move(material));
 
-		auto hittableLight = std::make_shared<HittableLight>();
-		meshNode->CreateComponent<LightComponent>(hittableLight);
+			auto hittableLight = std::make_shared<HittableLight>();
+			meshNode->CreateComponent<LightComponent>(hittableLight);
 
-		SceneNode* ref = meshNode.get();
-		meshNode->SetNodeType("Mesh");
-		Scene_->GetRootNode().AddChild(std::move(meshNode));
-		return ref;
+			SceneNode* ref = meshNode.get();
+			meshNode->SetNodeType("Mesh");
+			Scene_->GetRootNode().AddChild(std::move(meshNode));
+		}
 	}
 
 	SceneNode* Application::CreateEmptyNode()

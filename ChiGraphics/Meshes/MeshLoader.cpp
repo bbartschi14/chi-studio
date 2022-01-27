@@ -4,47 +4,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "ChiGraphics/Materials/MaterialManager.h"
 
 namespace CHISTUDIO {
 
-    MeshData MeshLoader::Import(const std::string& filename) {
-        std::string file_path = GetAssetDir() + filename;
-        bool success;
-        auto parsed_data = ObjParser::Parse(file_path, success);
-        if (!success) {
-            std::cerr << "Load mesh file " << filename << " failed!" << std::endl;
-            return {};
-        }
-        // Remove empty groups.
-        parsed_data.Groups.erase(
-            std::remove_if(parsed_data.Groups.begin(), parsed_data.Groups.end(),
-                [](MeshGroup& g) { return g.NumIndices == 0; }),
-            parsed_data.Groups.end());
-
-        MeshData mesh_data;
-        FDefaultObjectParams params;
-        mesh_data.VertexObj = make_unique<VertexObject>(EDefaultObject::CustomMesh, params);
-
-        if (parsed_data.Positions) {
-            mesh_data.VertexObj->UpdatePositions(std::move(parsed_data.Positions));
-        }
-        if (parsed_data.Normals) {
-            mesh_data.VertexObj->UpdateNormals(std::move(parsed_data.Normals));
-        }
-        if (parsed_data.TexCoords) {
-            mesh_data.VertexObj->UpdateTexCoord(std::move(parsed_data.TexCoords));
-        }
-        if (parsed_data.Indices) {
-            mesh_data.VertexObj->UpdateIndices(std::move(parsed_data.Indices));
-        }
-
-
-        mesh_data.Groups = std::move(parsed_data.Groups);
-
-        return mesh_data;
-    }
-
-    std::shared_ptr<VertexObject> MeshLoader::ImportObj(const std::string& filename, bool useImportedNormals)
+    std::vector<std::shared_ptr<VertexObject>> MeshLoader::ImportObj(const std::string& filename, bool useImportedNormals)
     {
         std::fstream fs(filename);
         if (!fs) {
@@ -54,12 +18,16 @@ namespace CHISTUDIO {
         }
 
         FDefaultObjectParams params;
-        std::shared_ptr<VertexObject> vertexObject = make_unique<VertexObject>(EDefaultObject::CustomMesh, params);
-        std::vector<FVertex*> createdVerts;
-        std::unordered_map<std::string, FHalfEdge*> createdHalfEdges;
-        std::vector<std::vector<int>> vertsOnFacesVector;
-        std::vector<std::vector<glm::vec3>> normalsOnFacesVector;
+        std::vector<glm::vec3> vertexPositions;
+        int currentGroupIndex = -1;
+        std::vector<std::shared_ptr<VertexObject>> vertexObjects;
+        std::vector<std::vector<FVertex*>> createdVertsPerGroup;
+        std::vector<std::unordered_map<std::string, FHalfEdge*>> createdHalfEdgesPerGroup;
+        std::vector<std::vector<std::vector<int>>> vertsOnFacesVectorPerGroup;
+        std::vector<std::vector<std::vector<glm::vec3>>> normalsOnFacesVectorPerGroup;
+        std::vector<int> indexOffsetPerGroup;
         auto importedNormals = make_unique<FNormalArray>();
+        std::unordered_map<std::string, std::shared_ptr<Material>> materialDictionary;
 
         std::string base_path = GetBasePath(filename);
 
@@ -74,9 +42,23 @@ namespace CHISTUDIO {
             }
             else if (command == "v")
             {
+                // Check to make sure we're in a group. If there are no groups, create one.
+                if (currentGroupIndex == -1)
+                {
+                    auto newObject = std::make_shared<VertexObject>(EDefaultObject::CustomMesh, params);
+                    currentGroupIndex = 0;
+                    indexOffsetPerGroup.push_back(0);
+                    vertexObjects.emplace_back(std::move(newObject));
+                    createdVertsPerGroup.resize(createdVertsPerGroup.size() + 1);
+                    createdHalfEdgesPerGroup.resize(createdHalfEdgesPerGroup.size() + 1);
+                    vertsOnFacesVectorPerGroup.resize(vertsOnFacesVectorPerGroup.size() + 1);
+                    normalsOnFacesVectorPerGroup.resize(normalsOnFacesVectorPerGroup.size() + 1);
+                }
+
                 glm::vec3 vertexPosition;
                 ss >> vertexPosition.x >> vertexPosition.y >> vertexPosition.z;
-                createdVerts.push_back(vertexObject->CreateVertex(vertexPosition, nullptr));
+                vertexPositions.push_back(vertexPosition);
+                createdVertsPerGroup[currentGroupIndex].push_back(vertexObjects[currentGroupIndex]->CreateVertex(vertexPosition, nullptr));
             }
             else if (command == "vn")
             {
@@ -126,33 +108,38 @@ namespace CHISTUDIO {
                 }
                 std::reverse(vertsOnFace.begin(), vertsOnFace.end()); // Flip winding to get correct normals. This might have to be an import flag depending on the model
                 std::reverse(normalsOnFace.begin(), normalsOnFace.end());
-                vertsOnFacesVector.push_back(vertsOnFace);
-                normalsOnFacesVector.push_back(normalsOnFace);
+                vertsOnFacesVectorPerGroup[currentGroupIndex].push_back(vertsOnFace);
+                normalsOnFacesVectorPerGroup[currentGroupIndex].push_back(normalsOnFace);
             }
             else if (command == "g")
             {
-                //if (current_group.Name != "") {
-                //    current_group.NumIndices =
-                //        data.Indices->size() - current_group.StartFaceIndex;
-                //    data.Groups.push_back(std::move(current_group));
-                //}
                 std::string groupName;
                 ss >> groupName;
-                //if (data.Indices == nullptr)
-                //    current_group.StartFaceIndex = 0;
-                //else
-                //    current_group.StartFaceIndex = data.Indices->size();
+                auto newObject = std::make_shared<VertexObject>(EDefaultObject::CustomMesh, params, groupName);
+                vertexObjects.emplace_back(std::move(newObject));
+                currentGroupIndex = vertexObjects.size() - 1;
+                int numVerticesSoFar = 0;
+                for (auto verts : createdVertsPerGroup)
+                {
+                    numVerticesSoFar += verts.size();
+                }
+                indexOffsetPerGroup.push_back(numVerticesSoFar);
+                createdVertsPerGroup.resize(createdVertsPerGroup.size() + 1);
+                createdHalfEdgesPerGroup.resize(createdHalfEdgesPerGroup.size() + 1);
+                vertsOnFacesVectorPerGroup.resize(vertsOnFacesVectorPerGroup.size() + 1);
+                normalsOnFacesVectorPerGroup.resize(normalsOnFacesVectorPerGroup.size() + 1);
             }
             else if (command == "usemtl")
             {
                 std::string materialName;
                 ss >> materialName;
+                vertexObjects[currentGroupIndex]->ImportedMaterialName = materialName;
             }
             else if (command == "mtllib")
             {
                 std::string mtl_file;
                 ss >> mtl_file;
-                //material_dict = ParseMTL(base_path + mtl_file);
+                materialDictionary = ParseMTL(base_path + mtl_file);
             }
             else if (command == "o" || command == "s")
             {
@@ -165,74 +152,153 @@ namespace CHISTUDIO {
             }
         }
 
-        int faceIndex = 0;
-        for (auto vertsOnFace : vertsOnFacesVector)
+        for (size_t objectIndex = 0; objectIndex < vertexObjects.size(); objectIndex++)
         {
-            FFace* newFace = vertexObject->CreateFace(nullptr);
-            newFace->SetImportedNormals(normalsOnFacesVector[faceIndex]);
-            size_t numVerts = vertsOnFace.size();
-            std::vector<FHalfEdge*> halfEdgesOnFace;
-            for (size_t i = 0; i < numVerts; i++)
-            {                
-                FHalfEdge* newHalfEdge = vertexObject->CreateHalfEdge(nullptr, nullptr, newFace, nullptr, createdVerts[vertsOnFace[(i + 1) % numVerts]]);
-                createdVerts[vertsOnFace[(i + 1) % numVerts]]->SetParentHalfEdge(newHalfEdge);
-                createdHalfEdges.insert({ fmt::format("{},{}", vertsOnFace[i], vertsOnFace[(i + 1) % numVerts]), newHalfEdge });
-
-                auto symmPair = createdHalfEdges.find(fmt::format("{},{}", vertsOnFace[(i + 1) % numVerts], vertsOnFace[i]));
-                if (symmPair != createdHalfEdges.end())
+            int faceIndex = 0;
+            for (auto vertsOnFace : vertsOnFacesVectorPerGroup[objectIndex])
+            {
+                FFace* newFace = vertexObjects[objectIndex]->CreateFace(nullptr);
+                newFace->SetImportedNormals(normalsOnFacesVectorPerGroup[objectIndex][faceIndex]);
+                size_t numVerts = vertsOnFace.size();
+                std::vector<FHalfEdge*> halfEdgesOnFace;
+                for (size_t i = 0; i < numVerts; i++)
                 {
-                    newHalfEdge->SetSymmetricalHalfEdge(symmPair->second);
-                    symmPair->second->SetSymmetricalHalfEdge(newHalfEdge);
-                    FEdge* newEdge = vertexObject->CreateEdge(newHalfEdge, symmPair->second);
+                    FHalfEdge* newHalfEdge = vertexObjects[objectIndex]->CreateHalfEdge(nullptr, nullptr, newFace, nullptr, createdVertsPerGroup[objectIndex][vertsOnFace[(i + 1) % numVerts] - indexOffsetPerGroup[objectIndex]]);
+                    createdVertsPerGroup[objectIndex][vertsOnFace[(i + 1) % numVerts] - indexOffsetPerGroup[objectIndex]]->SetParentHalfEdge(newHalfEdge);
+                    createdHalfEdgesPerGroup[objectIndex].insert({ fmt::format("{},{}", vertsOnFace[i], vertsOnFace[(i + 1) % numVerts]), newHalfEdge });
+
+                    auto symmPair = createdHalfEdgesPerGroup[objectIndex].find(fmt::format("{},{}", vertsOnFace[(i + 1) % numVerts], vertsOnFace[i]));
+                    if (symmPair != createdHalfEdgesPerGroup[objectIndex].end())
+                    {
+                        newHalfEdge->SetSymmetricalHalfEdge(symmPair->second);
+                        symmPair->second->SetSymmetricalHalfEdge(newHalfEdge);
+                        FEdge* newEdge = vertexObjects[objectIndex]->CreateEdge(newHalfEdge, symmPair->second);
+                    }
+                    halfEdgesOnFace.push_back(newHalfEdge);
+                    if (i == numVerts - 1) newFace->SetHalfEdgeOnFace(newHalfEdge);
                 }
-                halfEdgesOnFace.push_back(newHalfEdge);
-                if (i == numVerts - 1) newFace->SetHalfEdgeOnFace(newHalfEdge);
+
+                for (size_t i = 0; i < halfEdgesOnFace.size(); i++)
+                {
+                    halfEdgesOnFace[i]->SetNextHalfEdge(halfEdgesOnFace[(i + 1) % halfEdgesOnFace.size()]);
+                }
+                faceIndex++;
             }
 
-            for (size_t i = 0; i < halfEdgesOnFace.size(); i++)
+            std::unordered_map<int, FHalfEdge*> boundaryHalfEdgesFromPreviousVertIndex;
+            for (auto halfEdgePair : createdHalfEdgesPerGroup[objectIndex]) // Handle boundary edges
             {
-                halfEdgesOnFace[i]->SetNextHalfEdge(halfEdgesOnFace[(i + 1) % halfEdgesOnFace.size()]);
+                if (halfEdgePair.second->GetSymmetricalHalfEdge() == nullptr) // If it is a boundary edge
+                {
+                    FHalfEdge* newBoundaryHalfEdge = vertexObjects[objectIndex]->CreateHalfEdge(nullptr, halfEdgePair.second, nullptr, nullptr, halfEdgePair.second->GetPreviousHalfEdge()->GetNextVertex());
+                    halfEdgePair.second->SetSymmetricalHalfEdge(newBoundaryHalfEdge);
+                    FEdge* newEdge = vertexObjects[objectIndex]->CreateEdge(newBoundaryHalfEdge, halfEdgePair.second);
+                    boundaryHalfEdgesFromPreviousVertIndex.insert({ halfEdgePair.second->GetNextVertex()->GetIndexId(), newBoundaryHalfEdge });
+                }
             }
-            faceIndex++;
-        }
 
-        std::unordered_map<int, FHalfEdge*> boundaryHalfEdgesFromPreviousVertIndex;
-        for (auto halfEdgePair : createdHalfEdges) // Handle boundary edges
-        {
-            if (halfEdgePair.second->GetSymmetricalHalfEdge() == nullptr) // If it is a boundary edge
+            // Link boundary loops
+            for (auto halfEdgePair : boundaryHalfEdgesFromPreviousVertIndex)
             {
-                FHalfEdge* newBoundaryHalfEdge = vertexObject->CreateHalfEdge(nullptr, halfEdgePair.second, nullptr, nullptr, halfEdgePair.second->GetPreviousHalfEdge()->GetNextVertex());
-                halfEdgePair.second->SetSymmetricalHalfEdge(newBoundaryHalfEdge);
-                FEdge* newEdge = vertexObject->CreateEdge(newBoundaryHalfEdge, halfEdgePair.second);
-                boundaryHalfEdgesFromPreviousVertIndex.insert({ halfEdgePair.second->GetNextVertex()->GetIndexId(), newBoundaryHalfEdge });
+                FHalfEdge* nextHalfEdge = boundaryHalfEdgesFromPreviousVertIndex.find(halfEdgePair.second->GetNextVertex()->GetIndexId())->second;
+                halfEdgePair.second->SetNextHalfEdge(nextHalfEdge);
             }
-        }
 
-        // Link boundary loops
-        for (auto halfEdgePair : boundaryHalfEdgesFromPreviousVertIndex)
-        {
-            FHalfEdge* nextHalfEdge = boundaryHalfEdgesFromPreviousVertIndex.find(halfEdgePair.second->GetNextVertex()->GetIndexId())->second;
-            halfEdgePair.second->SetNextHalfEdge(nextHalfEdge);
-        }
-
-        if (useImportedNormals)
-        {
-            vertexObject->SetImportedNormals();
-        }
-
-        // Cleanup disconnected verts
-        for (auto vert : createdVerts)
-        {
-            if (vert->GetParentHalfEdge() == nullptr)
+            if (useImportedNormals)
             {
-                vert->bMarkedForDeletion = true;
+                vertexObjects[objectIndex]->SetImportedNormals();
+            }
+
+            // Cleanup disconnected verts
+            for (auto vert : createdVertsPerGroup[objectIndex])
+            {
+                if (vert->GetParentHalfEdge() == nullptr)
+                {
+                    vert->bMarkedForDeletion = true;
+                }
+            }
+            vertexObjects[objectIndex]->CleanupDeletedPrimitives();
+
+            vertexObjects[objectIndex]->MarkDirty();
+        }
+
+        return std::move(vertexObjects);
+    }
+
+    std::unordered_map<std::string, std::shared_ptr<Material>> MeshLoader::ParseMTL(const std::string& file_path)
+    {
+        std::fstream fs(file_path);
+        if (!fs) {
+            std::cerr << "ERROR: Unable to open MTL file " + file_path + "!"
+                << std::endl;
+            return {};
+        }
+        std::string base_path = GetBasePath(file_path);
+
+        std::unordered_map<std::string, std::shared_ptr<Material>> materialMap;
+        std::string line;
+        std::shared_ptr<Material> currentMaterial;
+        std::string currentName;
+        while (std::getline(fs, line)) {
+            std::stringstream ss(line);
+            std::string command;
+            ss >> command;
+            if (command == "#" || command == "") {
+                continue;
+            }
+            else if (command == "newmtl") {
+                if (currentMaterial != nullptr) {
+                    materialMap[currentName] = std::move(currentMaterial);
+                }
+                ss >> currentName;
+                currentMaterial = MaterialManager::GetInstance().CreateNewMaterial();
+                std::string createdName = MaterialManager::GetInstance().GetNameOfMaterial(currentMaterial.get());
+                MaterialManager::GetInstance().RenameMaterial(createdName, currentName);
+            }
+            else if (command == "Ns") {
+                float shininess;
+                ss >> shininess;
+                // https://github.com/blender/blender/blob/master/source/blender/io/wavefront_obj/exporter/obj_export_mtl.cc line 196 defines transforming specular exponent to roughness
+                float roughness = ((glm::sqrt(shininess) / 30.0f) - 1.0f) * -1.0f;
+                currentMaterial->SetRoughness(roughness);
+            }
+            else if (command == "Ka" || command == "Kd" || command == "Ks") {
+                glm::vec3 color;
+                ss >> color.r >> color.g >> color.b;
+                if (command == "Ka")
+                {
+                    // Ambient
+                }
+                else if (command == "Kd")
+                {
+                    // Diffuse
+                    currentMaterial->SetAlbedo(color);
+                }
+                else if (command == "Ks") 
+                {
+                    // Specular 
+                }
+            }
+            else if (command == "map_Ka" || command == "map_Kd" ||
+                command == "map_Ks") {
+                std::string image_file;
+                ss >> image_file;
+                // Skip loading textures for now.
+            }
+            else if (command == "map_bump") {
+                // Skip bump map for now.
+            }
+            else {
+                std::cerr << "Unknown mtl command: " << command << std::endl;
+                continue;
             }
         }
-        vertexObject->CleanupDeletedPrimitives();
 
+        if (currentMaterial != nullptr) {
+            materialMap[currentName] = std::move(currentMaterial);
+        }
 
-        vertexObject->MarkDirty();
-        return std::move(vertexObject);
+        return materialMap;
     }
 
 }

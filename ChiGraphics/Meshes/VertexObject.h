@@ -111,14 +111,16 @@ namespace CHISTUDIO {
     // for sending data from CPU to GPU via the Update* methods.
     class VertexObject {
     public:
-        VertexObject(EDefaultObject InDefaultObject, FDefaultObjectParams InParams) : VertexArray_(make_unique<VertexArray>()),
+        VertexObject(EDefaultObject InDefaultObject, FDefaultObjectParams InParams, std::string InObjectName = "", std::string InImportedMaterialName = "") : VertexArray_(make_unique<VertexArray>()),
             EdgeVertexArray_(make_unique<VertexArray>()),
             SelectedFaceVertexArray_(make_unique<VertexArray>()),
             SelectedEdgeVertexArray_(make_unique<VertexArray>()),
             SelectedVertexVertexArray_(make_unique<VertexArray>()),
             bDebugNormals(false),
             NormalsDebugVertexArray_(make_unique<VertexArray>()),
-            bUseImportedNormals(false)
+            bUseImportedNormals(false),
+            ObjectName(InObjectName),
+            ImportedMaterialName(InImportedMaterialName)
         {
             ShadingType = EShadingType::Flat;
 
@@ -462,7 +464,8 @@ namespace CHISTUDIO {
         void QuadrangleFace(FFace* InFace, std::unordered_map<int, FVertex*> InFaceCentroidVertices, std::unordered_map<int, FVertex*> InEdgeMidpointVertices, std::set<int>& InAlreadyQuadrangledFaces);
 
 #pragma endregion
-
+        std::string ObjectName;
+        std::string ImportedMaterialName;
     private:
         void ExtrudeRegion(FFaceRegion* InRegion);
 
