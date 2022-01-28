@@ -39,12 +39,17 @@ namespace CHISTUDIO {
 		void SetImportedNormals(const std::vector<glm::vec3>& InNormals);
 		const std::vector<glm::vec3>& GetImportedNormals() const { return ImportedNormals; }
 
+		void SetUVs(const std::vector<glm::vec2>& InUVs);
+		const std::vector<glm::vec2>& GetUVs() const { return UVs; }
+
+
 		/** Flagged used for stages of primitive deletion operations */
 		bool bMarkedForDeletion;
 	private:
 		FHalfEdge* HalfEdgeOnFace; // One of any number of half edges that line on this face
 		int IndexId;
 		std::vector<glm::vec3> ImportedNormals;
+		std::vector<glm::vec2> UVs;
 	};
 
 }

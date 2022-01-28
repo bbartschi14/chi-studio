@@ -185,7 +185,13 @@ namespace CHISTUDIO {
 			}
 			else if (lightType == ELightType::Directional)
 			{
-
+				glm::vec3 diffuseColor = lightComponent->GetLightPtr()->GetDiffuseColor();
+				ImGui::Text("Diffuse Color");
+				ImGui::SetNextItemWidth(panelSize.x);
+				if (ImGui::ColorEdit3("##Diffuse Color", glm::value_ptr(diffuseColor)))
+				{
+					lightComponent->GetLightPtr()->SetDiffuseColor(diffuseColor);
+				}
 			}
 			else if (lightType == ELightType::Hittable)
 			{
@@ -351,35 +357,91 @@ namespace CHISTUDIO {
 				MaterialManager::GetInstance().RenameMaterial(originalName, matName);
 			}
 
+			ImGui::Separator();
+
+			ImGui::Text("Albedo");
 			glm::vec3 albedo = mat.GetAlbedo();
-			if (ImGui::ColorEdit3("Albedo", glm::value_ptr(albedo)))
+			if (ImGui::ColorEdit3("##Albedo", glm::value_ptr(albedo)))
 			{
 				mat.SetAlbedo(albedo);
 			}
+
+			FImage* albedoMap = mat.GetAlbedoMap();
+			if (UILibrary::ImageSelector("AlbedoMap", albedoMap))
+			{
+				mat.SetAlbedoMap(albedoMap);
+			}
+			ImGui::Separator();
+
+			ImGui::Text("Roughness");
 			float roughness = mat.GetRoughness();
-			if (ImGui::SliderFloat("Roughness", &roughness, 0.001f, 1.0f))
+			if (ImGui::SliderFloat("##Roughness", &roughness, 0.001f, 1.0f))
 			{
 				mat.SetRoughness(roughness);
 			}
+
+			FImage* roughnessMap = mat.GetRoughnessMap();
+			if (UILibrary::ImageSelector("RoughnessMap", roughnessMap))
+			{
+				mat.SetRoughnessMap(roughnessMap, false);
+			}
+			ImGui::Separator();
+
+			ImGui::Text("Metallic");
 			float metallic = mat.GetMetallic();
-			if (ImGui::SliderFloat("Metallic", &metallic, 0.0f, 1.0f))
+			if (ImGui::SliderFloat("##Metallic", &metallic, 0.0f, 1.0f))
 			{
 				mat.SetMetallic(metallic);
 			}
+
+			FImage* MetallicMap = mat.GetMetallicMap();
+			if (UILibrary::ImageSelector("MetallicMap", MetallicMap))
+			{
+				mat.SetMetallicMap(MetallicMap);
+			}
+			ImGui::Separator();
+
+			ImGui::Text("Emittance");
 			float emittance = mat.GetEmittance();
-			if (ImGui::SliderFloat("Emittance", &emittance, 0.0f, 50.0f))
+			if (ImGui::SliderFloat("##Emittance", &emittance, 0.0f, 50.0f))
 			{
 				mat.SetEmittance(emittance);
 			}
+
+			FImage* EmittanceMap = mat.GetEmittanceMap();
+			if (UILibrary::ImageSelector("EmittanceMap", EmittanceMap))
+			{
+				mat.SetEmittanceMap(EmittanceMap);
+			}
+			ImGui::Separator();
+
+			ImGui::Text("IOR");
 			float IndexOfRefraction = mat.GetIndexOfRefraction();
-			if (ImGui::SliderFloat("IndexOfRefraction", &IndexOfRefraction, 0.0f, 2.0f))
+			if (ImGui::SliderFloat("##IndexOfRefraction", &IndexOfRefraction, 0.0f, 2.0f))
 			{
 				mat.SetIndexOfRefraction(IndexOfRefraction);
 			}
+			ImGui::Separator();
+
+			ImGui::Text("Transparent");
 			bool isTransparent = mat.IsTransparent();
-			if (ImGui::Checkbox("Transparent", &isTransparent))
+			if (ImGui::Checkbox("##Transparent", &isTransparent))
 			{
 				mat.SetTransparent(isTransparent);
+			}
+
+			FImage* AlphaMap = mat.GetAlphaMap();
+			if (UILibrary::ImageSelector("AlphaMap", AlphaMap))
+			{
+				mat.SetAlphaMap(AlphaMap);
+			}
+			ImGui::Separator();
+
+			ImGui::Text("Bump");
+			FImage* bumpMap = mat.GetBumpMap();
+			if (UILibrary::ImageSelector("BumpMap", bumpMap))
+			{
+				mat.SetBumpMap(bumpMap);
 			}
 			ImGui::Separator();
 

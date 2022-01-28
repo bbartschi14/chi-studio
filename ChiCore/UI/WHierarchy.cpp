@@ -78,6 +78,10 @@ namespace CHISTUDIO {
             {
                 InApplication.CreatePointLight();
             }
+            if (ImGui::Selectable("Add Directional Light"))
+            {
+                InApplication.CreateDirectionalLight();
+            }
             if (ImGui::Selectable("Add Ambient Light"))
             {
                 InApplication.CreateAmbientLight();

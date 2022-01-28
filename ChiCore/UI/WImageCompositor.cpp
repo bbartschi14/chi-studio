@@ -32,14 +32,14 @@ void WImageCompositor::Render(Application& InApplication, float InDeltaTime)
 	{
 		if (ImGui::BeginMenu("Images"))
 		{
-			//if (ImGui::MenuItem("Create Material")) { MaterialManager::GetInstance().CreateNewMaterial(); }
+			if (ImGui::MenuItem("Import Image")) { ImageManager::GetInstance().BeginImportImage(); }
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();
 	}
 
-	std::map<std::string, FImage*> selectableImages;
-	selectableImages.insert({ "Render Result", ImageManager::GetInstance().GetRenderResult()});
+	std::vector<std::pair<std::string, FImage*>> selectableImages = ImageManager::GetInstance().GetImages();
+	selectableImages.push_back({ "Render Result", ImageManager::GetInstance().GetRenderResult()});
 
 	for (auto imagePair : selectableImages)
 	{

@@ -83,7 +83,7 @@ namespace CHISTUDIO {
 		for (size_t i = 0; i < numTriangles; i++)
 		{
 			triangles.emplace_back(vertices[0]->GetPosition(), vertices[i+1]->GetPosition(), vertices[i+2]->GetPosition(),
-									naiveNormal, naiveNormal, naiveNormal);
+									naiveNormal, naiveNormal, naiveNormal, glm::vec2(0.f), glm::vec2(0.f), glm::vec2(0.f));
 		}
 
 		return triangles;
@@ -109,6 +109,15 @@ namespace CHISTUDIO {
 		for (glm::vec3 normal : InNormals)
 		{
 			ImportedNormals.push_back(normal);
+		}
+	}
+
+	void FFace::SetUVs(const std::vector<glm::vec2>& InUVs)
+	{
+		UVs.clear();
+		for (glm::vec2 uv : InUVs)
+		{
+			UVs.push_back(uv);
 		}
 	}
 }

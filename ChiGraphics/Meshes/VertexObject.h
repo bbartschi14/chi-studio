@@ -119,6 +119,7 @@ namespace CHISTUDIO {
             bDebugNormals(false),
             NormalsDebugVertexArray_(make_unique<VertexArray>()),
             bUseImportedNormals(false),
+            bUseImportedUVs(false),
             ObjectName(InObjectName),
             ImportedMaterialName(InImportedMaterialName)
         {
@@ -466,6 +467,8 @@ namespace CHISTUDIO {
 #pragma endregion
         std::string ObjectName;
         std::string ImportedMaterialName;
+        bool bUseImportedUVs;
+
     private:
         void ExtrudeRegion(FFaceRegion* InRegion);
 

@@ -10,7 +10,7 @@ namespace CHISTUDIO {
 
 struct FHitRecord 
 {
-    FHitRecord() : Position(glm::vec3(0.0f)), Normal(glm::vec3(1.0f, 0.0, 0.0f))
+    FHitRecord() : Position(glm::vec3(0.0f)), Normal(glm::vec3(1.0f, 0.0, 0.0f)), UV(glm::vec2(0.0f))
     {
         Time = std::numeric_limits<float>::max(); 
     }
@@ -18,6 +18,7 @@ struct FHitRecord
     float Time;
     glm::vec3 Position;
     glm::vec3 Normal;
+    glm::vec2 UV;
     Material Material_;
 };
 

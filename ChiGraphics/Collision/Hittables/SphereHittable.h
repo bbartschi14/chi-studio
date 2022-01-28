@@ -9,7 +9,7 @@ class SphereHittable : public IHittableBase
 public:
 	SphereHittable(float InRadius, glm::vec3 InOrigin) : Radius(InRadius), Origin(InOrigin) {}
 
-	bool Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord) const override;
+	bool Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord, class Material InMaterial) const override;
 
 	/**
 	* Samples for a point on the closest hemisphere to the target point, weighted by the cosine.

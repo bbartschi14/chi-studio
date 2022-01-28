@@ -1,5 +1,7 @@
 #pragma once
 #define GLM_PRECISION_HIGHP_DOUBLE
+#define NOMINMAX
+
 #include <glm/glm.hpp>
 #include <glm/gtx/compatibility.hpp>
 #include "ChiGraphics/Utilities.h"
@@ -7,8 +9,9 @@
 #include <glm/gtx/norm.hpp>
 #include "../Keyframing/Keyframeable.h"
 #include "../Keyframing/KeyframeTrack.h"
-
+#include "ChiGraphics/Textures/FImage.h"
 #include  <iostream>
+
 namespace CHISTUDIO {
     
 class Material : public IKeyframeable
@@ -17,6 +20,13 @@ public:
     Material()
         : IKeyframeable("Material"),
         Albedo(glm::dvec3(1.0, 0., 0.)),
+        AlbedoMap(nullptr),
+        RoughnessMap(nullptr),
+        bRoughnessMapIsSpecular(false),
+        MetallicMap(nullptr),
+        EmittanceMap(nullptr),
+        BumpMap(nullptr),
+        AlphaMap(nullptr),
         Roughness(1.0f),
         Metallic(0.0f),
         Emittance(0.0f),
@@ -34,6 +44,13 @@ public:
              const bool& InIsTransparent)
         : IKeyframeable("Material"), 
         Albedo(InAlbedo),
+        AlbedoMap(nullptr),
+        RoughnessMap(nullptr),
+        bRoughnessMapIsSpecular(false),
+        MetallicMap(nullptr),
+        EmittanceMap(nullptr),
+        BumpMap(nullptr),
+        AlphaMap(nullptr),
         Roughness(InRoughness),
         Metallic(InMetallic),
         Emittance(InEmittance),
@@ -57,66 +74,6 @@ public:
         );
     }
 
-    glm::dvec3 GetAlbedo() const 
-    {
-        return Albedo;
-    }
-
-    void SetAlbedo(const glm::dvec3& InAlbedo) 
-    {
-        Albedo = InAlbedo;
-    }
-
-    float GetRoughness() const
-    {
-        return Roughness;
-    }
-
-    void SetRoughness(const float& InRoughness)
-    {
-        Roughness = InRoughness;
-    }
-
-    float GetMetallic() const
-    {
-        return Metallic;
-    }
-
-    void SetMetallic(const float& InMetallic)
-    {
-        Metallic = InMetallic;
-    }
-
-    float GetEmittance() const
-    {
-        return Emittance;
-    }
-
-    void SetEmittance(const float& InEmittance)
-    {
-        Emittance = InEmittance;
-    }
-
-    float GetIndexOfRefraction() const
-    {
-        return IndexOfRefraction;
-    }
-
-    void SetIndexOfRefraction(const float& InIndexOfRefraction)
-    {
-        IndexOfRefraction = InIndexOfRefraction;
-    }
-
-    bool IsTransparent() const
-    {
-        return bIsTransparent;
-    }
-
-    void SetTransparent(const bool& InIsTransparent)
-    {
-        bIsTransparent = InIsTransparent;
-    }
-
     /*
     * Evaluate the Bidirectional Scattering Distribution Function for this material's properties.
     * 
@@ -130,13 +87,17 @@ public:
     * http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
     * https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
     */
-    glm::dvec3 EvaluateBSDF(glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, glm::dvec3 InTowardIncident) const
+    glm::dvec3 EvaluateBSDF(glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, glm::dvec3 InTowardIncident, const glm::vec2& InUVs) const
     {
         double NormalDottedWithViewer = glm::dot(InSurfaceNormal,InTowardViewer);
         double NormalDottedWithIncident = glm::dot(InSurfaceNormal, InTowardIncident);
 
         bool bIsViewerOutside = NormalDottedWithViewer > 0.0;
         bool bIsIncidentOutside = NormalDottedWithIncident > 0.0;
+
+        float sampledRoughness = SampleRoughness(InUVs);
+        glm::dvec3 sampledAlbedo = SampleAlbedo(InUVs);
+        float sampledMetallic = SampleMetallic(InUVs);
 
         // Check if we're looking for transmitted light
         if (!bIsViewerOutside || !bIsIncidentOutside) {
@@ -155,7 +116,7 @@ public:
             // Evaluate microfacet distribution function
             // D = exp(((n dot h)^2 - 1) / (roughness^2 (n dot h)^2)) / (pi * roughness^2 (n dot h)^4)
             double NH2 = NormalDotHalfway * NormalDotHalfway;
-            double roughnessSquared = Roughness * Roughness;
+            double roughnessSquared = sampledRoughness * sampledRoughness;
             double dNum1 = (NH2 - 1.0);
             double dNum2 = (roughnessSquared * NH2);
             double dNumerator = glm::exp(dNum1 / dNum2);
@@ -173,7 +134,7 @@ public:
             else 
             {
                 double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
-                glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), Albedo, (double)Metallic);
+                glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), sampledAlbedo, (double)sampledMetallic);
                 fresnel = colorF0 + (glm::dvec3(1.0, 1.0, 1.0) - colorF0) * glm::pow((1.0 - ViewerDotHalfway), 5);
             };
 
@@ -194,7 +155,7 @@ public:
             }
             else 
             {
-                glm::dvec3 diffuseComponent = (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * Albedo / (double)kPi;
+                glm::dvec3 diffuseComponent = (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * sampledAlbedo / (double)kPi;
                 return specularComponent + diffuseComponent;
             }
         }
@@ -214,7 +175,7 @@ public:
             // Evaluate microfacet distribution function
             // D = exp(((n dot h)^2 - 1) / (roughness^2 (n dot h)^2)) / (pi * roughness^2 (n dot h)^4)
             double NH2 = glm::pow<double, int, glm::qualifier::highp>(NormalDotHalfway, 2);
-            double roughnessSquared = Roughness * Roughness;
+            double roughnessSquared = sampledRoughness * sampledRoughness;
             double top = (NH2 - 1.0);
             double bottom = (roughnessSquared * NH2);
             double preExp = top / bottom;
@@ -225,7 +186,7 @@ public:
             // Evaluate fresnel using schlick's approximation
             // F = F0 + (1 - F0)(1 - wi dot h)^5
             double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
-            glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), Albedo, (double)Metallic);
+            glm::dvec3 colorF0 = glm::lerp(glm::dvec3(f0, f0, f0), sampledAlbedo, (double)sampledMetallic);
             glm::dvec3 fresnel = colorF0 + (glm::dvec3(1.0, 1.0, 1.0) - colorF0) * glm::pow((1.0 - glm::abs(ViewerDotHalfway)), 5);
 
             // Evaluate geometry function using microfacet shadowing
@@ -240,7 +201,7 @@ public:
             glm::dvec3 btdf = glm::abs(IncidentDotHalfway * ViewerDotHalfway / (NormalDottedWithIncident * NormalDottedWithViewer))
                 * (distributionFunction * (glm::dvec3(1.0, 1.0, 1.0) - fresnel) * geometryFunction / glm::pow((etaT * IncidentDotHalfway + ViewerDotHalfway), 2));
 
-            return btdf * Albedo;
+            return btdf * sampledAlbedo;
         }
     }
 
@@ -254,15 +215,19 @@ public:
     * 
     * Returns false if ray shouldn't be used
     */
-    bool SampleHemisphere(glm::dvec3& OutDirection, double& OutPDF, glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer)
+    bool SampleHemisphere(glm::dvec3& OutDirection, double& OutPDF, glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, const glm::vec2& InUVs)
     {
         // https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
 
-        double roughnessSquared = (double)Roughness * (double)Roughness;
+        float sampledRoughness = SampleRoughness(InUVs);
+        glm::dvec3 sampledAlbedo = SampleAlbedo(InUVs);
+        float sampledMetallic = SampleMetallic(InUVs);
+
+        double roughnessSquared = (double)sampledRoughness * (double)sampledRoughness;
 
         // Using the Fresnel term, estimate specular contribution 
         double f0 = glm::pow(((IndexOfRefraction - 1.0) / (IndexOfRefraction + 1.0)), 2);
-        double f = (1.0 - Metallic) * f0 + Metallic * ((Albedo.x + Albedo.y + Albedo.z) / 3.0);
+        double f = (1.0 - sampledMetallic) * f0 + sampledMetallic * ((sampledAlbedo.x + sampledAlbedo.y + sampledAlbedo.z) / 3.0);
         f = glm::lerp(f, 1.0, 0.2);
 
         double etaT = glm::dot(InTowardViewer, InSurfaceNormal) > 0.0 ? IndexOfRefraction : 1.0 / IndexOfRefraction;
@@ -508,24 +473,185 @@ public:
     FKeyframeTrack<float> MetallicKeyframeTrack;
     FKeyframeTrack<float> EmittanceKeyframeTrack;
     FKeyframeTrack<float> IORKeyframeTrack;
+
+    glm::dvec3 GetAlbedo() const
+    {
+        return Albedo;
+    }
+
+    glm::dvec3 SampleAlbedo(const glm::vec2& InUVs) const
+    {
+        //return glm::dvec3(InUVs.x, InUVs.y, 0.0f); // Debug UVs
+        return AlbedoMap ? AlbedoMap->SampleWithUV(InUVs) : Albedo ;
+    }
+
+    void SetAlbedo(const glm::dvec3& InAlbedo)
+    {
+        Albedo = InAlbedo;
+    }
+
+    FImage* GetAlbedoMap() const
+    {
+        return AlbedoMap;
+    }
+
+    void SetAlbedoMap(FImage* InAlbedoMap)
+    {
+        AlbedoMap = InAlbedoMap;
+    }
+
+    float GetRoughness() const
+    {
+        return Roughness;
+    }
+
+    float SampleRoughness(const glm::vec2& InUVs) const
+    {
+        return RoughnessMap ? (bRoughnessMapIsSpecular ? glm::max(1.0f - RoughnessMap->SampleWithUV(InUVs).x, 0.01f) : RoughnessMap->SampleWithUV(InUVs).x) : Roughness;
+    }
+
+    void SetRoughness(const float& InRoughness)
+    {
+        Roughness = InRoughness;
+    }
+
+    float GetMetallic() const
+    {
+        return Metallic;
+    }
+
+    float SampleMetallic(const glm::vec2& InUVs) const
+    {
+        return MetallicMap ? MetallicMap->SampleWithUV(InUVs).x : Metallic;
+    }
+
+    void SetMetallic(const float& InMetallic)
+    {
+        Metallic = InMetallic;
+    }
+
+    float GetEmittance() const
+    {
+        return Emittance;
+    }
+
+    float SampleEmittance(const glm::vec2& InUVs) const
+    {
+        return EmittanceMap ? EmittanceMap->SampleWithUV(InUVs).x : Emittance;
+    }
+
+    void SetEmittance(const float& InEmittance)
+    {
+        Emittance = InEmittance;
+    }
+
+    float GetIndexOfRefraction() const
+    {
+        return IndexOfRefraction;
+    }
+
+    void SetIndexOfRefraction(const float& InIndexOfRefraction)
+    {
+        IndexOfRefraction = InIndexOfRefraction;
+    }
+
+    bool IsTransparent() const
+    {
+        return bIsTransparent;
+    }
+
+    void SetTransparent(const bool& InIsTransparent)
+    {
+        bIsTransparent = InIsTransparent;
+    }
+
+    FImage* GetRoughnessMap() const
+    {
+        return RoughnessMap;
+    }
+
+    void SetRoughnessMap(FImage* InRoughnessMap, bool bIsSpecular)
+    {
+        bRoughnessMapIsSpecular = bIsSpecular;
+        RoughnessMap = InRoughnessMap;
+    }
+
+    FImage* GetMetallicMap() const
+    {
+        return MetallicMap;
+    }
+
+    void SetMetallicMap(FImage* InMetallicMap)
+    {
+        MetallicMap = InMetallicMap;
+    }
+
+    FImage* GetEmittanceMap() const
+    {
+        return EmittanceMap;
+    }
+
+    void SetEmittanceMap(FImage* InEmittanceMap)
+    {
+        EmittanceMap = InEmittanceMap;
+    }
+
+    FImage* GetBumpMap() const
+    {
+        return BumpMap;
+    }
+
+    float SampleBump(const glm::vec2& InUVs) const
+    {
+        return BumpMap ? BumpMap->SampleWithUV(InUVs).x : 0.0f;
+    }
+
+    void SetBumpMap(FImage* InBumpMap)
+    {
+        BumpMap = InBumpMap;
+    }
+
+    FImage* GetAlphaMap() const
+    {
+        return AlphaMap;
+    }
+
+    float SampleAlpha(const glm::vec2& InUVs) const
+    {
+        return AlphaMap ? AlphaMap->SampleWithUV(InUVs).x : 1.0f;
+    }
+
+    void SetAlphaMap(FImage* InAlphaMap)
+    {
+        AlphaMap = InAlphaMap;
+    }
 private:
     // Base color
     glm::dvec3 Albedo;
+    FImage* AlbedoMap;
 
     // Used for calculating shininess/microfacet distribution
     float Roughness;
+    FImage* RoughnessMap;
+    bool bRoughnessMapIsSpecular;
 
     // Metallic vs. dialectic (an example dialectric being plastic)
     float Metallic;
+    FImage* MetallicMap;
 
     // Self emission of light
     float Emittance;
+    FImage* EmittanceMap;
 
     // Used for refraction, snell's law
     float IndexOfRefraction;
 
     // Used for allowing transmittance
     bool bIsTransparent;
+
+    FImage* BumpMap;
+    FImage* AlphaMap;
+
 };
 
 }

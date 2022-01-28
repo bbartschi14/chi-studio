@@ -7,6 +7,8 @@
 #include <windows.h>
 #include "ChiGraphics/Modifiers/Modifier.h"
 #include "ChiGraphics/Textures/ImageModifier.h"
+#include "ChiGraphics/Textures/ImageManager.h"
+#include "ChiGraphics/Textures/FImage.h"
 #include <core.h>
 
 namespace CHISTUDIO {
@@ -274,6 +276,41 @@ namespace CHISTUDIO {
 			ImGui::EndChild();
 			ImGui::PopStyleVar();
 
+			return wasModified;
+		}
+
+		static bool ImageSelector(const std::string& InLabel, FImage*& InImage)
+		{
+			bool wasModified = false;
+		
+			// ComboBox
+			auto images = ImageManager::GetInstance().GetImages();
+			std::string currentImageName = ImageManager::GetInstance().GetNameOfImage(InImage);
+			if (ImGui::BeginCombo(("##ImageSelector" + InLabel).c_str(), currentImageName.c_str()))
+			{
+				for (int i = 0; i < images.size(); i++)
+				{
+					bool isSelected = currentImageName == images[i].first;
+					if (ImGui::Selectable(images[i].first.c_str(), isSelected))
+					{
+						currentImageName = images[i].first;
+						InImage = images[i].second;
+						wasModified = true;
+					}
+		
+					if (isSelected)
+						ImGui::SetItemDefaultFocus();
+				}
+		
+				ImGui::EndCombo();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear"))
+			{
+				InImage = nullptr;
+				wasModified = true;
+			}
+		
 			return wasModified;
 		}
 	};

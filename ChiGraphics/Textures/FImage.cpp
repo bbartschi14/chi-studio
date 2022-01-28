@@ -1,3 +1,5 @@
+#define NOMINMAX
+
 #include "FImage.h"
 #include <stdexcept>
 #define STB_IMAGE_IMPLEMENTATION
@@ -20,6 +22,14 @@ static uint8_t ClampColor(float c) {
     return static_cast<uint8_t>(tmp);
 }
 
+const glm::vec3& FImage::GetPixel(int x, int y) const
+{
+    // Repeated tiling sampling
+    int sampleX = ((x % Width) + Width) % Width;
+    int sampleY = ((y % Height) + Height) % Height;
+    return Data[sampleY * Width + sampleX];
+}
+
 void FImage::SetData(const std::vector<glm::vec3>& InData)
 {
     Data = InData;
@@ -32,9 +42,9 @@ std::unique_ptr<FImage> FImage::LoadPNG(const std::string& filename, bool y_reve
     if (buffer == nullptr) {
         throw std::runtime_error("Cannot load " + filename + "!");
     }
-    if (n != 3) {
-        throw std::runtime_error("Wrong number of channels in " + filename + "!");
-    }
+    //if (n != 3) {
+    //    throw std::runtime_error("Wrong number of channels in " + filename + "!");
+    //}
     auto image = make_unique<FImage>(w, h);
 
     int dy = y_reversed ? -1 : 1;
@@ -43,8 +53,18 @@ std::unique_ptr<FImage> FImage::LoadPNG(const std::string& filename, bool y_reve
     for (int c = 0, p = 0, y = y_start; y != y_end; y += dy) {
         for (int x = 0; x < w; x++, p++) {
             glm::vec3& pixel = image->Data[p];
-            for (int t = 0; t < 3; t++)
-                pixel[t] = static_cast<float>(buffer[c++]) / 255.0f;
+            for (int t = 0; t < n; t++)
+            {
+                if (t < 3)
+                {
+                    pixel[t] = static_cast<float>(buffer[c++]) / 255.0f;
+                }
+                else
+                {
+                    c++;
+                    // Drop alpha for now
+                }
+            }
         }
     }
     stbi_image_free(buffer);
@@ -129,12 +149,17 @@ glm::vec3 FImage::SampleHDRI(const glm::vec3& InDirection)
 
 glm::vec3 FImage::BilinearSample(float InX, float InY)
 {
-    int x0 = glm::min((int)InX, (int)Width - 1); // (x as u32).min(self.width - 1);
-    int y0 = glm::min((int)InY, (int)Height - 1);
+    int x0 = glm::floor(InX);
+    int y0 = glm::floor(InY);
     float ax = InX - x0;
     float ay = InY - y0;
 
     return glm::lerp(glm::lerp(GetPixel(x0, y0), GetPixel(x0 + 1, y0), ax), glm::lerp(GetPixel(x0, y0 + 1), GetPixel(x0 + 1, y0 + 1), ax), ay);
+}
+
+glm::vec3 FImage::SampleWithUV(glm::vec2 InUV)
+{
+    return BilinearSample((Width - 1) * InUV.x, (Height - 1) * (1.0f - InUV.y));
 }
 
 void FImage::ApplyGaussianBlur(int InNumIterations)

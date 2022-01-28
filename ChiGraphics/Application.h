@@ -90,6 +90,7 @@ namespace CHISTUDIO {
 		SceneNode* CreateVertexObjectCopy(VertexObject* InVertexObjectToCopy);
 		SceneNode* CreateCamera();
 		SceneNode* CreatePointLight();
+		SceneNode* CreateDirectionalLight();
 		SceneNode* CreateAmbientLight();
 		SceneNode* CreateTracingSphereNode();
 		void CreateImportMeshNode(const std::string& filePath, bool useImportedNormals);

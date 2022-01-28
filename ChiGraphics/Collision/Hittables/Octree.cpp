@@ -2,6 +2,7 @@
 #include "TriangleHittable.h"
 #include "MeshHittable.h"
 #include "ChiGraphics/Utilities.h"
+#include "ChiGraphics/Materials/Material.h"
 
 namespace CHISTUDIO {
 
@@ -136,7 +137,7 @@ void Octree::Build(const MeshHittable& InMesh)
     BuildNode(*Root, Bbox, triangle_ptrs, 0);
 }
 
-bool Octree::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord)
+bool Octree::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord, Material InMaterial)
 {
     glm::vec3 rayDirection = InRay.GetDirection();
     // TODO: does rayDirection need to be unit?
@@ -165,7 +166,7 @@ bool Octree::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord)
 
     if (std::max(std::max(tx0, ty0), tz0) <= std::min(std::min(tx1, ty1), tz1)) {
         return IntersectSubtree(aa, *Root, tx0, ty0, tz0, tx1, ty1, tz1, InRay,
-            Tmin, InRecord);
+            Tmin, InRecord, InMaterial);
     }
     else {
         return false;
@@ -211,7 +212,7 @@ void Octree::BuildNode(OctNode& InNode, const AABB& InBbox, const std::vector<co
     }
 }
 
-bool Octree::IntersectSubtree(uint8_t aa, const OctNode& node, float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, const FRay& ray, float t_min, FHitRecord& record)
+bool Octree::IntersectSubtree(uint8_t aa, const OctNode& node, float tx0, float ty0, float tz0, float tx1, float ty1, float tz1, const FRay& ray, float t_min, FHitRecord& record, Material InMaterial)
 {
     bool intersected = false;
     if (tx1 < 0 || ty1 < 0 || tz1 < 0) {
@@ -221,7 +222,7 @@ bool Octree::IntersectSubtree(uint8_t aa, const OctNode& node, float tx0, float 
     if (node.IsTerminal()) {
         // Brute force over things.
         for (auto& t : node.Triangles) {
-            bool result = t->Intersect(ray, t_min, record);
+            bool result = t->Intersect(ray, t_min, record, InMaterial);
             intersected |= result;
         }
         return intersected;
@@ -235,42 +236,42 @@ bool Octree::IntersectSubtree(uint8_t aa, const OctNode& node, float tx0, float 
         switch (cur) {
         case 0: {
             intersected |= IntersectSubtree(aa, *node.Children[aa], tx0, ty0, tz0, txm,
-                tym, tzm, ray, t_min, record);
+                tym, tzm, ray, t_min, record, InMaterial);
             cur = NextChildIndex(txm, 4, tym, 2, tzm, 1);
         } break;
         case 1: {
             intersected |= IntersectSubtree(aa, *node.Children[1 ^ aa], tx0, ty0, tzm,
-                txm, tym, tz1, ray, t_min, record);
+                txm, tym, tz1, ray, t_min, record, InMaterial);
             cur = NextChildIndex(txm, 5, tym, 3, tz1, 8);
         } break;
         case 2: {
             intersected |= IntersectSubtree(aa, *node.Children[2 ^ aa], tx0, tym, tz0,
-                txm, ty1, tzm, ray, t_min, record);
+                txm, ty1, tzm, ray, t_min, record, InMaterial);
             cur = NextChildIndex(txm, 6, ty1, 8, tzm, 3);
         } break;
         case 3: {
             intersected |= IntersectSubtree(aa, *node.Children[3 ^ aa], tx0, tym, tzm,
-                txm, ty1, tz1, ray, t_min, record);
+                txm, ty1, tz1, ray, t_min, record, InMaterial);
             cur = NextChildIndex(txm, 7, ty1, 8, tz1, 8);
         } break;
         case 4: {
             intersected |= IntersectSubtree(aa, *node.Children[4 ^ aa], txm, ty0, tz0,
-                tx1, tym, tzm, ray, t_min, record);
+                tx1, tym, tzm, ray, t_min, record, InMaterial);
             cur = NextChildIndex(tx1, 8, tym, 6, tzm, 5);
         } break;
         case 5: {
             intersected |= IntersectSubtree(aa, *node.Children[5 ^ aa], txm, ty0, tzm,
-                tx1, tym, tz1, ray, t_min, record);
+                tx1, tym, tz1, ray, t_min, record, InMaterial);
             cur = NextChildIndex(tx1, 8, tym, 7, tz1, 8);
         } break;
         case 6: {
             intersected |= IntersectSubtree(aa, *node.Children[6 ^ aa], txm, tym, tz0,
-                tx1, ty1, tzm, ray, t_min, record);
+                tx1, ty1, tzm, ray, t_min, record, InMaterial);
             cur = NextChildIndex(tx1, 8, ty1, 8, tzm, 7);
         } break;
         case 7: {
             intersected |= IntersectSubtree(aa, *node.Children[7 ^ aa], txm, tym, tzm,
-                tx1, ty1, tz1, ray, t_min, record);
+                tx1, ty1, tz1, ray, t_min, record, InMaterial);
             cur = 8;
         } break;
         }

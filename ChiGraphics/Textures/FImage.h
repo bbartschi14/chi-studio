@@ -1,11 +1,12 @@
 #pragma once
+#define NOMINMAX
 
+#include <glm/glm.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 #include <string>
 #include <memory>
-#include <glm/glm.hpp>
 #include <math.h>
 #include <functional>
 
@@ -36,35 +37,7 @@ public:
         }
     }
 
-    const glm::vec3& GetPixel(int x, int y) const {
-        if (x < 0)
-        {
-            x = -x - 1;
-        }
-        else if (x >= Width)
-        {
-            x = 2 * Width - x - 1;
-        }
-
-        if (y < 0)
-        {
-            y = -y - 1;
-        }
-        else if (y >= Height)
-        {
-            y = 2 * Height - y - 1;
-        }
-
-        return Data[glm::max((int)glm::min(y, (int)Height - 1), 0) * Width + glm::max((int)glm::min(x, (int)Width - 1), 0)];
-
-        /*if (x < Width && y < Height) {
-            return Data[y * Width + x];
-        }
-        else {
-            std::cout << "(" << x << "," << y << ")" << std::endl;
-            throw std::runtime_error("Unable to get a pixel outside of image range.");
-        }*/
-    }
+    const glm::vec3& GetPixel(int x, int y) const;
     const std::vector<glm::vec3>& GetData() const { return Data; }
     void SetData(const std::vector<glm::vec3>& InData);
     static std::unique_ptr<FImage> LoadPNG(const std::string& filename, bool y_reversed);
@@ -79,6 +52,7 @@ public:
 
     glm::vec3 SampleHDRI(const glm::vec3& InDirection);
     glm::vec3 BilinearSample(float InX, float InY);
+    glm::vec3 SampleWithUV(glm::vec2 InUV);
     std::string ImportedFileName;
 
     // Apply a gaussian blur with a number of iterations

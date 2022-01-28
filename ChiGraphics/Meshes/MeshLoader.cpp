@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 #include "ChiGraphics/Materials/MaterialManager.h"
+#include "ChiGraphics/Textures/ImageManager.h"
+#include "ChiGraphics/Textures/FImage.h"
 
 namespace CHISTUDIO {
 
@@ -25,8 +27,10 @@ namespace CHISTUDIO {
         std::vector<std::unordered_map<std::string, FHalfEdge*>> createdHalfEdgesPerGroup;
         std::vector<std::vector<std::vector<int>>> vertsOnFacesVectorPerGroup;
         std::vector<std::vector<std::vector<glm::vec3>>> normalsOnFacesVectorPerGroup;
+        std::vector<std::vector<std::vector<glm::vec2>>> uvsOnFacesVectorPerGroup;
         std::vector<int> indexOffsetPerGroup;
         auto importedNormals = make_unique<FNormalArray>();
+        auto importedUVs = std::vector<glm::vec2>();
         std::unordered_map<std::string, std::shared_ptr<Material>> materialDictionary;
 
         std::string base_path = GetBasePath(filename);
@@ -53,6 +57,7 @@ namespace CHISTUDIO {
                     createdHalfEdgesPerGroup.resize(createdHalfEdgesPerGroup.size() + 1);
                     vertsOnFacesVectorPerGroup.resize(vertsOnFacesVectorPerGroup.size() + 1);
                     normalsOnFacesVectorPerGroup.resize(normalsOnFacesVectorPerGroup.size() + 1);
+                    uvsOnFacesVectorPerGroup.resize(uvsOnFacesVectorPerGroup.size() + 1);
                 }
 
                 glm::vec3 vertexPosition;
@@ -70,18 +75,20 @@ namespace CHISTUDIO {
             {
                 glm::vec2 uvCoordinate;
                 ss >> uvCoordinate.s >> uvCoordinate.t;
-                // Skip uvs for now
+                importedUVs.emplace_back(std::move(uvCoordinate));
             }
             else if (command == "f")
             {
                 // Read all vertices on face
                 std::vector<int> vertsOnFace;
                 std::vector<glm::vec3> normalsOnFace;
+                std::vector<glm::vec2> uvsOnFace;
                 while (ss.rdbuf()->in_avail() > 0) {
                     std::string str;
                     ss >> str;
                     unsigned int idx;
                     unsigned int normalIdx;
+                    unsigned int uvIdx;
                     if (str.find('/') == std::string::npos)
                     {
                         if (str.size() > 0)
@@ -97,6 +104,10 @@ namespace CHISTUDIO {
                     {
                         std::vector<std::string> split = Split(str, '/');
                         idx = std::stoul(split[0]);
+                        if (split.size() > 1)
+                        {
+                            uvIdx = std::stoul(split[1]);
+                        }
                         if (split.size() > 2)
                         {
                             normalIdx = std::stoul(split[2]);
@@ -105,11 +116,14 @@ namespace CHISTUDIO {
                     // OBJ indices start with 1.
                     vertsOnFace.push_back(idx - 1);
                     normalsOnFace.push_back(importedNormals->at(normalIdx - 1));
+                    uvsOnFace.push_back(importedUVs.at(uvIdx - 1));
                 }
                 std::reverse(vertsOnFace.begin(), vertsOnFace.end()); // Flip winding to get correct normals. This might have to be an import flag depending on the model
                 std::reverse(normalsOnFace.begin(), normalsOnFace.end());
+                std::reverse(uvsOnFace.begin(), uvsOnFace.end());
                 vertsOnFacesVectorPerGroup[currentGroupIndex].push_back(vertsOnFace);
                 normalsOnFacesVectorPerGroup[currentGroupIndex].push_back(normalsOnFace);
+                uvsOnFacesVectorPerGroup[currentGroupIndex].push_back(uvsOnFace);
             }
             else if (command == "g")
             {
@@ -128,6 +142,7 @@ namespace CHISTUDIO {
                 createdHalfEdgesPerGroup.resize(createdHalfEdgesPerGroup.size() + 1);
                 vertsOnFacesVectorPerGroup.resize(vertsOnFacesVectorPerGroup.size() + 1);
                 normalsOnFacesVectorPerGroup.resize(normalsOnFacesVectorPerGroup.size() + 1);
+                uvsOnFacesVectorPerGroup.resize(uvsOnFacesVectorPerGroup.size() + 1);
             }
             else if (command == "usemtl")
             {
@@ -159,6 +174,7 @@ namespace CHISTUDIO {
             {
                 FFace* newFace = vertexObjects[objectIndex]->CreateFace(nullptr);
                 newFace->SetImportedNormals(normalsOnFacesVectorPerGroup[objectIndex][faceIndex]);
+                newFace->SetUVs(uvsOnFacesVectorPerGroup[objectIndex][faceIndex]);
                 size_t numVerts = vertsOnFace.size();
                 std::vector<FHalfEdge*> halfEdgesOnFace;
                 for (size_t i = 0; i < numVerts; i++)
@@ -208,6 +224,8 @@ namespace CHISTUDIO {
             {
                 vertexObjects[objectIndex]->SetImportedNormals();
             }
+
+            vertexObjects[objectIndex]->bUseImportedUVs = true;
 
             // Cleanup disconnected verts
             for (auto vert : createdVertsPerGroup[objectIndex])
@@ -280,13 +298,34 @@ namespace CHISTUDIO {
                 }
             }
             else if (command == "map_Ka" || command == "map_Kd" ||
-                command == "map_Ks") {
+                command == "map_Ks" || command == "map_Bump" || command == "map_d" || command == "map_Ns" || command == "refl") {
                 std::string image_file;
                 ss >> image_file;
-                // Skip loading textures for now.
-            }
-            else if (command == "map_bump") {
-                // Skip bump map for now.
+                auto newImage = ImageManager::GetInstance().ImportImage(image_file);
+                if (command == "map_Kd" || command == "map_Ka")
+                {
+                    currentMaterial->SetAlbedoMap(newImage.second);
+                }
+                else if (command == "map_Ks")
+                {
+                    currentMaterial->SetRoughnessMap(newImage.second, true);
+                }
+                else if (command == "map_Ns")
+                {
+                    currentMaterial->SetRoughnessMap(newImage.second, false);
+                }
+                else if (command == "map_Bump")
+                {
+                    currentMaterial->SetBumpMap(newImage.second);
+                }
+                else if (command == "map_d")
+                {
+                    currentMaterial->SetAlphaMap(newImage.second);
+                }
+                else if (command == "refl")
+                {
+                    currentMaterial->SetMetallicMap(newImage.second);
+                }
             }
             else {
                 std::cerr << "Unknown mtl command: " << command << std::endl;

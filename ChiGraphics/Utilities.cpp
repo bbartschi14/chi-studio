@@ -48,6 +48,8 @@ const std::string kRootSentinel = "chistudio.cfg";
 const int kMaxDepth = 20;
 
 std::string GetProjectRootDir() {
+    return "D:/GraphicsProjects/ChiStudio/"; // TODO: FIX hardcoded path. Recursive method below fails when we choose a file outside the directory
+
     // Recursively going up in directory until finding chistudio.cfg
     std::string dir = "./";
     for (int i = 0; i < kMaxDepth; i++) {

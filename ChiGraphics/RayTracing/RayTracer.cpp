@@ -11,6 +11,7 @@
 #include "ChiGraphics/GL_Wrapper/FTexture.h"
 #include "ChiGraphics/Utilities.h"
 #include "ChiGraphics/Lights/PointLight.h"
+#include "ChiGraphics/Lights/DirectionalLight.h"
 #include "ChiGraphics/Lights/AmbientLight.h"
 #include "ChiGraphics/Lights/HittableLight.h"
 #include "core.h"
@@ -18,6 +19,7 @@
 #include "ChiGraphics/Textures/ImageManager.h"
 #include "ChiCore/ChiStudioApplication.h"
 #include "external/src/oidn/include/OpenImageDenoise/oidn.hpp"
+#include <glm/gtx/matrix_decompose.hpp>
 
 namespace CHISTUDIO {
 
@@ -193,7 +195,7 @@ void FRayTracer::BuildHittableData(const Scene& InScene, std::vector<LightCompon
 		{
 			VertexObject* vertexObject = renderingComp->GetVertexObjectPtr();
 			if (vertexObject->GetPositions().size() == 0) continue;
-			std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices());
+			std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices(), vertexObject->GetTexCoords());
 
 			hittable->ModelMatrix = renderingComp->GetNodePtr()->GetTransform().GetLocalToWorldMatrix();
 			hittable->InverseModelMatrix = glm::inverse(hittable->ModelMatrix);
@@ -289,7 +291,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 		// Record albedo of first hit. Initial value is set to negative
 		if (OutAlbedo.x < 0.0f)
 		{
-			OutAlbedo = record.Material_.GetAlbedo();
+			OutAlbedo = record.Material_.SampleAlbedo(record.UV);
 		}
 
 		// Record normal of first hit. Initial value is set to length = 0.0f
@@ -303,7 +305,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 		glm::dvec3 eyeRay = glm::normalize(glm::dvec3(InRay.GetOrigin()) - hitPosition);
 
 		// Initialize color from emission first
-		glm::dvec3 overallIntensity = (double)record.Material_.GetEmittance() * record.Material_.GetAlbedo();
+		glm::dvec3 overallIntensity = (double)record.Material_.SampleEmittance(record.UV) * record.Material_.SampleAlbedo(record.UV);
 
 		for (LightComponent* lightComp : InLights) {
 
@@ -311,7 +313,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 
 			// Set up light variables and check for ambient light strength/Color
 			if (lightComp->GetLightPtr()->GetType() == ELightType::Ambient) {
-				overallIntensity += glm::dvec3(lightComp->GetLightPtr()->GetDiffuseColor()) * record.Material_.GetAlbedo();
+				overallIntensity += glm::dvec3(lightComp->GetLightPtr()->GetDiffuseColor()) * record.Material_.SampleAlbedo(record.UV);
 			}
 			else
 			{
@@ -336,7 +338,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				if (!wasShadowObjectHit || distanceToHit > distanceToLight)
 				{
 					// No object casting a shadow
-					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight);
+					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight, record.UV);
 					overallIntensity += illumination * lightIntensity * glm::dot(directionToLight, glm::dvec3(record.Normal));
 				}
 				else
@@ -352,9 +354,9 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 			glm::dvec3 sampledRayDirection;
 			double rayProbability;
 
-			if (record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, record.Normal, eyeRay))
+			if (record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, record.Normal, eyeRay, record.UV))
 			{
-				glm::dvec3 indirect = record.Material_.EvaluateBSDF(record.Normal, eyeRay, sampledRayDirection);
+				glm::dvec3 indirect = record.Material_.EvaluateBSDF(record.Normal, eyeRay, sampledRayDirection, record.UV);
 
 				FRay tracedRay = FRay(hitPosition, sampledRayDirection);
 				glm::dvec3 traceResult = TraceRay(tracedRay, InBounces + 1, InLights, OutAlbedo, OutNormal);
@@ -403,7 +405,11 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 	auto lightPtr = lightComponent.GetLightPtr();
 	if (lightPtr->GetType() == ELightType::Directional) 
 	{
-		// TODO : Implement directional light type
+		auto directionalLightPtr = static_cast<DirectionalLight*>(lightPtr);
+		glm::vec3 direction = glm::mat4_cast(lightComponent.GetNodePtr()->GetTransform().GetRotation()) * glm::vec4(directionalLightPtr->BaseDirection, 0.0f);
+		distanceToLight = 200000.0f;
+		directionToLight = direction * -1.0f;
+		intensity = directionalLightPtr->GetDiffuseColor() * directionalLightPtr->GetIntensity();
 	}
 	else if (lightPtr->GetType() == ELightType::Point) 
 	{
@@ -452,7 +458,7 @@ bool FRayTracer::GetClosestObjectHit(const FRay& InRay, FHitRecord& InRecord, st
 			// Cast a ray in object space for this hittable
 			FRay objectSpaceRay = FRay(InRay.GetOrigin(), InRay.GetDirection());
 			objectSpaceRay.ApplyTransform(Hittables[i]->InverseModelMatrix);
-			bool bWasHitRecorded = Hittables[i]->Intersect(objectSpaceRay, .00001f, InRecord);
+			bool bWasHitRecorded = Hittables[i]->Intersect(objectSpaceRay, .00001f, InRecord, Hittables[i]->Material_);
 
 			if (bWasHitRecorded) {
 				// Transform normal back to world space

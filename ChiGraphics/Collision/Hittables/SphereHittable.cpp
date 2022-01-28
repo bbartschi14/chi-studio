@@ -1,10 +1,11 @@
 #include "ChiGraphics\Collision\Hittables\SphereHittable.h"
 #include <cmath>
 #include <glm/gtx/norm.hpp>
+#include "ChiGraphics/Materials/Material.h"
 
 namespace CHISTUDIO {
 
-bool SphereHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord) const
+bool SphereHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord, Material InMaterial) const
 {
 	// RAY-SPHERE INTERSECTION (https://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection/)
 

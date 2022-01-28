@@ -34,7 +34,7 @@ public:
     Octree(int InMaxLevel = 8) : MaxLevel(InMaxLevel) {
     }
     void Build(const MeshHittable& InMesh);
-    bool Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord);
+    bool Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord, class Material InMaterial);
 
 private:
     struct OctNode {
@@ -58,7 +58,8 @@ private:
         float tz1,
         const FRay& ray,
         float t_min,
-        FHitRecord& record);
+        FHitRecord& record,
+        class Material InMaterial);
 
     int MaxLevel;
     AABB Bbox;

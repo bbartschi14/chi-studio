@@ -1,9 +1,10 @@
 #include "TriangleHittable.h"
+#include "ChiGraphics/Materials/Material.h"
 
 namespace CHISTUDIO
 {
 
-TriangleHittable::TriangleHittable(const glm::vec3& InPos0, const glm::vec3& InPos1, const glm::vec3& InPos2, const glm::vec3& InNorm0, const glm::vec3& InNorm1, const glm::vec3& InNorm2)
+TriangleHittable::TriangleHittable(const glm::vec3& InPos0, const glm::vec3& InPos1, const glm::vec3& InPos2, const glm::vec3& InNorm0, const glm::vec3& InNorm1, const glm::vec3& InNorm2, const glm::vec2& InUV1, const glm::vec2& InUV2, const glm::vec2& InUV3)
 {
     Positions.push_back(InPos0);
     Positions.push_back(InPos1);
@@ -11,15 +12,19 @@ TriangleHittable::TriangleHittable(const glm::vec3& InPos0, const glm::vec3& InP
     Normals.push_back(InNorm0);
     Normals.push_back(InNorm1);
     Normals.push_back(InNorm2);
+    UVs.push_back(InUV1);
+    UVs.push_back(InUV2);
+    UVs.push_back(InUV3);
 }
 
-TriangleHittable::TriangleHittable(const std::vector<glm::vec3>& InPositions, const std::vector<glm::vec3>& InNormals)
+TriangleHittable::TriangleHittable(const std::vector<glm::vec3>& InPositions, const std::vector<glm::vec3>& InNormals, const std::vector<glm::vec2>& InUVs)
 {
     Positions = InPositions;
     Normals = InNormals;
+    UVs = InUVs;
 }
 
-bool TriangleHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord) const
+bool TriangleHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord, Material InMaterial) const
 {
     glm::vec3 a = Positions[0];
     glm::vec3 b = Positions[1];
@@ -40,10 +45,17 @@ bool TriangleHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& I
     if (t >= InT_Min && t < InRecord.Time) {
         // Check barycentric correctness
         if (gamma >= 0 && beta >= 0 && (beta + gamma) <= 1) {
-            InRecord.Time = t;
-            glm::vec3 interp_normal = alpha * Normals[0] + beta * Normals[1] + gamma * Normals[2];
-            InRecord.Normal = glm::normalize(interp_normal);
-            return true;
+            glm::vec2 uv = alpha * UVs[0] + beta * UVs[1] + gamma * UVs[2];
+            // Check alpha mask before considering
+            float mask = InMaterial.SampleAlpha(uv);
+            if (mask > 0.001f)
+            {
+                InRecord.Time = t;
+                glm::vec3 interp_normal = alpha * Normals[0] + beta * Normals[1] + gamma * Normals[2];
+                InRecord.Normal = glm::normalize(interp_normal);
+                InRecord.UV = uv;
+                return true;
+            }
         }
     }
 

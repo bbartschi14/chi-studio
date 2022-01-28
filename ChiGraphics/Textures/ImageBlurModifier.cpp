@@ -1,3 +1,5 @@
+#define NOMINMAX
+
 #include "ImageBlurModifier.h"
 #include "ChiGraphics/Textures/FImage.h"
 #include "ChiCore/UI/UILibrary.h"

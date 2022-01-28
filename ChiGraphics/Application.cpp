@@ -14,6 +14,7 @@
 #include "ChiGraphics/Lights/AmbientLight.h"
 #include "ChiGraphics/Lights/PointLight.h"
 #include "ChiGraphics/Lights/LightNode.h"
+#include "ChiGraphics/Lights/DirectionalLightNode.h"
 #include "ChiGraphics/Lights/HittableLight.h"
 #include "ChiGraphics/Lights/AmbientLightNode.h"
 #include "ChiGraphics/Shaders/PhongShader.h"
@@ -250,8 +251,7 @@ namespace CHISTUDIO {
 				if (!renderingComp->bIsDebugRender)
 				{
 					VertexObject* vertexObject = renderingComp->GetVertexObjectPtr();
-					std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices(), false);
-
+					std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices(), vertexObject->GetTexCoords(), false);
 					hittable->ModelMatrix = renderingComp->GetNodePtr()->GetTransform().GetLocalToWorldMatrix();
 					hittable->InverseModelMatrix = glm::inverse(hittable->ModelMatrix);
 					hittable->TransposeInverseModelMatrix = glm::transpose(hittable->InverseModelMatrix);
@@ -259,7 +259,8 @@ namespace CHISTUDIO {
 					// Cast a ray in object space for this hittable
 					FRay objectSpaceRay = FRay(mouseRay.GetOrigin(), mouseRay.GetDirection());
 					objectSpaceRay.ApplyTransform(hittable->InverseModelMatrix);
-					bool bWasHitRecorded = hittable->Intersect(objectSpaceRay, .00001f, record);
+					Material defaultMat;
+					bool bWasHitRecorded = hittable->Intersect(objectSpaceRay, .00001f, record, defaultMat);
 
 					if (bWasHitRecorded)
 					{
@@ -422,6 +423,16 @@ namespace CHISTUDIO {
 	SceneNode* Application::CreatePointLight()
 	{
 		auto lightNode = make_unique<LightNode>(fmt::format("PointLight.{}", Scene_->GetRootNode().GetChildrenCount()));
+		SceneNode* ref = lightNode.get();
+		lightNode->SetNodeType("Light");
+
+		Scene_->GetRootNode().AddChild(std::move(lightNode));
+		return ref;
+	}
+
+	SceneNode* Application::CreateDirectionalLight()
+	{
+		std::unique_ptr<DirectionalLightNode> lightNode = make_unique<DirectionalLightNode>(fmt::format("DirectionalLight.{}", Scene_->GetRootNode().GetChildrenCount()));
 		SceneNode* ref = lightNode.get();
 		lightNode->SetNodeType("Light");
 

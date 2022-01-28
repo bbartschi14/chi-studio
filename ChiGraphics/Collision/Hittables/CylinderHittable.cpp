@@ -1,10 +1,11 @@
 #include <cmath>
 #include <glm/gtx/norm.hpp>
 #include "CylinderHittable.h"
+#include "ChiGraphics/Materials/Material.h"
 
 namespace CHISTUDIO {
 
-bool CylinderHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord) const
+bool CylinderHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord, Material InMaterial) const
 {
     // Works without having to transform the cylinders direction 
 

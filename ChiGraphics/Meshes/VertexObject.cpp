@@ -420,6 +420,7 @@ namespace CHISTUDIO {
 
 		auto newPositions = make_unique<FPositionArray>();
 		auto newNormals = make_unique<FNormalArray>();
+		auto newTexCoords = make_unique<FTexCoordArray>();
 		auto newIndices = make_unique<FIndexArray>();
 
 		auto newWireframePositions = make_unique<FPositionArray>();
@@ -484,6 +485,21 @@ namespace CHISTUDIO {
 					}
 				}
 
+				// Add UVs
+				if (bUseImportedUVs)
+				{
+					for (auto texCoord : Faces[i]->GetUVs())
+					{
+						newTexCoords->push_back(texCoord);
+					}
+				}
+				else
+				{
+					for (auto vert : Faces[i]->GetVerticesOnFace())
+					{
+						newTexCoords->push_back(glm::vec2(0.f));
+					}
+				}
 			}
 		}
 		else
@@ -556,15 +572,18 @@ namespace CHISTUDIO {
 				(*normals)[v3] += n;
 			}
 
-			for (size_t i = 0; i < normals->size(); i++) {
+			for (size_t i = 0; i < normals->size(); i++) 
+			{
 				(*normals)[i] = glm::normalize((*normals)[i]);
 				newNormals->push_back((*normals)[i]);
+				newTexCoords->push_back(glm::vec2(0.f));
 			}
 		}
 
 		UpdatePositions(std::move(newPositions));
 		UpdateIndices(std::move(newIndices));
 		UpdateNormals(std::move(newNormals));
+		TexCoords = (std::move(newTexCoords));
 
 		EdgeVertexArray_->UpdatePositions(*std::move(newWireframePositions));
 
@@ -1807,10 +1826,11 @@ namespace CHISTUDIO {
 		FHitRecord hitRecord = FHitRecord();
 		bool bWasAnyVertexFound = false;
 		FVertex* hitVertex = nullptr;
+		Material defaultMat;
 		for (size_t i = 0; i < Vertices.size(); i++)
 		{
 			SphereHittable vertexCollision = SphereHittable(.05f, Vertices[i]->GetPosition());
-			bool hitRecorded = vertexCollision.Intersect(InSceneRay, 0.0001f, hitRecord);
+			bool hitRecorded = vertexCollision.Intersect(InSceneRay, 0.0001f, hitRecord, defaultMat);
 			bWasAnyVertexFound |= hitRecorded;
 			if (hitRecorded) hitVertex = Vertices[i].get();
 		}
@@ -1830,13 +1850,14 @@ namespace CHISTUDIO {
 		FHitRecord hitRecord = FHitRecord();
 		bool bWasAnyEdgeFound = false;
 		FEdge* hitEdge = nullptr;
+		Material defaultMat;
 		for (size_t i = 0; i < Edges.size(); i++)
 		{
 			glm::vec3 firstVertexPos = Edges[i]->GetFirstHalfEdge()->GetNextVertex()->GetPosition();
 			glm::vec3 secondVertexPos = Edges[i]->GetSecondHalfEdge()->GetNextVertex()->GetPosition();
 
 			CylinderHittable edgeCollision = CylinderHittable(.05f, firstVertexPos, glm::normalize(secondVertexPos - firstVertexPos), glm::length(secondVertexPos - firstVertexPos));
-			bool hitRecorded = edgeCollision.Intersect(InSceneRay, 0.0001f, hitRecord);
+			bool hitRecorded = edgeCollision.Intersect(InSceneRay, 0.0001f, hitRecord, defaultMat);
 			bWasAnyEdgeFound |= hitRecorded;
 			if (hitRecorded) hitEdge = Edges[i].get();
 		}
@@ -1856,11 +1877,12 @@ namespace CHISTUDIO {
 		FHitRecord hitRecord = FHitRecord();
 		bool bWasAnyFaceFound = false;
 		FFace* hitFace = nullptr;
+		Material defaultMat;
 		for (size_t i = 0; i < Faces.size(); i++)
 		{
 			for (TriangleHittable triangle : Faces[i]->GetTrianglesOnFace())
 			{
-				bool hitRecorded = triangle.Intersect(InSceneRay, 0.0001f, hitRecord);
+				bool hitRecorded = triangle.Intersect(InSceneRay, 0.0001f, hitRecord, defaultMat);
 				bWasAnyFaceFound |= hitRecorded;
 				if (hitRecorded) hitFace = Faces[i].get();
 			}
