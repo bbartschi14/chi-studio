@@ -3,6 +3,7 @@
 
 namespace CHISTUDIO {
 
+/** Scene node for a directional light to be rendered in the ray tracer. */
 class DirectionalLightNode: public SceneNode
 {
 public:

@@ -4,6 +4,7 @@
 
 namespace CHISTUDIO {
 
+/** Ambient light to be added evenly across the entire scene. */
 class AmbientLight : public LightBase {
     // Use DiffuseColor as the ambient light color.
 public:

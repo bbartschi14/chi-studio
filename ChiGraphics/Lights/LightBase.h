@@ -11,6 +11,7 @@ enum class ELightType {
     Hittable
 };
 
+/** Base light info shared across various light types */
 class LightBase {
 public:
     LightBase()

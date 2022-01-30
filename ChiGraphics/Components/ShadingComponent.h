@@ -6,7 +6,7 @@
 
 namespace CHISTUDIO {
 
-/** Stores a shader to be used for the  */
+/** Stores a shader to be used for the viewport renderer. */
 class ShadingComponent : public ComponentBase 
 {
 public:

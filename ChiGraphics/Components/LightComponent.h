@@ -6,6 +6,7 @@
 
 namespace CHISTUDIO {
 
+/** Manages a light attached to a node. Lights are used for ray traced rendering only. */
 class LightComponent : public ComponentBase
 {
 public:

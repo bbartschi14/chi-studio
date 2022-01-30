@@ -4,6 +4,7 @@
 #include <memory>
 namespace CHISTUDIO {
 
+/** Represents a light that uses a hittable to emit light. */
 class HittableLight : public LightBase {
 public:
     HittableLight::HittableLight()

@@ -10,6 +10,7 @@ namespace CHISTUDIO {
 
 using TextureConfig = std::unordered_map<GLenum, GLint>;
 
+/** Wraps OpenGL texture API */
 class FTexture {
 public:
     FTexture();

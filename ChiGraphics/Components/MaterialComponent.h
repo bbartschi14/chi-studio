@@ -5,6 +5,7 @@
 
 namespace CHISTUDIO {
 
+/** Manages a material attached to a node */
 class MaterialComponent : public ComponentBase {
 public:
     MaterialComponent(std::shared_ptr<Material> InMaterial, bool IsDebugMaterial = false) : bIsDebugMaterial(IsDebugMaterial)

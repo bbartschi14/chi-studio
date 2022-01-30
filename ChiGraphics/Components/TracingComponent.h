@@ -9,6 +9,7 @@ enum class ETracingType
     Sphere
 };
 
+/** Used to represent ray-traceable primitives that do not use mesh data. */
 class TracingComponent: public ComponentBase
 {
 

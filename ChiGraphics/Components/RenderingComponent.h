@@ -6,6 +6,9 @@
 
 namespace CHISTUDIO {
 
+/** Represents visualizable mesh data. Can be rendered in the scene viewport, and can also be
+ * sent to the ray tracer for rendering. Manages non-destructible mesh modifiers to model objects.
+ */
 class RenderingComponent : public ComponentBase 
 {
 public:

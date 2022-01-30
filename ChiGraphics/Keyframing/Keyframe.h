@@ -26,6 +26,7 @@ enum class EKeyframeEasingType
 	EaseInOut
 };
 
+/** Base class for keyframes. Contains interpolation data that applies to all type of keyframes. */
 class IKeyframeBase
 {
 public:
@@ -43,6 +44,7 @@ public:
 	int Frame;
 };
 
+/** Templated child class used to create keyframes for specific values. (Floats vs glm::vec3) */
 template <class T>
 class FKeyframe : public IKeyframeBase
 {

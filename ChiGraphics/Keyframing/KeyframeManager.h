@@ -5,7 +5,10 @@
 #include <memory>
 
 namespace CHISTUDIO {
-    // Singleton pattern class for timeline frames
+    /** Singleton pattern class for managing timeline frames.
+     * Allows for external classes to modify the current timeline without accessing the UI. For
+     * example, the rendering panel adjusts the keyframe when rendering multi-frame animations.
+     */
     class KeyframeManager
     {
     public:
