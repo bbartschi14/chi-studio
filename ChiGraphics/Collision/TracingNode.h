@@ -3,6 +3,9 @@
 
 namespace CHISTUDIO {
 
+/* Represents a Ray-Traceable sphere. Displayed in the scene viewport using a debug sphere mesh,
+ * but is traced using exact ray-sphere intersection.
+ */
 class TracingNode: public SceneNode
 {
 public:

@@ -54,16 +54,6 @@ void ArcBallCameraNode::Update(double delta_time) {
     ArcBallRotation(InputManager::GetInstance().GetCursorPosition());
     prev_released = false;
   } 
-
- /* else if (input_manager.IsRightMousePressed()) 
-  {
-    if (prev_released) {
-      mouse_start_click_ = InputManager::GetInstance().GetCursorPosition();
-    }
-    DistanceZoom(InputManager::GetInstance().GetCursorPosition());
-    prev_released = false;
-  } */
-
   else 
   {
     auto scroll = input_manager.FetchAndResetMouseScroll();

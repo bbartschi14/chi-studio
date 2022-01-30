@@ -3,7 +3,7 @@
 
 namespace CHISTUDIO {
 
-/** Implements ray-cylinder intersection. */
+/** Implements ray-cylinder intersection. Useful for implementing line selection in the viewport. */
 class CylinderHittable : public IHittableBase
 {
 public:

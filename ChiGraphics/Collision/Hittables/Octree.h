@@ -28,6 +28,7 @@ struct AABB {
 	glm::vec3 Minimum, Maximum;
 };
 
+/** Implemented Octree acceleration structure. http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.29.987 */
 class Octree
 {
 public:

@@ -8,6 +8,7 @@
 
 namespace CHISTUDIO {
 
+/** Used to record info from collision checks. */
 struct FHitRecord 
 {
     FHitRecord() : Position(glm::vec3(0.0f)), Normal(glm::vec3(1.0f, 0.0, 0.0f)), UV(glm::vec2(0.0f))

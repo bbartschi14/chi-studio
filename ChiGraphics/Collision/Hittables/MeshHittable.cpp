@@ -11,6 +11,7 @@ namespace CHISTUDIO {
     if (num_vertices % 3 != 0 || normals.size() != positions.size())
         throw std::runtime_error("Bad mesh data in Mesh constuctor!");
 
+    // Create triangle hittables for mesh data
     for (size_t i = 0; i < num_vertices; i += 3) {
         Triangles.emplace_back(
             positions.at(indices.at(i)), positions.at(indices.at(i + 1)),
@@ -20,8 +21,9 @@ namespace CHISTUDIO {
             uvs.at(indices.at(i + 1)),
             uvs.at(indices.at(i + 2)));
     }
-    // Let mesh data destruct.
+
     bUseOctree = InUseOctree;
+
     // Build Octree.
     if (bUseOctree)
     {
@@ -49,6 +51,7 @@ bool MeshHittable::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord
 
 float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const
 {
+    // Sample a random triangle. Account for the number of triangles when calculating probability
     size_t numberOfTriangles = Triangles.size();
     int randomIndex = InRNG.Float() * numberOfTriangles;
     float probability = Triangles[randomIndex].Sample(InTargetPoint, OutPoint, OutNormal, InRNG);

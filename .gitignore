@@ -1,2 +1,6 @@
 .vs/
 out/
+assets/models
+assets/hdr
+assets/savefiles
+testassets/

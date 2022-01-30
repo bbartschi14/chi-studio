@@ -4,7 +4,7 @@
 
 namespace CHISTUDIO {
 
-/** Implements ray-cylinder intersection. */
+/** Implements ray-triangle intersection. */
 class TriangleHittable : public IHittableBase
 {
 public:

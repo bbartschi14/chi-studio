@@ -7,7 +7,10 @@
 
 namespace CHISTUDIO {
 
-
+/** Implements the hittable interface for a mesh of triangles. 
+ *  Can construct an octree acceleration structure to speed up multiple
+ *  collision checks, or can simply check each triangle for a single intersection.
+ */
 class MeshHittable: public IHittableBase
 {
 

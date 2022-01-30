@@ -4,7 +4,10 @@
 
 namespace CHISTUDIO {
 
-/** Camera node that can be used for ray trace rendering */
+/** Camera node that can be used for ray-traced rendering. Is not used for 
+ *  rendering the scene viewport. Focus distance and FOV displayed with debug
+ *  line meshes in the scene.
+ */
 class TracingCameraNode: public SceneNode
 {
 public:
@@ -13,8 +16,9 @@ public:
 
 	/** Call to update the vertex object for debug visuals */
 	void RefreshDebugVisual();
-private:
 
+private:
+	/** Use the camera properties to calculate the debug visual */
 	std::unique_ptr<FPositionArray> GetDebugPositions();
 
 	std::unique_ptr<SceneNode> CameraDebugVisualNode;
