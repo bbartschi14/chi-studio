@@ -60,6 +60,17 @@ void WImageCompositor::Render(Application& InApplication, float InDeltaTime)
 	{
 		if (ImGui::BeginMenu("Result"))
 		{
+			if (ImGui::MenuItem("Save As"))
+			{
+				std::string filename = UILibrary::SaveFileName("Image (*.png)\0*.png\0");
+				if (!filename.empty())
+				{
+					if (ModifiedImagePtr)
+					{
+						ModifiedImagePtr->SavePNG(filename);
+					}
+				}
+			}
 			ImGui::EndMenu();
 		}
 		ImGui::EndMenuBar();

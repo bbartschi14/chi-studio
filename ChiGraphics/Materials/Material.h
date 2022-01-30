@@ -11,6 +11,7 @@
 #include "../Keyframing/KeyframeTrack.h"
 #include "ChiGraphics/Textures/FImage.h"
 #include  <iostream>
+#include "ChiGraphics/RNG.h"
 
 namespace CHISTUDIO {
     
@@ -87,7 +88,7 @@ public:
     * http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
     * https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
     */
-    glm::dvec3 EvaluateBSDF(glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, glm::dvec3 InTowardIncident, const glm::vec2& InUVs) const
+    glm::dvec3 EvaluateBSDF(glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, glm::dvec3 InTowardIncident, const glm::vec2& InUVs, RNG& InRNG) const
     {
         double NormalDottedWithViewer = glm::dot(InSurfaceNormal,InTowardViewer);
         double NormalDottedWithIncident = glm::dot(InSurfaceNormal, InTowardIncident);
@@ -215,7 +216,7 @@ public:
     * 
     * Returns false if ray shouldn't be used
     */
-    bool SampleHemisphere(glm::dvec3& OutDirection, double& OutPDF, glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, const glm::vec2& InUVs)
+    bool SampleHemisphere(glm::dvec3& OutDirection, double& OutPDF, glm::dvec3 InSurfaceNormal, glm::dvec3 InTowardViewer, const glm::vec2& InUVs, RNG& InRNG)
     {
         // https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
 
@@ -236,12 +237,12 @@ public:
         {
             // Probability integral transform for Beckmann distribution microfacet normal
             // theta = arctan sqrt(-m^2 ln U)
-            double theta = glm::atan(glm::sqrt(-roughnessSquared * glm::log(RandomDouble())));
+            double theta = glm::atan(glm::sqrt(-roughnessSquared * glm::log(InRNG.Float())));
             double sinT = glm::sin(theta);
             double cosT = glm::cos(theta);
 
             // Generate halfway vector by sampling azimuth uniformly
-            glm::dvec2 point = RandomInUnitDisk();
+            glm::dvec2 point = RandomInUnitDisk(InRNG);
             glm::dvec3 halfway = glm::dvec3(point.x * sinT, point.y * sinT, cosT);
             
             //std::cout << glm::to_string(halfway) << std::endl;
@@ -260,7 +261,7 @@ public:
             return probability;
         };
       
-        bool bIsReflected = RandomDouble(0.0, 1.0) <= f;
+        bool bIsReflected = InRNG.Float() <= f;
         glm::dvec3 toIncidentRay; 
 
         if (bIsReflected)
@@ -273,7 +274,7 @@ public:
         {
             // Diffuse component (Lambertian)
             // Simple cosine-sampling using Malley's method
-            glm::dvec2 point = RandomInUnitDisk();
+            glm::dvec2 point = RandomInUnitDisk(InRNG);
             double z = glm::sqrt((1.0 - point.x * point.x - point.y * point.y));
             toIncidentRay = GetLocalToWorld(InSurfaceNormal) * glm::dvec3(point.x, point.y, z);
         }
@@ -332,8 +333,6 @@ public:
 
     glm::dmat3 GetLocalToWorld(glm::dvec3 InNormal)
     {
-        //glm::vec3 truncatedNormal = glm::vec3(InNormal); // Doubles can cause precision errors in glm::normalize, giving NANs
-
         glm::dvec3 ns = !std::isnan(InNormal.x) ? glm::normalize(glm::vec3(InNormal.y, -InNormal.x, 0.0)) : glm::normalize(glm::vec3(0.0, -InNormal.z, InNormal.y));
         if (std::isnan(ns.x)) ns = glm::normalize(glm::vec3(0.0, -InNormal.z, InNormal.y));
 

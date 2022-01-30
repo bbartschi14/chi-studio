@@ -14,7 +14,6 @@ LightNode::LightNode(std::string InName)
 {
 	auto pointLight = std::make_shared<PointLight>();
 	pointLight->SetDiffuseColor(glm::vec3(1.0f, 1.0f, 1.0f));
-	pointLight->SetAttenuation(glm::vec3(1.0f, 0.09f, 0.032f));
 
 	auto lightComponent = CreateComponent<LightComponent>(pointLight);
 

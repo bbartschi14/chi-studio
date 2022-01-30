@@ -20,6 +20,8 @@
 #include "ChiCore/ChiStudioApplication.h"
 #include "external/src/oidn/include/OpenImageDenoise/oidn.hpp"
 #include <glm/gtx/matrix_decompose.hpp>
+#include "ChiGraphics/RNG.h"
+#include <ctime>
 
 namespace CHISTUDIO {
 
@@ -32,26 +34,28 @@ FRayTracer::FRayTracer(FRayTraceSettings InSettings)
 
 static std::mutex RowsCompleteMutex;
 
-void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, FTracingCamera* InTracingCamera, FImage* InOutputImage, FImage* InAlbedoImage, FImage* InNormalImage)
+void FRayTracer::RenderRow(size_t InY, std::vector<LightComponent*>* InLights, FTracingCamera* InTracingCamera, FImage* InOutputImage, FImage* InAlbedoImage, FImage* InNormalImage, int InRNGSeed)
 {
+	RNG rng = RNG(InRNGSeed);
+
 	for (size_t x = 0; x < Settings.ImageSize.x; x++) {
 		glm::vec3 pixelColor(0.f);
 		glm::vec3 albedo(0.f);
 		glm::vec3 normal(0.f);
 		for (size_t sampleNumber = 0; sampleNumber < Settings.SamplesPerPixel; sampleNumber++)
 		{
-			double jitterX = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
-			double jitterY = Settings.SamplesPerPixel > 1 ? RandomDouble() : 0.0;
+			double jitterX = Settings.SamplesPerPixel > 1 ? rng.Float() : 0.0;
+			double jitterY = Settings.SamplesPerPixel > 1 ? rng.Float() : 0.0;
 
 			// Set coords from [ -1, 1 ] for both x and y.
 			float cameraX = ((float(x) + (float)jitterX) / (Settings.ImageSize.x - 1)) * 2 - 1;
 			float cameraY = ((float(InY) + (float)jitterY) / (Settings.ImageSize.y - 1)) * 2 - 1;
 
 			// Use camera coords to generate a ray into the scene
-			FRay cameraToSceneRay = InTracingCamera->GenerateRay(glm::vec2(cameraX, cameraY));
+			FRay cameraToSceneRay = InTracingCamera->GenerateRay(glm::vec2(cameraX, cameraY), rng);
 			glm::vec3 outAlbedo(-1.0f);
 			glm::vec3 outNormal(0.0f);
-			pixelColor += TraceRay(cameraToSceneRay, 0, *InLights, outAlbedo, outNormal);
+			pixelColor += TraceRay(cameraToSceneRay, 0, *InLights, outAlbedo, outNormal, rng);
 			albedo += outAlbedo;
 			normal += outNormal;
 		}
@@ -96,7 +100,7 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) 
 	{
-		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), outputImage.get(), albedoImage.get(), normalImage.get()));
+		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), outputImage.get(), albedoImage.get(), normalImage.get(), time(NULL) + y * 10000));
 	}
 
 	for (auto& future : Futures) {
@@ -281,7 +285,7 @@ std::unique_ptr<FTracingCamera> FRayTracer::GetFirstTracingCamera(const Scene& I
 	return nullptr;
 }
 
-glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights, glm::vec3& OutAlbedo, glm::vec3& OutNormal)
+glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector<LightComponent*> InLights, glm::vec3& OutAlbedo, glm::vec3& OutNormal, RNG& InRNG)
 {
 	FHitRecord record;
     bool objectHit = GetClosestObjectHit(InRay, record, nullptr);
@@ -320,7 +324,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				glm::dvec3 directionToLight;
 				glm::dvec3 lightIntensity;
 				double distanceToLight;
-				GetIllumination(*lightComp, hitPosition, directionToLight, lightIntensity, distanceToLight);
+				GetIllumination(*lightComp, hitPosition, directionToLight, lightIntensity, distanceToLight, InRNG);
 
 				FHitRecord shadowRecord;
 				FRay shadowRay = FRay(hitPosition, directionToLight);
@@ -338,7 +342,7 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 				if (!wasShadowObjectHit || distanceToHit > distanceToLight)
 				{
 					// No object casting a shadow
-					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight, record.UV);
+					glm::dvec3 illumination = record.Material_.EvaluateBSDF(record.Normal, eyeRay, directionToLight, record.UV, InRNG);
 					overallIntensity += illumination * lightIntensity * glm::dot(directionToLight, glm::dvec3(record.Normal));
 				}
 				else
@@ -354,12 +358,12 @@ glm::dvec3 FRayTracer::TraceRay(const FRay& InRay, size_t InBounces, std::vector
 			glm::dvec3 sampledRayDirection;
 			double rayProbability;
 
-			if (record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, record.Normal, eyeRay, record.UV))
+			if (record.Material_.SampleHemisphere(sampledRayDirection, rayProbability, record.Normal, eyeRay, record.UV, InRNG))
 			{
-				glm::dvec3 indirect = record.Material_.EvaluateBSDF(record.Normal, eyeRay, sampledRayDirection, record.UV);
+				glm::dvec3 indirect = record.Material_.EvaluateBSDF(record.Normal, eyeRay, sampledRayDirection, record.UV, InRNG);
 
 				FRay tracedRay = FRay(hitPosition, sampledRayDirection);
-				glm::dvec3 traceResult = TraceRay(tracedRay, InBounces + 1, InLights, OutAlbedo, OutNormal);
+				glm::dvec3 traceResult = TraceRay(tracedRay, InBounces + 1, InLights, OutAlbedo, OutNormal, InRNG);
 				glm::dvec3 term = indirect * traceResult;
 				glm::dvec3 indirectIllumination = 1.0 / rayProbability * term * glm::abs(glm::dot(sampledRayDirection, glm::dvec3(record.Normal)));
 
@@ -400,7 +404,7 @@ glm::vec3 FRayTracer::GetBackgroundColor(const glm::vec3& InDirection) const
 	return Settings.BackgroundColor;
 }
 
-void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm::dvec3& hitPos, glm::dvec3& directionToLight, glm::dvec3& intensity, double& distanceToLight)
+void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm::dvec3& hitPos, glm::dvec3& directionToLight, glm::dvec3& intensity, double& distanceToLight, RNG& InRNG)
 {
 	auto lightPtr = lightComponent.GetLightPtr();
 	if (lightPtr->GetType() == ELightType::Directional) 
@@ -413,12 +417,35 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 	}
 	else if (lightPtr->GetType() == ELightType::Point) 
 	{
+		//https://developer.blender.org/diffusion/C/browse/master/src/kernel/light/light.h Reference blender's light sampling code for point light with radius
 		auto pointLightPtr = static_cast<PointLight*>(lightPtr);
-		glm::dvec3 pointLightPos = lightComponent.GetNodePtr()->GetTransform().GetWorldPosition();
-		glm::dvec3 surfaceToLight = pointLightPos - hitPos;
-		distanceToLight = glm::length(surfaceToLight);
-		directionToLight = glm::normalize(surfaceToLight);
-		intensity = pointLightPtr->GetDiffuseColor() * pointLightPtr->GetIntensity();
+		glm::dvec3 center = lightComponent.GetNodePtr()->GetTransform().GetWorldPosition();
+		float radius = pointLightPtr->GetRadius();
+		float pdf = 1.0f;
+		glm::vec3 normalOnLight = glm::normalize(hitPos - center);
+		float inverseArea = 1.0f; // Default to 1.0f
+		if (radius > 0.0f)
+		{
+			inverseArea = 1.0f / (kPi * radius * radius);
+			center += DiskLightSample(normalOnLight, InRNG.Float(), InRNG.Float()) * radius;
+			pdf = 1.0f / (kPi * radius * radius);
+		}
+
+		directionToLight = glm::normalize(center - hitPos);
+		distanceToLight = glm::length(center - hitPos);
+
+		// Calculate lamp light pdf
+		float cosPi = glm::dot(normalOnLight, -(glm::vec3)directionToLight);
+		pdf *= cosPi <= 0.0f ? 0.0f : ((float)distanceToLight * (float)distanceToLight / cosPi);
+		float evalFactor = 1.0f / kPi * 0.25f * inverseArea;
+		if (pdf > 0.0f)
+		{
+			intensity = (pointLightPtr->GetDiffuseColor() * pointLightPtr->GetIntensity()) * evalFactor / pdf;
+		}
+		else
+		{
+			intensity = glm::vec3( 0.0f );
+		}
 	}
 	else if (lightPtr->GetType() == ELightType::Hittable) 
 	{
@@ -426,7 +453,7 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 		glm::vec3 outPosition;
 		glm::vec3 outNormal;
 		glm::vec3 transformedHitPosition = hittableLightPtr->GetHittable()->InverseModelMatrix * glm::vec4(hitPos, 1.0f);
-		float outProbability = hittableLightPtr->GetHittable()->Sample(transformedHitPosition, outPosition, outNormal);
+		float outProbability = hittableLightPtr->GetHittable()->Sample(transformedHitPosition, outPosition, outNormal, InRNG);
 
 		// Transform normal and pos back to world space
 		outNormal = glm::normalize(glm::vec3(hittableLightPtr->GetHittable()->TransposeInverseModelMatrix * glm::vec4(outNormal, 0.0f)));
@@ -437,6 +464,7 @@ void FRayTracer::GetIllumination(const LightComponent& lightComponent, const glm
 		float cosine = glm::max(glm::dot(-displacement, outNormal), 0.0f) / (float)distanceToLight;
 		float surfaceArea = glm::max(cosine, 0.0f) / (float)(distanceToLight * distanceToLight);
 
+		// TODO: Change GetAlbedo and GetEmittance to use material sample functions. Needs to get UVs from Hittable->Sample
 		intensity = (glm::vec3)hittableLightPtr->GetHittable()->Material_.GetAlbedo() * hittableLightPtr->GetHittable()->Material_.GetEmittance() * surfaceArea / outProbability;
 		directionToLight = displacement / (float)distanceToLight;
 	}

@@ -4,6 +4,7 @@
 #include <glm/ext/quaternion_geometric.hpp>
 #include "../Utilities.h"
 #include "ChiGraphics/Collision/FRay.h"
+#include "ChiGraphics/RNG.h"
 
 namespace CHISTUDIO {
 
@@ -30,7 +31,7 @@ public:
         Aperture = InSpec.Aperture;
     }
 
-    FRay GenerateRay(const glm::vec2& point) {
+    FRay GenerateRay(const glm::vec2& point, RNG& InRNG) {
         float d = 1.0f / tanf(FOV_Radian / 2.0f);
         glm::vec3 newDirection = d * Direction + point[0] * Horizontal / AspectRatio + point[1] * Up;
         newDirection = glm::normalize(newDirection);
@@ -40,7 +41,7 @@ public:
         if (Aperture > 0.0f)
         {
             glm::vec3 focalPoint = Center + newDirection * FocusDistance;
-            glm::vec2 offset = RandomInUnitDisk();
+            glm::vec2 offset = RandomInUnitDisk(InRNG);
             origin += (offset.x * Horizontal + offset.y * Up) * Aperture;
             newDirection = glm::normalize(focalPoint - origin);
         }

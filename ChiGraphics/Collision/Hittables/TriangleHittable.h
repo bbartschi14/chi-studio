@@ -13,7 +13,7 @@ public:
     TriangleHittable(const std::vector<glm::vec3>& InPositions, const std::vector<glm::vec3>& InNormals, const std::vector<glm::vec2>& InUVs);
 
 	bool Intersect(const FRay& InRay, float InT_Min, FHitRecord& InRecord, class Material InMaterial) const override;
-    float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const override;
+    float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const override;
 
     glm::vec3 GetPosition(size_t i) const {
         return Positions[i];

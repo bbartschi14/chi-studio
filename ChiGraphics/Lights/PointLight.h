@@ -5,19 +5,19 @@
 namespace CHISTUDIO {
     class PointLight : public LightBase {
     public:
-        void SetAttenuation(const glm::vec3& attenuation) {
-            Attenuation = attenuation;
-        }
-
-        glm::vec3 GetAttenuation() const {
-            return Attenuation;
-        }
-
         ELightType GetType() const override {
             return ELightType::Point;
         }
 
+        void SetRadius(const float& InRadius) {
+            Radius = InRadius;
+        }
+
+        float GetRadius() const {
+            return Radius;
+        }
+
     private:
-        glm::vec3 Attenuation;  // (constant, linear, quadratic)
+        float Radius;
     };
 }

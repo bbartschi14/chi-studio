@@ -47,11 +47,11 @@ bool MeshHittable::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord
     }
 }
 
-float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
+float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const
 {
     size_t numberOfTriangles = Triangles.size();
-    int randomIndex = RandomFloat(0.0f, numberOfTriangles);
-    float probability = Triangles[randomIndex].Sample(InTargetPoint, OutPoint, OutNormal);
+    int randomIndex = InRNG.Float() * numberOfTriangles;
+    float probability = Triangles[randomIndex].Sample(InTargetPoint, OutPoint, OutNormal, InRNG);
     return probability / numberOfTriangles;
 }
 

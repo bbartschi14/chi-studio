@@ -15,7 +15,7 @@ public:
 	* Samples for a point on the closest hemisphere to the target point, weighted by the cosine.
 	* Doesn't fully implement solid angle sampling.
 	*/
-	float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const override;
+	float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const override;
 private:
 	float Radius;
 	glm::vec3 Origin;

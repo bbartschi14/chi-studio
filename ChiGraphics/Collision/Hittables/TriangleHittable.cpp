@@ -62,14 +62,14 @@ bool TriangleHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& I
     return false;
 }
 
-float TriangleHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
+float TriangleHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const
 {
-    float u = RandomDouble();
-    float v = RandomDouble();
+    float u = InRNG.Float();
+    float v = InRNG.Float();
 
     while (u + v > 1.0f) {
-        u = RandomDouble();
-        v = RandomDouble();
+        u = InRNG.Float();
+        v = InRNG.Float();
     }
 
     float w = 1.0f - u - v;

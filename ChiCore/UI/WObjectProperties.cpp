@@ -5,6 +5,7 @@
 #include "core.h"
 #include "ChiGraphics/Cameras/TracingCameraNode.h"
 #include "ChiGraphics/Lights/HittableLight.h"
+#include "ChiGraphics/Lights/PointLight.h"
 #include "ChiGraphics/Modifiers/SubdivisionSurfaceModifier.h"
 #include "ChiGraphics/Modifiers/MirrorModifier.h"
 #include "ChiGraphics/Modifiers/ScrewModifier.h"
@@ -155,7 +156,7 @@ namespace CHISTUDIO {
 			if (lightType != ELightType::Hittable)
 			{
 				float intensity = lightComponent->GetLightPtr()->GetIntensity();
-				if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 50.0f))
+				if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 2000.0f))
 				{
 					lightComponent->GetLightPtr()->SetIntensity(intensity);
 				}
@@ -174,6 +175,7 @@ namespace CHISTUDIO {
 			}
 			else if (lightType == ELightType::Point)
 			{
+				auto pointLight = static_cast<PointLight*>(lightComponent->GetLightPtr());
 				glm::vec3 diffuseColor = lightComponent->GetLightPtr()->GetDiffuseColor();
 				glm::vec3 specularColor = lightComponent->GetLightPtr()->GetSpecularColor();
 				ImGui::Text("Diffuse Color");
@@ -181,6 +183,11 @@ namespace CHISTUDIO {
 				if (ImGui::ColorEdit3("##Diffuse Color", glm::value_ptr(diffuseColor)))
 				{
 					lightComponent->GetLightPtr()->SetDiffuseColor(diffuseColor);
+				}
+				float radius = pointLight->GetRadius();
+				if (ImGui::SliderFloat("Radius", &radius, 0.0f, 20.0f))
+				{
+					pointLight->SetRadius(radius);
 				}
 			}
 			else if (lightType == ELightType::Directional)

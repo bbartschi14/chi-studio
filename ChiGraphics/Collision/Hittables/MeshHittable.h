@@ -15,7 +15,7 @@ public:
     MeshHittable(const FPositionArray& positions, const FNormalArray& normals, const FIndexArray& indices, const FTexCoordArray& uvs, bool InUseOctree = true);
 
     bool Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord, class Material InMaterial) const override;
-    float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const override;
+    float Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const override;
 
     const std::vector<TriangleHittable>& GetTriangles() const {
         return Triangles;

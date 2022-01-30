@@ -86,7 +86,6 @@ void PhongShader::SetLightSource(const LightComponent& InComponent) const
         SetUniform("point_light.position", InComponent.GetNodePtr()->GetTransform().GetPosition());
         SetUniform("point_light.diffuse", point_light_ptr->GetDiffuseColor());
         SetUniform("point_light.specular", point_light_ptr->GetSpecularColor());
-        SetUniform("point_light.attenuation", point_light_ptr->GetAttenuation());
     }
     else {
         throw std::runtime_error(

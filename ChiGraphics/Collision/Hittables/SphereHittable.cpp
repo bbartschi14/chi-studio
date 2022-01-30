@@ -52,9 +52,9 @@ bool SphereHittable::Intersect(const FRay& InRay, float InT_Min, FHitRecord& InR
     return false;
 }
 
-float SphereHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal) const
+float SphereHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const
 {
-    glm::vec2 randomPoint = RandomInUnitDisk();
+    glm::vec2 randomPoint = RandomInUnitDisk(InRNG);
     float z = glm::sqrt(1.0f - randomPoint.x * randomPoint.x - randomPoint.y * randomPoint.y);
     glm::vec3 normalizedDirection = glm::normalize(InTargetPoint);
 

@@ -106,11 +106,13 @@ namespace CHISTUDIO {
                         idx = std::stoul(split[0]);
                         if (split.size() > 1)
                         {
-                            uvIdx = std::stoul(split[1]);
+                            if (split[1].size() > 0)
+                                uvIdx = std::stoul(split[1]);
                         }
                         if (split.size() > 2)
                         {
-                            normalIdx = std::stoul(split[2]);
+                            if (split[2].size() > 0)
+                                normalIdx = std::stoul(split[2]);
                         }
                     }
                     // OBJ indices start with 1.

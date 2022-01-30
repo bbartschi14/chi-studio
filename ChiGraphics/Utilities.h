@@ -10,6 +10,7 @@
 #include "AliasTypes.h"
 #include <cstdlib>
 #include <random>
+#include "ChiGraphics/RNG.h"
 
 /** Collection of helper functions and macros for the graphics library */
 
@@ -95,14 +96,52 @@ float static RandomFloat(float min, float max) {
     return min + (max - min) * rand() / (RAND_MAX + 1.0f);;
 }
 
-glm::vec2 static RandomInUnitDisk()
+glm::vec2 static RandomInUnitDisk(RNG& InRNG)
 {
     while (true) 
     {
-        auto p = glm::vec2(RandomDouble(-1, 1), RandomDouble(-1, 1));
+        float x = InRNG.Float() * 2.0f - 1.0f;
+        float y = InRNG.Float() * 2.0f - 1.0f;
+        auto p = glm::vec2(x, y);
         if (glm::length(p) >= 1) continue;
         return p;
     }
+}
+
+/* Distribute uniform xy on [0,1] over unit disk [-1,1] */
+void static ToUnitDisk(float& OutX, float& OutY)
+{
+    float phi = kPi * 2 * (OutX);
+    float r = glm::sqrt(OutY);
+
+    OutX = r * glm::cos(phi);
+    OutY = r * glm::sin(phi);
+}
+
+void static MakeOrthonormals(const glm::vec3& InNormal, glm::vec3& OutA, glm::vec3& OutB)
+{
+    if (InNormal.x != InNormal.y || InNormal.x != InNormal.z)
+        OutA = glm::vec3(InNormal.z - InNormal.y, InNormal.x - InNormal.z, InNormal.y - InNormal.x);  //(1,1,1)x N
+    else
+        OutA = glm::vec3(InNormal.z - InNormal.y, InNormal.x + InNormal.z, -InNormal.y - InNormal.x);  //(-1,1,1)x N
+
+    OutA = glm::normalize(OutA);
+    OutB = glm::cross(InNormal, OutA);
+}
+
+glm::vec3 static EllipseSample(const glm::vec3& InRu, const glm::vec3& InRv, float InRandomU, float InRandomV)
+{
+    ToUnitDisk(InRandomU, InRandomV);
+    return InRu * InRandomU + InRv * InRandomV;
+}
+
+glm::vec3 static DiskLightSample(const glm::vec3& InNormal, float InRandomU, float InRandomV)
+{
+    glm::vec3 Ru, Rv;
+
+    MakeOrthonormals(InNormal, Ru, Rv);
+
+    return EllipseSample(Ru, Rv, InRandomU, InRandomV);
 }
 
 // Silence compiler warning for unused variables
