@@ -7,7 +7,9 @@
 
 namespace CHISTUDIO {
 
-// Singleton pattern class for managing all materials in the project
+/** Singleton pattern class for managing all materials in the project. New materials can be
+ * created, and a default material pointer is maintained to assign to new objects.
+ */
 class MaterialManager
 {
 public:

@@ -19,6 +19,7 @@ namespace CHISTUDIO {
             return {};
         }
 
+        // Instantiate all intermediate data structures for reconstructing vertex object data
         FDefaultObjectParams params;
         std::vector<glm::vec3> vertexPositions;
         int currentGroupIndex = -1;
@@ -155,7 +156,7 @@ namespace CHISTUDIO {
             else if (command == "mtllib")
             {
                 std::string mtl_file;
-                ss >> mtl_file;
+                ss >> mtl_file; // TODO: Doesn't read files with spaces in the name
                 materialDictionary = ParseMTL(base_path + mtl_file);
             }
             else if (command == "o" || command == "s")

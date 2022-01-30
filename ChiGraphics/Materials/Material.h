@@ -14,7 +14,8 @@
 #include "ChiGraphics/RNG.h"
 
 namespace CHISTUDIO {
-    
+ 
+/** Implements a BSDF for material sampling. Allows for specifying a texture map per parameter, or a single uniform value. */
 class Material : public IKeyframeable
 {
 public:

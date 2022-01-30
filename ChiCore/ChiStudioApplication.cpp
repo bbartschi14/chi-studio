@@ -48,23 +48,6 @@ void ChiStudioApplication::SetupScene(bool InIncludeDefaults)
 	cameraNode->SetHierarchyVisible(false);
 
 	root.AddChild(std::move(cameraNode));
-
-	//CreatePrimitiveNode(EDefaultObject::Cube);
-	//CreateTracingSphereNode();
-
-	//SceneNode* tracingCamera = CreateCamera();
-	//tracingCamera->GetTransform().SetPosition(glm::vec3(0.0f, 2.0f, 10.0f));
-	//tracingCamera->GetTransform().SetRotation(glm::vec3(-45.0f, 45.0f, 0.0f));
-
-	//SceneNode* tracingPointLight = CreatePointLight();
-	//tracingPointLight->GetTransform().SetPosition(glm::vec3(0.0f, 5.0f, 5.0f));
-	//FDefaultObjectParams params;
-	//SceneNode* plane = CreatePrimitiveNode(EDefaultObject::Plane, params);
-	//plane->GetComponentPtr<MaterialComponent>()->GetMaterial().SetAlbedo(glm::vec3(.1f));
-
-	//SceneNode* teapot = CreateImportMeshNode("teapot.obj");
-	//SceneNode* pegasus = CreateImportMeshNode("D:/GraphicsProjects/ChiStudio/assets/pegasus.obj");
-	//pegasus->GetTransform().SetScale(glm::vec3(3.0f));
 }
 
 void ChiStudioApplication::DrawGUI(float InDeltaTime)
