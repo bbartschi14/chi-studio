@@ -63,7 +63,7 @@ namespace CHISTUDIO {
 	{
 		// Process window events.
 		glfwPollEvents();
-		UpdateGUI(InDeltaTime);
+		UpdateGUI((float)InDeltaTime);
 
 		// Logic update before rendering.
 		if (bIsPreviewingRenderCamera)

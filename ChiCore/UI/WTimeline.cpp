@@ -125,7 +125,7 @@ void WTimeline::Render(Application& InApplication, float InDeltaTime)
                     {
                         bCanSequencerChangeFrame = false;
                         kf->SelectedTrackIndex = i;
-                        keyframeable->SelectedKeyframeableIndex = keyframeableIndex;
+                        keyframeable->SelectedKeyframeableIndex = (int)keyframeableIndex;
                     }
                     if (ImGui::IsItemHovered() && ImGui::IsMouseDown(0))
                     {

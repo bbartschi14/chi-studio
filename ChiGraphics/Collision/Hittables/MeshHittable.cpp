@@ -27,8 +27,10 @@ namespace CHISTUDIO {
     // Build Octree.
     if (bUseOctree)
     {
+        std::cout << "Building octree" << std::endl;
         Octree_ = make_unique<Octree>();
         Octree_->Build(*this);
+        std::cout << "Finished octree" << std::endl;
     }
 }
 
@@ -53,7 +55,7 @@ float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, 
 {
     // Sample a random triangle. Account for the number of triangles when calculating probability
     size_t numberOfTriangles = Triangles.size();
-    int randomIndex = InRNG.Float() * numberOfTriangles;
+    int randomIndex = (int)(InRNG.Float() * numberOfTriangles);
     float probability = Triangles[randomIndex].Sample(InTargetPoint, OutPoint, OutNormal, InRNG);
     return probability / numberOfTriangles;
 }

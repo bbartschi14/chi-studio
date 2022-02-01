@@ -1,10 +1,10 @@
 #pragma once
 
 #include "IWidget.h"
+#include "ChiGraphics/External.h"
 #include <vector>
 #include <memory>
 #include <string>
-#include "ChiGraphics/External.h"
 
 namespace CHISTUDIO {
 

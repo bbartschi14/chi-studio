@@ -98,6 +98,7 @@ std::unique_ptr<FTexture> FRayTracer::Render(const Scene& InScene, const std::st
 
 	std::chrono::steady_clock::time_point beginTime = std::chrono::steady_clock::now();
 
+	std::cout << "Initializing render threads" << std::endl;
 	for (size_t y = 0; y < Settings.ImageSize.y; y++) 
 	{
 		Futures.push_back(std::async(std::launch::async, &FRayTracer::RenderRow, this, y, &lightComponents, tracingCamera.get(), outputImage.get(), albedoImage.get(), normalImage.get(), time(NULL) + y * 10000));
@@ -188,6 +189,7 @@ std::vector<LightComponent*> FRayTracer::GetLightComponents(const Scene& InScene
 void FRayTracer::BuildHittableData(const Scene& InScene, std::vector<LightComponent*>& InLights)
 {
 	Hittables.clear();
+	std::cout << "Building hittable data" << std::endl;
 
 	auto& root = InScene.GetRootNode();
 	std::vector<RenderingComponent*> renderingComps = root.GetComponentPtrsInChildren<RenderingComponent>();
@@ -199,6 +201,7 @@ void FRayTracer::BuildHittableData(const Scene& InScene, std::vector<LightCompon
 		{
 			VertexObject* vertexObject = renderingComp->GetVertexObjectPtr();
 			if (vertexObject->GetPositions().size() == 0) continue;
+			std::cout << "Building hittable for " << renderingComp->GetNodePtr()->GetNodeName() << std::endl;
 			std::shared_ptr<MeshHittable> hittable = std::make_shared<MeshHittable>(vertexObject->GetPositions(), vertexObject->GetNormals(), vertexObject->GetIndices(), vertexObject->GetTexCoords());
 
 			hittable->ModelMatrix = renderingComp->GetNodePtr()->GetTransform().GetLocalToWorldMatrix();

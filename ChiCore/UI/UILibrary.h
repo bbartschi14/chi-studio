@@ -1,10 +1,10 @@
 #pragma once
+#include <windows.h>
 #include <string>
 #include <glm/glm.hpp>
 #include "ChiGraphics/External.h"
 #include <imgui_internal.h>
 #include <functional>
-#include <windows.h>
 #include "ChiGraphics/Modifiers/Modifier.h"
 #include "ChiGraphics/Textures/ImageModifier.h"
 #include "ChiGraphics/Textures/ImageManager.h"

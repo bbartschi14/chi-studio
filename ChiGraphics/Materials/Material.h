@@ -374,15 +374,15 @@ public:
     {
         if (InTrackName == "Albedo R")
         {
-            AlbedoRKeyframeTrack.AddKeyframe(InFrame, Albedo.r);
+            AlbedoRKeyframeTrack.AddKeyframe(InFrame, (float)Albedo.r);
         }
         else if (InTrackName == "Albedo G")
         {
-            AlbedoGKeyframeTrack.AddKeyframe(InFrame, Albedo.g);
+            AlbedoGKeyframeTrack.AddKeyframe(InFrame, (float)Albedo.g);
         }
         else if (InTrackName == "Albedo B")
         {
-            AlbedoBKeyframeTrack.AddKeyframe(InFrame, Albedo.b);
+            AlbedoBKeyframeTrack.AddKeyframe(InFrame, (float)Albedo.b);
         }
         else if (InTrackName == "Roughness")
         {

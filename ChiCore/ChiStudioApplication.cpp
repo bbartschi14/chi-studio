@@ -52,7 +52,7 @@ void ChiStudioApplication::SetupScene(bool InIncludeDefaults)
 
 void ChiStudioApplication::DrawGUI(float InDeltaTime)
 {
-	ImGui::ShowDemoWindow();
+	//ImGui::ShowDemoWindow();
 
 	// Create the docking environment
 	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_MenuBar |

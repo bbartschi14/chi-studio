@@ -6,6 +6,7 @@
 #include "UILibrary.h"
 #include <glm/gtc/type_ptr.hpp>
 #include "ChiGraphics/Keyframing/KeyframeManager.h"
+#include <stdexcept>
 
 namespace CHISTUDIO {
 
@@ -91,6 +92,11 @@ void WRendering::Render(Application& InApplication, float InDeltaTime)
         ImGui::EndMenuBar();
     }
     ImGui::Checkbox("Use HDRI", &bUseHDRI);
+
+    if (ImGui::Button("Crash")) {
+        throw std::runtime_error("Incomplete framebuffer!");
+    }
+
     if (bUseHDRI)
     {
         ImGui::Text(fmt::format("HDRI: {}", HDRI ? HDRI->ImportedFileName : "None").c_str());

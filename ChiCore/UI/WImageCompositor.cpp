@@ -79,7 +79,10 @@ void WImageCompositor::Render(Application& InApplication, float InDeltaTime)
 	if (DisplayTexture)
 	{
 		uint64_t textureID = DisplayTexture->GetHandle();
-		ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)SelectedImagePtr->GetWidth() * ImageZoom, (float)SelectedImagePtr->GetHeight() * ImageZoom }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 });
+		if (SelectedImagePtr != nullptr)
+		{
+			ImGui::Image(reinterpret_cast<void*>(textureID), ImVec2{ (float)SelectedImagePtr->GetWidth() * ImageZoom, (float)SelectedImagePtr->GetHeight() * ImageZoom }, ImVec2{ 0, 0 }, ImVec2{ 1, 1 });
+		}
 	}
 	ImGui::EndChild();
 

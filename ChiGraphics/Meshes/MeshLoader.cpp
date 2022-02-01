@@ -134,11 +134,11 @@ namespace CHISTUDIO {
                 ss >> groupName;
                 auto newObject = std::make_shared<VertexObject>(EDefaultObject::CustomMesh, params, groupName);
                 vertexObjects.emplace_back(std::move(newObject));
-                currentGroupIndex = vertexObjects.size() - 1;
+                currentGroupIndex = (int)vertexObjects.size() - 1;
                 int numVerticesSoFar = 0;
                 for (auto verts : createdVertsPerGroup)
                 {
-                    numVerticesSoFar += verts.size();
+                    numVerticesSoFar += (int)verts.size();
                 }
                 indexOffsetPerGroup.push_back(numVerticesSoFar);
                 createdVertsPerGroup.resize(createdVertsPerGroup.size() + 1);
