@@ -20,3 +20,6 @@ View in-depth breakdown [on my website](https://benbartschi.me/portfolio/chi-stu
 
 ![galleryImage4](https://github.com/bbartschi14/chi-studio/blob/main/assets/gallery/iceLions.png)
 <i>Lion model from [CGTrader](https://www.cgtrader.com/free-3d-print-models/art/sculptures/lion-statue--10), imported and rendered in Chi Studio with ice material and mesh mirror modifier.</i>
+
+![galleryImage1-1](https://github.com/bbartschi14/chi-studio/blob/main/assets/gallery/interpCubesGif.gif)  
+<i>Keyframe easing demo. Modeled and rendered in Chi Studio.</i>
