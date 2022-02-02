@@ -54,7 +54,7 @@ bool MeshHittable::Intersect(const FRay& InRay, float Tmin, FHitRecord& InRecord
 float MeshHittable::Sample(const glm::vec3& InTargetPoint, glm::vec3& OutPoint, glm::vec3& OutNormal, RNG& InRNG) const
 {
     // Sample a random triangle. Account for the number of triangles when calculating probability
-    size_t numberOfTriangles = Triangles.size();
+    size_t numberOfTriangles = Triangles.size() - 1;
     int randomIndex = (int)(InRNG.Float() * numberOfTriangles);
     float probability = Triangles[randomIndex].Sample(InTargetPoint, OutPoint, OutNormal, InRNG);
     return probability / numberOfTriangles;
