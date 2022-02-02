@@ -28,6 +28,13 @@ public:
         return Height;
     }
 
+    void SetDimensions(size_t InWidth, size_t InHeight)
+    {
+        Width = InWidth;
+        Height = InHeight;
+        Data.resize(Width * Height);
+    }
+
     void SetPixel(size_t x, size_t y, const glm::vec3& color) {
         if (x < Width && y < Height) {
             Data[y * Width + x] = color;

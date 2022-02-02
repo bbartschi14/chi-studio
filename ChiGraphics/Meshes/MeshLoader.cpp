@@ -119,7 +119,14 @@ namespace CHISTUDIO {
                     // OBJ indices start with 1.
                     vertsOnFace.push_back(idx - 1);
                     normalsOnFace.push_back(importedNormals->at(normalIdx - 1));
-                    uvsOnFace.push_back(importedUVs.at(uvIdx - 1));
+                    if (importedUVs.size() > 0)
+                    {
+                        uvsOnFace.push_back(importedUVs.at(uvIdx - 1));
+                    }
+                    else
+                    {
+                        uvsOnFace.push_back(glm::vec2(0.0f));
+                    }
                 }
                 std::reverse(vertsOnFace.begin(), vertsOnFace.end()); // Flip winding to get correct normals. This might have to be an import flag depending on the model
                 std::reverse(normalsOnFace.begin(), normalsOnFace.end());

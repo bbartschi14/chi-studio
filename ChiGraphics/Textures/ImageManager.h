@@ -56,7 +56,7 @@ private:
 	// Maps names to the images
 	std::unordered_map<std::string, std::unique_ptr<class FImage>> ImageLibrary;
 
-	ImageManager() {}
+	ImageManager();
 	~ImageManager() {}
 
 	std::unique_ptr<class FImage> RenderResult;

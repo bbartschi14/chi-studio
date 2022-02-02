@@ -8,6 +8,12 @@
 
 namespace CHISTUDIO {
 
+ImageManager::ImageManager() :
+	RenderResult(make_unique<FImage>(512,512))
+{
+
+}
+
 std::vector<std::pair<std::string, FImage*>> ImageManager::GetImages() const
 {
 	std::vector<std::pair<std::string, FImage*>> images;
@@ -95,7 +101,8 @@ std::pair<std::string, class FImage*> ImageManager::ImportImage(std::string imag
 
 void ImageManager::SetRenderResult(std::unique_ptr<FImage> InImage)
 {
-	RenderResult = std::move(InImage);
+	RenderResult->SetDimensions(InImage->GetWidth(), InImage->GetHeight());
+	RenderResult->SetData(InImage->GetData());
 }
 
 std::string ImageManager::GetUniqueName(std::string InBaseName) const
